@@ -1,15 +1,40 @@
 plugins {
     id 'java'
 }
-repositories { mavenCentral(); maven { url 'https://repo.runelite.net' } }
+repositories {
+    maven {
+        url = 'https://repo.runelite.net'
+        content { includeGroupByRegex 'net\\.runelite.*' }
+    }
+    mavenCentral()
+}
 def runeLiteVersion = 'latest.release'
 dependencies {
     compileOnly "net.runelite:client:${runeLiteVersion}"
-    compileOnly 'org.projectlombok:lombok:1.18.36'
-    annotationProcessor 'org.projectlombok:lombok:1.18.36'
     testImplementation 'junit:junit:4.13.2'
+    testImplementation "net.runelite:client:${runeLiteVersion}"
+    testImplementation "net.runelite:jshell:${runeLiteVersion}"
 }
 group = 'com.traphouse'
 version = '1.0.0'
-java { toolchain { languageVersion = JavaLanguageVersion.of(11) } }
-tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release.set(11)
+}
+
+tasks.register('run', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.traphouse.TrapHousePluginLauncher'
+    jvmArgs '-ea'
+    args '--developer-mode', '--debug'
+}
+
+tasks.register('preview', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.traphouse.TrapHousePanelPreview'
+}
+
+tasks.register('previewBoth', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.traphouse.TrapHouseBothTabsPreview'
+}

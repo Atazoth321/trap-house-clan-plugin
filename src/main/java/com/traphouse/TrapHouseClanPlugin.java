@@ -1,0 +1,89 @@
+package com.traphouse;
+
+import com.google.inject.Provides;
+import javax.inject.Inject;
+import java.awt.image.BufferedImage;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import javax.swing.SwingUtilities;
+import net.runelite.client.config.ConfigManager;
+import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
+import net.runelite.client.plugins.Plugin;
+import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.ui.ClientToolbar;
+import net.runelite.client.ui.NavigationButton;
+import net.runelite.client.util.ImageUtil;
+
+@PluginDescriptor(name="Trap House Clan Plugin", description="TRAP HOUSE boss and Skill of the Month Wise Old Man event leaderboards", tags={"clan","events","boss","skills","traphouse","leaderboard"})
+public class TrapHouseClanPlugin extends Plugin {
+    @Inject private ClientToolbar toolbar;
+    @Inject private TrapHouseConfig config;
+    @Inject private WiseOldManClient wiseOldMan;
+    @Inject private ScheduledExecutorService executor;
+    private NavigationButton navigationButton;
+    private TrapHouseDashboard dashboard;
+    private EventLeaderboardController bossBoard;
+    private EventLeaderboardController skillBoard;
+    private ScheduledFuture<?> refreshTask;
+    private boolean active;
+
+    @Provides TrapHouseConfig provideConfig(ConfigManager manager) {
+        return manager.getConfig(TrapHouseConfig.class);
+    }
+
+    @Override protected void startUp() {
+        SwingUtilities.invokeLater(() -> {
+            active = true;
+            bossBoard = new EventLeaderboardController(wiseOldMan, executor, config::competitionId, false);
+            skillBoard = new EventLeaderboardController(wiseOldMan, executor, config::skillCompetitionId, true);
+            createPanel(0);
+            refreshBoth();
+        });
+        refreshTask = executor.scheduleWithFixedDelay(() -> SwingUtilities.invokeLater(this::refreshBoth), 5, 5, TimeUnit.MINUTES);
+    }
+
+    private void createPanel(int selectedTab) {
+        TrapHousePanel bossPanel = new TrapHousePanel(config, bossBoard::refresh, false);
+        TrapHousePanel skillPanel = new TrapHousePanel(config, skillBoard::refresh, true);
+        bossBoard.setPanel(bossPanel);
+        skillBoard.setPanel(skillPanel);
+        dashboard = new TrapHouseDashboard(bossPanel, skillPanel, selectedTab);
+        BufferedImage icon = ImageUtil.loadImageResource(getClass(), "icon.png");
+        navigationButton = NavigationButton.builder().tooltip("TRAP HOUSE").icon(icon).priority(6).panel(dashboard).build();
+        toolbar.addNavigation(navigationButton);
+    }
+
+    private void refreshBoth() {
+        if (!active) return;
+        bossBoard.refresh();
+        skillBoard.refresh();
+    }
+
+    @Override protected void shutDown() {
+        if (refreshTask != null) refreshTask.cancel(false);
+        refreshTask = null;
+        SwingUtilities.invokeLater(() -> {
+            active = false;
+            bossBoard.stop();
+            skillBoard.stop();
+            if (navigationButton != null) toolbar.removeNavigation(navigationButton);
+            navigationButton = null;
+            dashboard = null;
+        });
+    }
+
+    @Subscribe public void onConfigChanged(ConfigChanged event) {
+        if (!"traphouse".equals(event.getGroup())) return;
+        SwingUtilities.invokeLater(() -> {
+            if (!active) return;
+            if ("competitionId".equals(event.getKey())) bossBoard.reset();
+            if ("skillCompetitionId".equals(event.getKey())) skillBoard.reset();
+            int tab = dashboard.selectedTab();
+            toolbar.removeNavigation(navigationButton);
+            createPanel(tab);
+            refreshBoth();
+        });
+    }
+}

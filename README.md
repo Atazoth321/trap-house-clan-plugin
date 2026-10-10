@@ -1,30 +1,123 @@
-# TRAP HOUSE RuneLite plugin (starter project)
+# Trap House Clan Plugin
 
-A custom sidebar for the TRAP HOUSE Old School RuneScape clan.
+A RuneLite sidebar for the **TRAP HOUSE** Old School RuneScape clan. Follow Boss of the Week and Skill of the Month competitions from [Wise Old Man group 2504](https://wiseoldman.net/groups/2504), with event leaderboards and configurable prizes.
 
-## Current features
-- Red/black clan dashboard, slogan, configurable event and prize values
-- Configurable boss name and **local nearby boss-death counter** (not a verified personal kill count; may include other players' kills)
-- Counter saved per RuneLite RS profile, reset confirmation
-- Optional Discord and website buttons (disabled until HTTPS links are configured)
+## Features
 
-## Build
-1. Install JDK 11 and a recent Gradle release (or open project in IntelliJ with Gradle support).
-2. Run `gradle build` in this folder.
-3. For local RuneLite development, use the official RuneLite plugin development workflow / Plugin Hub template to launch a development client with this plugin. Building this project alone does not install it into the official client.
-4. Configure links, event and prizes in RuneLite settings.
+- **Boss event:** Boss of the Week details and the top ten participants ranked by kills gained during the competition.
+- **Skill event:** Skill of the Month details and the top ten participants ranked by XP gained during the competition.
+- Automatic detection of active clan competitions, with separate competition-ID overrides for each tab.
+- Event titles, featured bosses or skills, competition dates, and gold, silver, and bronze ranks.
+- Automatic refresh every five minutes and a manual **Refresh leaderboard** button.
+- Separate first-, second-, and third-place prize settings for boss and skill events.
+- TRAP HOUSE branding and optional Discord and clan website buttons.
 
-## Notes
-This is an initial source project, not a Plugin Hub submission. Clan-wide events, leaderboards, bingo and verified kill credit require additional implementation and potentially a backend. The boss death signal may vary by NPC and client API version. Test with the current RuneLite API before relying on it for payouts. No credentials or automation are included.
+![Boss event and Skill event tabs](docs/plugin-preview.png)
 
-## Public distribution / Plugin Hub submission
-This plugin does not require clan membership, login credentials, whitelists, or private servers. Anyone can use the local dashboard after installing it.
+## Build and run
 
-**Not yet published:** Public installation through the RuneLite Plugin Hub requires a public source repository, a working build, review, and acceptance by RuneLite maintainers. This ZIP is source code and cannot be installed through the Plugin Hub until approved.
+Use **JDK 17 or newer** to run the included Gradle wrapper. The plugin compiles for Java 11. An internet connection is required to download dependencies and read Wise Old Man events.
 
-1. Publish the source under a public GitHub repository (for example `trap-house-runelite`). Add an appropriate open-source license and commit the logo assets.
-2. Verify that the code compiles and runs against the current RuneLite API; test the sidebar, configuration, and boss-death counter. The current starter project has not been build-verified.
-3. Follow the **current** official instructions at https://github.com/runelite/plugin-hub/blob/master/README.md for the required repository structure, manifest, and submission pull request.
-4. After acceptance, any RuneLite user can find and install the plugin from the Plugin Hub without being a TRAP HOUSE member.
+On Windows, build and run the tests:
 
-**Privacy:** The local death counter is not a verified personal kill count and is not shared with the clan. Links to Discord and the website are optional and disabled until configured.
+```powershell
+.\gradlew.bat build
+```
+
+Launch a development RuneLite client with the plugin loaded:
+
+```powershell
+.\gradlew.bat run
+```
+
+On macOS or Linux, use `./gradlew` instead of `.\gradlew.bat`.
+
+In RuneLite, enable **Trap House Clan Plugin** in plugin settings, then click the TRAP HOUSE sidebar icon. Building a JAR does not install the plugin into your regular RuneLite client.
+
+### IntelliJ IDEA
+
+1. Open the project as a Gradle project.
+2. Select your installed JDK as the Gradle JVM and reload Gradle.
+3. Run the Gradle `run` task, or run `TrapHousePluginLauncher.main()` from `src/test/java/com/traphouse`.
+
+Restart the development client after changing plugin code.
+
+## Settings
+
+| Setting | Purpose |
+| --- | --- |
+| Wise Old Man competition ID | Boss event override. Leave at `0` to detect an active boss competition automatically. |
+| Skill of the Month competition ID | Skill event override. Leave at `0` to detect an active single-skill competition automatically. |
+| 1st / 2nd / 3rd prize (GP) | Prize amounts displayed on the Boss event tab. |
+| Skill 1st / 2nd / 3rd prize (GP) | Prize amounts displayed on the Skill event tab. |
+| Discord invite URL | Enables the Discord button when an HTTPS link is configured. |
+| Clan website URL | Enables the website button when an HTTPS link is configured. |
+
+A competition's ID is the number in its Wise Old Man URL, such as `154611` in `https://wiseoldman.net/competitions/154611`. Overrides must belong to **Trap House group 2504** and match the tab's event type. Historical and upcoming competitions are labeled accordingly.
+
+## How tracking works
+
+The plugin reads public competition data from Wise Old Man. Leaderboard scores are **gains recorded during the selected competition**, rather than lifetime kill counts, lifetime XP, or nearby NPC deaths.
+
+Each tab selects an event whose start time has passed and whose end time has not passed. If several matching events overlap, it selects the most recently started one. The skill tab accepts individual skills and excludes overall-XP competitions.
+
+If no matching event is running, the tab displays **No active boss event** or **No active skill event**. It does not substitute a finished event. Participants with missing hiscores baselines are omitted.
+
+Members must update their Wise Old Man profiles for newer gains to appear. This plugin reads the recorded scores; it does not submit player updates or create competitions. Prize settings only control the displayed amounts.
+
+XP scores are abbreviated in the sidebar. Hover a leaderboard row to see the exact gain. Event dates are shown in UTC. Manual refreshes are limited to once every 30 seconds. If a refresh fails, the last fetched scores remain visible with a stale-data message.
+
+## Preview the sidebar
+
+Render the layout without starting a game client:
+
+```powershell
+.\gradlew.bat preview
+```
+
+Preview the current boss event:
+
+```powershell
+.\gradlew.bat preview --args=--live
+```
+
+Preview the current skill event:
+
+```powershell
+.\gradlew.bat preview --args=--skill-live
+```
+
+Preview a specific competition:
+
+```powershell
+.\gradlew.bat preview --args="--live 154611"
+.\gradlew.bat preview --args="--skill-live 150717"
+```
+
+These commands write `build/trap-house-preview.png`. To render both tabs side by side with current Wise Old Man data:
+
+```powershell
+.\gradlew.bat previewBoth
+```
+
+The combined image is saved as `build/trap-house-both-tabs.png`. Live previews require an internet connection. The README screenshot shows the layout at the time it was captured, not current event status.
+
+## Troubleshooting
+
+- **No active event:** Check whether group 2504 has a running competition of the correct type. Use the appropriate competition-ID setting to view a specific event.
+- **Scores look outdated:** Update the participant's Wise Old Man profile, then refresh the leaderboard.
+- **Wrong competition type or group:** Choose a Trap House boss competition for Boss event, or a Trap House single-skill competition for Skill event.
+- **Discord or website button is disabled:** Add an HTTPS URL in plugin settings.
+- **Java cannot be found:** Set `JAVA_HOME` to your JDK installation, or configure the Gradle JVM in IntelliJ.
+
+## Privacy
+
+The plugin makes HTTPS read requests to `api.wiseoldman.net` for public clan competitions and participant scores. It does not send your player name, login details, or local kill counts. Opening configured Discord or website links uses your browser.
+
+## Development and distribution
+
+Plugin entry point: `com.traphouse.TrapHouseClanPlugin`.
+
+Run `build` to compile and execute the tests. Tests cover event selection, time boundaries, kill and XP gains, group validation, leaderboard states, tab layout, and packaged logo resources.
+
+This repository is a development project. Plugin Hub distribution requires a separate submission and acceptance; consult the [RuneLite Plugin Hub instructions](https://github.com/runelite/plugin-hub/blob/master/README.md) before submitting.
