@@ -1,7 +1,6 @@
 package com.traphouse;
 
 import java.awt.*;
-import java.net.URI;
 import java.util.Locale;
 import java.util.List;
 import java.util.Collections;
@@ -12,6 +11,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.util.ImageUtil;
+import net.runelite.client.util.LinkBrowser;
 
 public class TrapHousePanel extends PluginPanel {
     private static final Color WHITE = new Color(239, 241, 246);
@@ -273,10 +273,7 @@ public class TrapHousePanel extends PluginPanel {
         JButton button = button(text, primary);
         button.setEnabled(url != null && url.matches("https://.+"));
         if (!button.isEnabled()) button.setToolTipText("Add an HTTPS link in Trap House Clan Plugin settings");
-        button.addActionListener(e -> {
-            try { Desktop.getDesktop().browse(new URI(url)); }
-            catch (Exception ex) { JOptionPane.showMessageDialog(this, "Could not open URL: " + ex.getMessage()); }
-        });
+        button.addActionListener(e -> LinkBrowser.browse(url));
         return button;
     }
 
