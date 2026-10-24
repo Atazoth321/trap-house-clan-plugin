@@ -11,8 +11,11 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.util.ImageUtil;
+import net.runelite.client.util.LinkBrowser;
 
 public class TrapHousePanel extends PluginPanel {
+    private static final String DISCORD_URL = "";
+    private static final String WEBSITE_URL = "";
     private static final int FIRST_PRIZE = 10_000_000;
     private static final int SECOND_PRIZE = 5_000_000;
     private static final int THIRD_PRIZE = 2_500_000;
@@ -101,6 +104,9 @@ public class TrapHousePanel extends PluginPanel {
         prizes.add(prize("03", "THIRD PLACE", THIRD_PRIZE, new Color(207, 153, 120)));
         section(prizes);
 
+        add(linkButton("Open Discord", DISCORD_URL, true));
+        gap(this, 7);
+        add(linkButton("Open Clan Website", WEBSITE_URL, false));
         gap(this, 14);
         add(label("YOUR GRIND. YOUR COMMUNITY.", 9, MUTED));
         gap(this, 4);
@@ -268,6 +274,13 @@ public class TrapHousePanel extends PluginPanel {
         return button;
     }
 
+    private JButton linkButton(String text, String url, boolean primary) {
+        JButton button = button(text, primary);
+        button.setEnabled(url != null && url.matches("https://.+"));
+        if (!button.isEnabled()) button.setToolTipText("Community link coming soon");
+        button.addActionListener(e -> LinkBrowser.browse(url));
+        return button;
+    }
     private static class Card extends JPanel {
         private final boolean header;
         Card(boolean header) { this.header = header; setOpaque(false); }

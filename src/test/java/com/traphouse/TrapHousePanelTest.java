@@ -23,7 +23,7 @@ public class TrapHousePanelTest {
     }
 
     @Test
-    public void leaderboardDisplaysScoresWithoutLinkButtons() throws Exception {
+    public void leaderboardDisplaysScoresAndCommunityLinkButtons() throws Exception {
         SwingUtilities.invokeAndWait(() -> {
             TrapHousePanel panel = new TrapHousePanel(new TrapHouseConfig() {}, () -> {});
             panel.updateLeaderboard(Arrays.asList(new LeaderboardEntry("Clan member", 12),
@@ -39,7 +39,7 @@ public class TrapHousePanelTest {
                     links++;
                 }
             }
-            assertEquals(0, links);
+            assertEquals(2, links);
         });
     }
 
