@@ -23,7 +23,7 @@ public class TrapHousePanelTest {
     }
 
     @Test
-    public void leaderboardDisplaysScoresAndUnconfiguredLinksAreDisabled() throws Exception {
+    public void leaderboardDisplaysScoresWithoutLinkButtons() throws Exception {
         SwingUtilities.invokeAndWait(() -> {
             TrapHousePanel panel = new TrapHousePanel(new TrapHouseConfig() {}, () -> {});
             panel.updateLeaderboard(Arrays.asList(new LeaderboardEntry("Clan member", 12),
@@ -39,7 +39,7 @@ public class TrapHousePanelTest {
                     links++;
                 }
             }
-            assertEquals(2, links);
+            assertEquals(0, links);
         });
     }
 
@@ -76,11 +76,9 @@ public class TrapHousePanelTest {
         });
     }
 
-    @Test public void skillTabShowsXpGainsAndItsOwnPrizes() throws Exception {
+    @Test public void skillTabShowsXpGainsAndFixedPrizes() throws Exception {
         SwingUtilities.invokeAndWait(() -> {
-            TrapHousePanel skill = new TrapHousePanel(new TrapHouseConfig() {
-                @Override public int skillFirstPrize() { return 1234567; }
-            }, () -> {}, true);
+            TrapHousePanel skill = new TrapHousePanel(new TrapHouseConfig() {}, () -> {}, true);
             ClanEvent event = new ClanEvent(1, "Skill of the Month: Sailing", "sailing", Instant.now().minusSeconds(60),
                 Instant.now().plusSeconds(60), Collections.singletonList(new LeaderboardEntry("Member", 1234567)));
             skill.updateEvent(event, "Fetched 12:00");
@@ -88,7 +86,9 @@ public class TrapHousePanelTest {
             assertTrue(hasLabel(skill, "SKILL XP LEADERBOARD"));
             assertTrue(hasLabel(skill, "1.2M"));
             assertTrue(hasLabel(skill, "XP"));
-            assertTrue(hasLabel(skill, "1,234,567 GP"));
+            assertTrue(hasLabel(skill, "10,000,000 GP"));
+            assertTrue(hasLabel(skill, "5,000,000 GP"));
+            assertTrue(hasLabel(skill, "2,500,000 GP"));
             assertFalse(hasLabel(skill, "KILLS"));
             TrapHouseDashboard dashboard = new TrapHouseDashboard(new TrapHousePanel(new TrapHouseConfig() {}, () -> {}), skill, 1);
             assertEquals(1, dashboard.selectedTab());

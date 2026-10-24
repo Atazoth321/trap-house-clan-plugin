@@ -11,9 +11,11 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.util.ImageUtil;
-import net.runelite.client.util.LinkBrowser;
 
 public class TrapHousePanel extends PluginPanel {
+    private static final int FIRST_PRIZE = 10_000_000;
+    private static final int SECOND_PRIZE = 5_000_000;
+    private static final int THIRD_PRIZE = 2_500_000;
     private static final Color WHITE = new Color(239, 241, 246);
     private static final Color MUTED = new Color(143, 151, 167);
     private static final Color RED = new Color(255, 77, 91);
@@ -92,16 +94,13 @@ public class TrapHousePanel extends PluginPanel {
         JPanel prizes = card(false);
         prizes.add(label("THE PRIZE POOL", 10, GOLD));
         gap(prizes, 12);
-        prizes.add(prize("01", "FIRST PLACE", skillEvent ? config.skillFirstPrize() : config.firstPrize(), GOLD));
+        prizes.add(prize("01", "FIRST PLACE", FIRST_PRIZE, GOLD));
         gap(prizes, 10);
-        prizes.add(prize("02", "SECOND PLACE", skillEvent ? config.skillSecondPrize() : config.secondPrize(), new Color(185, 197, 215)));
+        prizes.add(prize("02", "SECOND PLACE", SECOND_PRIZE, new Color(185, 197, 215)));
         gap(prizes, 10);
-        prizes.add(prize("03", "THIRD PLACE", skillEvent ? config.skillThirdPrize() : config.thirdPrize(), new Color(207, 153, 120)));
+        prizes.add(prize("03", "THIRD PLACE", THIRD_PRIZE, new Color(207, 153, 120)));
         section(prizes);
 
-        add(linkButton("Open Discord", config.discordUrl(), true));
-        gap(this, 7);
-        add(linkButton("Open Clan Website", config.websiteUrl(), false));
         gap(this, 14);
         add(label("YOUR GRIND. YOUR COMMUNITY.", 9, MUTED));
         gap(this, 4);
@@ -266,14 +265,6 @@ public class TrapHousePanel extends PluginPanel {
         button.setAlignmentX(Component.LEFT_ALIGNMENT);
         button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
         button.setPreferredSize(new Dimension(180, 34));
-        return button;
-    }
-
-    private JButton linkButton(String text, String url, boolean primary) {
-        JButton button = button(text, primary);
-        button.setEnabled(url != null && url.matches("https://.+"));
-        if (!button.isEnabled()) button.setToolTipText("Add an HTTPS link in Trap House Clan Plugin settings");
-        button.addActionListener(e -> LinkBrowser.browse(url));
         return button;
     }
 

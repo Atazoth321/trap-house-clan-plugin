@@ -12,28 +12,4 @@ public interface TrapHouseConfig extends Config {
     @Range(min=0)
     default int skillCompetitionId() { return 0; }
 
-    @ConfigItem(keyName="skillFirstPrize", name="Skill 1st prize (GP)", description="Skill of the Month first-place prize", position=8)
-    default int skillFirstPrize() { return 10000000; }
-
-    @ConfigItem(keyName="skillSecondPrize", name="Skill 2nd prize (GP)", description="Skill of the Month second-place prize", position=9)
-    default int skillSecondPrize() { return 5000000; }
-
-    @ConfigItem(keyName="skillThirdPrize", name="Skill 3rd prize (GP)", description="Skill of the Month third-place prize", position=10)
-    default int skillThirdPrize() { return 2500000; }
-
-    @ConfigItem(keyName="firstPrize", name="1st prize (GP)", description="First-place prize", position=3)
-    default int firstPrize() { return 10000000; }
-
-    @ConfigItem(keyName="secondPrize", name="2nd prize (GP)", description="Second-place prize", position=4)
-    default int secondPrize() { return 5000000; }
-
-    @ConfigItem(keyName="thirdPrize", name="3rd prize (GP)", description="Third-place prize", position=5)
-    default int thirdPrize() { return 2500000; }
-
-    @ConfigItem(keyName="discordUrl", name="Discord invite URL", description="Your clan Discord invite", position=6)
-    default String discordUrl() { return ""; }
-
-    @ConfigItem(keyName="websiteUrl", name="Clan website URL", description="Your clan website", position=7)
-    default String websiteUrl() { return ""; }
-
 }

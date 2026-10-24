@@ -1,6 +1,6 @@
 # Trap House Clan Plugin
 
-A RuneLite sidebar for the **TRAP HOUSE** Old School RuneScape clan. Follow Boss of the Week and Skill of the Month competitions from [Wise Old Man group 2504](https://wiseoldman.net/groups/2504), with event leaderboards and configurable prizes.
+A RuneLite sidebar for the **TRAP HOUSE** Old School RuneScape clan. Follow Boss of the Week and Skill of the Month competitions from [Wise Old Man group 2504](https://wiseoldman.net/groups/2504), with event leaderboards and fixed prizes.
 
 ## Features
 
@@ -9,8 +9,8 @@ A RuneLite sidebar for the **TRAP HOUSE** Old School RuneScape clan. Follow Boss
 - Automatic detection of active clan competitions, with separate competition-ID overrides for each tab.
 - Event titles, featured bosses or skills, competition dates, and gold, silver, and bronze ranks.
 - Automatic refresh every five minutes and a manual **Refresh leaderboard** button.
-- Separate first-, second-, and third-place prize settings for boss and skill events.
-- TRAP HOUSE branding and optional Discord and clan website buttons.
+- Fixed first-, second-, and third-place prizes of 10M, 5M, and 2.5M GP for both events.
+- TRAP HOUSE branding.
 
 ![Boss event and Skill event tabs](docs/plugin-preview.png)
 
@@ -48,10 +48,6 @@ Restart the development client after changing plugin code.
 | --- | --- |
 | Wise Old Man competition ID | Boss event override. Leave at `0` to detect an active boss competition automatically. |
 | Skill of the Month competition ID | Skill event override. Leave at `0` to detect an active single-skill competition automatically. |
-| 1st / 2nd / 3rd prize (GP) | Prize amounts displayed on the Boss event tab. |
-| Skill 1st / 2nd / 3rd prize (GP) | Prize amounts displayed on the Skill event tab. |
-| Discord invite URL | Enables the Discord button when an HTTPS link is configured. |
-| Clan website URL | Enables the website button when an HTTPS link is configured. |
 
 A competition's ID is the number in its Wise Old Man URL, such as `154611` in `https://wiseoldman.net/competitions/154611`. Overrides must belong to **Trap House group 2504** and match the tab's event type. Historical and upcoming competitions are labeled accordingly.
 
@@ -63,7 +59,7 @@ Each tab selects an event whose start time has passed and whose end time has not
 
 If no matching event is running, the tab displays **No active boss event** or **No active skill event**. It does not substitute a finished event. Participants with missing hiscores baselines are omitted.
 
-Members must update their Wise Old Man profiles for newer gains to appear. This plugin reads the recorded scores; it does not submit player updates or create competitions. Prize settings only control the displayed amounts.
+Members must update their Wise Old Man profiles for newer gains to appear. This plugin reads the recorded scores; it does not submit player updates or create competitions. Prizes are displayed as fixed amounts; the plugin does not distribute rewards.
 
 XP scores are abbreviated in the sidebar. Hover a leaderboard row to see the exact gain. Event dates are shown in UTC. Manual refreshes are limited to once every 30 seconds. If a refresh fails, the last fetched scores remain visible with a stale-data message.
 
@@ -107,12 +103,11 @@ The combined image is saved as `build/trap-house-both-tabs.png`. Live previews r
 - **No active event:** Check whether group 2504 has a running competition of the correct type. Use the appropriate competition-ID setting to view a specific event.
 - **Scores look outdated:** Update the participant's Wise Old Man profile, then refresh the leaderboard.
 - **Wrong competition type or group:** Choose a Trap House boss competition for Boss event, or a Trap House single-skill competition for Skill event.
-- **Discord or website button is disabled:** Add an HTTPS URL in plugin settings.
 - **Java cannot be found:** Set `JAVA_HOME` to your JDK installation, or configure the Gradle JVM in IntelliJ.
 
 ## Privacy
 
-The plugin makes HTTPS read requests to `api.wiseoldman.net` for public clan competitions and participant scores. It does not send your player name, login details, or local kill counts. Opening configured Discord or website links uses your browser.
+The plugin makes HTTPS read requests to `api.wiseoldman.net` for public clan competitions and participant scores. It does not send your player name, login details, or local kill counts.
 
 ## Development and distribution
 
