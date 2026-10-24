@@ -10,7 +10,7 @@ A RuneLite sidebar for the **TRAP HOUSE** Old School RuneScape clan. Follow Boss
 - Event titles, featured bosses or skills, competition dates, and gold, silver, and bronze ranks.
 - Automatic refresh every five minutes and a manual **Refresh leaderboard** button.
 - Fixed first-, second-, and third-place prizes of 10M, 5M, and 2.5M GP for both events.
-- TRAP HOUSE branding and an **Open Clan Website** button linking to https://traphouseosrs.net/. The Discord button remains disabled until an invite is supplied.
+- TRAP HOUSE branding, an **Open Clan Website** button linking to https://traphouseosrs.net/, and an **Open Discord** button linking to https://discord.gg/thosrs.
 
 ![Boss event and Skill event tabs](docs/plugin-preview.png)
 

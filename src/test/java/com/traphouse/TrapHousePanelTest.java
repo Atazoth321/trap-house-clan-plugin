@@ -35,7 +35,7 @@ public class TrapHousePanelTest {
             int links = 0;
             for (Component component : descendants(panel)) {
                 if (component instanceof JButton && ((JButton) component).getText().startsWith("Open ")) {
-                    assertEquals("Open Clan Website".equals(((JButton) component).getText()), component.isEnabled());
+                    assertTrue(component.isEnabled());
                     links++;
                 }
             }
