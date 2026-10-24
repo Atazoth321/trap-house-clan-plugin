@@ -15,7 +15,7 @@ import net.runelite.client.util.LinkBrowser;
 
 public class TrapHousePanel extends PluginPanel {
     private static final String DISCORD_URL = "";
-    private static final String WEBSITE_URL = "";
+    private static final String WEBSITE_URL = "https://traphouseosrs.net/";
     private static final int FIRST_PRIZE = 10_000_000;
     private static final int SECOND_PRIZE = 5_000_000;
     private static final int THIRD_PRIZE = 2_500_000;
