@@ -41,6 +41,9 @@ public class TrapHouseClanPlugin extends Plugin {
     private boolean skillAnnounced;
     private ScheduledFuture<?> refreshTask;
     private boolean active;
+    private String playerName;
+    private EventAlerts bossAlerts;
+    private EventAlerts skillAlerts;
 
     @Provides TrapHouseConfig provideConfig(ConfigManager manager) {
         return manager.getConfig(TrapHouseConfig.class);
@@ -48,6 +51,9 @@ public class TrapHouseClanPlugin extends Plugin {
 
     @Override protected void startUp() {
         loginSession = false;
+        playerName = null;
+        bossAlerts = new EventAlerts();
+        skillAlerts = new EventAlerts();
         overlayManager.add(eventOverlay);
         SwingUtilities.invokeLater(() -> {
             active = true;
@@ -117,25 +123,51 @@ public class TrapHouseClanPlugin extends Plugin {
 
     @Subscribe public void onGameStateChanged(GameStateChanged event) {
         // Hopping and loading stay in the same session; returning to login resets it.
-        if (event.getGameState() == GameState.LOGIN_SCREEN) loginSession = false;
+        if (event.getGameState() == GameState.LOGIN_SCREEN) {
+            loginSession = false;
+            updatePlayer(null);
+        }
     }
 
     @Subscribe public void onGameTick(GameTick tick) {
         if (client.getGameState() != GameState.LOGGED_IN) return;
+        updatePlayer(client.getLocalPlayer() == null ? null : client.getLocalPlayer().getName());
         if (!loginSession) {
             loginSession = true;
             bossAnnounced = !config.announceOnLogin();
             skillAnnounced = !config.announceOnLogin();
+            bossAlerts.beginSession();
+            skillAlerts.beginSession();
             SwingUtilities.invokeLater(this::refreshBoth);
         }
-        if (!config.announceOnLogin()) return;
-        if (!bossAnnounced && isEventChecked(false)) {
+        if (config.announceOnLogin() && !bossAnnounced && isEventChecked(false)) {
             announceEvent(false);
             bossAnnounced = true;
         }
-        if (!skillAnnounced && isEventChecked(true)) {
+        if (config.announceOnLogin() && !skillAnnounced && isEventChecked(true)) {
             announceEvent(true);
             skillAnnounced = true;
+        }
+        pollAlerts(false, bossAlerts);
+        pollAlerts(true, skillAlerts);
+    }
+
+    private void updatePlayer(String name) {
+        if (java.util.Objects.equals(playerName, name)) return;
+        playerName = name;
+        SwingUtilities.invokeLater(() -> {
+            if (!active) return;
+            bossBoard.updatePlayer(name);
+            skillBoard.updatePlayer(name);
+        });
+    }
+
+    private void pollAlerts(boolean skill, EventAlerts alerts) {
+        if (!isEventChecked(skill)) return;
+        boolean automatic = (skill ? config.skillCompetitionId() : config.competitionId()) == 0;
+        for (String message : alerts.poll(getEvent(skill), java.time.Instant.now(),
+            config.newEventAlerts() && automatic, config.eventEndingReminders())) {
+            client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "[Trap House] " + (skill ? "Skill: " : "Boss: ") + message, null);
         }
     }
 

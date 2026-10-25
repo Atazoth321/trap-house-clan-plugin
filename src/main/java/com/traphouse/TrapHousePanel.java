@@ -26,6 +26,10 @@ public class TrapHousePanel extends PluginPanel {
     private final JPanel leaderboardRows = new JPanel();
     private final JLabel leaderboardStatus = wrapped("Connecting to Wise Old Man...", 10, MUTED);
     private final JButton refreshButton = button("Refresh leaderboard", false);
+    private final JButton openEventButton = button("Open on Wise Old Man", false);
+    private final JLabel personalProgress = wrapped("Log in to see your event progress.", 10, GOLD);
+    private ClanEvent currentEvent;
+    private String playerName;
     private JPanel leaderboardCard;
     private final JLabel eventHeading = label("BOSS OF THE WEEK", 10, RED);
     private final JLabel eventStatus = label("", 9, MUTED);
@@ -73,6 +77,12 @@ public class TrapHousePanel extends PluginPanel {
         event.add(eventBoss);
         gap(event, 8);
         event.add(eventDates);
+        gap(event, 10);
+        openEventButton.setEnabled(false);
+        openEventButton.addActionListener(e -> {
+            if (currentEvent != null) LinkBrowser.browse("https://wiseoldman.net/competitions/" + currentEvent.id);
+        });
+        event.add(openEventButton);
         section(event);
 
         leaderboardCard = card(false);
@@ -81,6 +91,8 @@ public class TrapHousePanel extends PluginPanel {
         leaderboardCard.add(label("WISE OLD MAN / GROUP 2504", 9, MUTED));
         gap(leaderboardCard, 4);
         leaderboardCard.add(label(skillEvent ? "XP GAINED DURING EVENT" : "KILLS GAINED DURING EVENT", 9, MUTED));
+        gap(leaderboardCard, 8);
+        leaderboardCard.add(personalProgress);
         gap(leaderboardCard, 14);
         leaderboardRows.setOpaque(false);
         leaderboardRows.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -131,6 +143,10 @@ public class TrapHousePanel extends PluginPanel {
     }
 
     void updateEvent(ClanEvent event, String fetchedAt) {
+        currentEvent = event;
+        openEventButton.setEnabled(event != null);
+        openEventButton.setToolTipText(event == null ? "No event selected" : "https://wiseoldman.net/competitions/" + event.id);
+        updatePlayer(playerName);
         if (event == null) {
             eventStatus.setText("");
             eventTitle.setFont(new Font("SansSerif", Font.BOLD, 16));
@@ -163,6 +179,12 @@ public class TrapHousePanel extends PluginPanel {
 
     private void setStatus(String text) {
         leaderboardStatus.setText("<html><div style='width:126px'>" + text + "</div></html>");
+        resizeLeaderboard();
+    }
+
+    void updatePlayer(String name) {
+        playerName = name;
+        personalProgress.setText(wrapped(EventProgress.describe(currentEvent, name, skillEvent), 10, GOLD).getText());
         resizeLeaderboard();
     }
 

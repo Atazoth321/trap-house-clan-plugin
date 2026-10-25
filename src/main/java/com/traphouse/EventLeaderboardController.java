@@ -22,6 +22,7 @@ final class EventLeaderboardController {
     private long generation;
     private long lastRefresh;
     private String fetchedAt;
+    private String playerName;
 
     EventLeaderboardController(WiseOldManClient client, ScheduledExecutorService executor, IntSupplier competitionId, boolean skillEvent) {
         this.client = client;
@@ -32,6 +33,7 @@ final class EventLeaderboardController {
 
     void setPanel(TrapHousePanel panel) {
         this.panel = panel;
+        panel.updatePlayer(playerName);
         if (checked) panel.updateEvent(event, fetchedAt);
         if (request != null) panel.setLeaderboardLoading();
     }
@@ -39,6 +41,11 @@ final class EventLeaderboardController {
     ClanEvent getEvent() { return event; }
 
     boolean isChecked() { return checked; }
+
+    void updatePlayer(String name) {
+        playerName = name;
+        if (panel != null) panel.updatePlayer(name);
+    }
 
     void refresh() {
         if (!active || request != null || panel == null) return;

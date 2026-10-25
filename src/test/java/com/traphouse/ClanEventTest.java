@@ -15,6 +15,21 @@ public class ClanEventTest {
     private static final Gson GSON = new Gson();
     private static final Instant NOW = Instant.parse("2026-10-10T12:00:00Z");
 
+    @Test public void retainsScoresOutsideTopTenForPersonalProgress() {
+        StringBuilder participants = new StringBuilder();
+        for (int index = 0; index < 12; index++) {
+            if (index > 0) participants.append(',');
+            participants.append("{\"player\":{\"displayName\":\"Player ").append(index)
+                .append("\"},\"progress\":{\"start\":0,\"end\":").append(12 - index)
+                .append(",\"gained\":").append(12 - index).append("}}");
+        }
+        String json = event(1, "fishing", "2026-10-01T00:00:00Z", "2026-11-01T00:00:00Z")
+            .replace("\"participations\":[]", "\"participations\":[" + participants + "]");
+        ClanEvent fetched = WiseOldManClient.parseEvent(json, GSON, true);
+        assertEquals(12, fetched.scores.size());
+        assertTrue(EventProgress.describe(fetched, "Player 11", true).startsWith("You: #12 / 1 XP gained"));
+    }
+
     private static String event(int id, String metric, String start, String end) {
         return "{\"id\":" + id + ",\"groupId\":2504,\"title\":\"Boss event\",\"metric\":\"" + metric
             + "\",\"startsAt\":\"" + start + "\",\"endsAt\":\"" + end + "\",\"participations\":[]}";

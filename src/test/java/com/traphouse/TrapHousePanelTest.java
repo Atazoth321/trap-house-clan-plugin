@@ -34,7 +34,8 @@ public class TrapHousePanelTest {
             assertTrue(hasLabel(panel, "12"));
             int links = 0;
             for (Component component : descendants(panel)) {
-                if (component instanceof JButton && ((JButton) component).getText().startsWith("Open ")) {
+                if (component instanceof JButton && ("Open Discord".equals(((JButton) component).getText())
+                    || "Open Clan Website".equals(((JButton) component).getText()))) {
                     assertTrue(component.isEnabled());
                     links++;
                 }
@@ -73,6 +74,29 @@ public class TrapHousePanelTest {
             assertFalse(hasLabel(panel, "Member"));
             assertTrue(hasLabel(panel, "No active boss event"));
             assertTrue(hasLabel(panel, "KILLS GAINED DURING EVENT"));
+        });
+    }
+
+    @Test public void eventLinkAndPersonalProgressFollowSelectedCompetition() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            for (boolean skill : new boolean[] {false, true}) {
+                TrapHousePanel panel = new TrapHousePanel(new TrapHouseConfig() {}, () -> {}, skill);
+                JButton link = null;
+                for (Component component : descendants(panel)) {
+                    if (component instanceof JButton && "Open on Wise Old Man".equals(((JButton) component).getText())) link = (JButton) component;
+                }
+                assertNotNull(link);
+                assertFalse(link.isEnabled());
+                panel.updatePlayer("Member");
+                panel.updateEvent(new ClanEvent(123, "Test", skill ? "fishing" : "vorkath", Instant.now().minusSeconds(60),
+                    Instant.now().plusSeconds(60), Collections.singletonList(new LeaderboardEntry("Member", 20))), "Fetched now");
+                assertTrue(link.isEnabled());
+                assertEquals("https://wiseoldman.net/competitions/123", link.getToolTipText());
+                assertTrue(hasLabel(panel, "<html><div style='width:126px'>You: #1 / 20 " + (skill ? "XP" : "kills") + " gained / Leading!</div></html>"));
+                panel.updateEvent(null, "Fetched now");
+                assertFalse(link.isEnabled());
+                assertTrue(hasLabel(panel, "<html><div style='width:126px'>No event selected.</div></html>"));
+            }
         });
     }
 

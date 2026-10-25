@@ -11,6 +11,10 @@ A RuneLite sidebar for the **TRAP HOUSE** Old School RuneScape clan. Follow Boss
 - Automatic refresh every five minutes and a manual **Refresh leaderboard** button.
 - Private boss and skill event announcements once per login, without repeating on world hops.
 - Optional on-screen event overlay showing both targets and time remaining.
+- Separate boss and skill overlay toggles, with an optional top-three leaderboard for each event.
+- Your recorded event rank, kills or XP gained, and gap to the player above you in each sidebar tab.
+- Direct Wise Old Man competition links on both event tabs.
+- Private event ending reminders and new event alerts while playing.
 - Fixed first-, second-, and third-place prizes of 10M, 5M, and 2.5M GP for both events.
 - TRAP HOUSE branding, an **Open Clan Website** button linking to https://traphouseosrs.net/, and an **Open Discord** button linking to https://discord.gg/thosrs.
 
@@ -52,6 +56,11 @@ Restart the development client after changing plugin code.
 | Skill of the Month competition ID | Skill event override. Leave at `0` to detect an active single-skill competition automatically. |
 | Announce events on login | Show both events privately in game chat once per login. Enabled by default. |
 | Show event overlay | Show boss and skill targets and time remaining on screen. Disabled by default. |
+| Boss event in overlay | Include the boss event in the overlay. Enabled by default. |
+| Skill event in overlay | Include the skill event in the overlay. Enabled by default. |
+| Top three in overlay | Include the top three participants and their recorded scores. Disabled by default. |
+| Event ending reminders | Private chat reminders within one day and one hour of an event ending. Enabled by default. |
+| New event alerts | Private chat alerts when a new active event is detected during play. Enabled by default; applies to automatic event selection. |
 
 A competition's ID is the number in its Wise Old Man URL, such as `154611` in `https://wiseoldman.net/competitions/154611`. Overrides must belong to **Trap House group 2504** and match the tab's event type. Historical and upcoming competitions are labeled accordingly.
 
@@ -64,6 +73,8 @@ Each tab selects an event whose start time has passed and whose end time has not
 If no matching event is running, the tab displays **No active boss event** or **No active skill event**. It does not substitute a finished event. Participants with missing hiscores baselines are omitted.
 
 Members must update their Wise Old Man profiles for newer gains to appear. This plugin reads the recorded scores; it does not submit player updates or create competitions. Prizes are displayed as fixed amounts; the plugin does not distribute rewards.
+
+Your progress uses your logged-in character's name locally to find your recorded score, including ranks outside the top ten. Equal scores use the leaderboard's alphabetical ordering. Progress and overlay leaderboards refresh with Wise Old Man data every five minutes. New event detection follows the same refresh interval. Ending reminders appear once per threshold while the plugin remains enabled; logging in during the final hour produces only the hour reminder. No player name is sent to Wise Old Man.
 
 XP scores are abbreviated in the sidebar. Hover a leaderboard row to see the exact gain. Event dates are shown in UTC. Manual refreshes are limited to once every 30 seconds. If a refresh fails, the last fetched scores remain visible with a stale-data message.
 

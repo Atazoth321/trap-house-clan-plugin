@@ -18,4 +18,19 @@ public interface TrapHouseConfig extends Config {
     @ConfigItem(keyName="showEventOverlay", name="Show event overlay", description="Display the boss and skill event targets and time remaining on screen.", position=4)
     default boolean showEventOverlay() { return false; }
 
+    @ConfigItem(keyName="showBossOverlay", name="Boss event in overlay", description="Include the boss event when the event overlay is enabled.", position=5)
+    default boolean showBossOverlay() { return true; }
+
+    @ConfigItem(keyName="showSkillOverlay", name="Skill event in overlay", description="Include the skill event when the event overlay is enabled.", position=6)
+    default boolean showSkillOverlay() { return true; }
+
+    @ConfigItem(keyName="showOverlayLeaders", name="Top three in overlay", description="Include the top three participants for each visible event.", position=7)
+    default boolean showOverlayLeaders() { return false; }
+
+    @ConfigItem(keyName="eventEndingReminders", name="Event ending reminders", description="Privately remind you when an active event has a day or an hour remaining.", position=8)
+    default boolean eventEndingReminders() { return true; }
+
+    @ConfigItem(keyName="newEventAlerts", name="New event alerts", description="Privately announce new active events detected while you are playing.", position=9)
+    default boolean newEventAlerts() { return true; }
+
 }

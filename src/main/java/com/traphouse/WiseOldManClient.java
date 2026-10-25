@@ -144,7 +144,7 @@ final class WiseOldManClient {
             .thenComparing(entry -> entry.name, String.CASE_INSENSITIVE_ORDER));
         return new ClanEvent(event.get("id").getAsInt(), event.get("title").getAsString(), metric,
             Instant.parse(event.get("startsAt").getAsString()), Instant.parse(event.get("endsAt").getAsString()),
-            scores.subList(0, Math.min(10, scores.size())));
+            scores);
     }
 
 }
