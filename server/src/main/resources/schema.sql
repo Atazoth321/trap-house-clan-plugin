@@ -289,3 +289,21 @@ BEGIN
 END $$;
 DROP TRIGGER IF EXISTS audit_adjustment ON point_adjustments;
 CREATE TRIGGER audit_adjustment AFTER INSERT ON point_adjustments FOR EACH ROW EXECUTE FUNCTION audit_point_adjustment();
+
+-- One verified Discord identity per roster member. Discord names never grant ranks or permissions.
+CREATE TABLE IF NOT EXISTS discord_member_links (
+ discord_user_id varchar(20) PRIMARY KEY CHECK(discord_user_id ~ '^[0-9]{17,20}$'),
+ member_id uuid NOT NULL UNIQUE REFERENCES members(id),
+ linked_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS discord_login_sessions (
+ id uuid PRIMARY KEY,
+ device_hash char(64) NOT NULL,
+ browser_hash char(64) NOT NULL,
+ state_hash char(64) UNIQUE,
+ member_id uuid REFERENCES members(id),
+ callback_used boolean NOT NULL DEFAULT false,
+ last_poll timestamptz,
+ expires_at timestamptz NOT NULL DEFAULT now()+interval '10 minutes'
+);
+CREATE INDEX IF NOT EXISTS discord_login_expiry ON discord_login_sessions(expires_at);

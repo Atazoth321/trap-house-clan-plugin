@@ -34,6 +34,7 @@ public class TrapHouseClanPlugin extends Plugin {
     @Inject private TrapHouseEventOverlay eventOverlay;
     @Inject private RankingClient rankings;
     @Inject private AwardItemImages awardItemImages;
+    @Inject private DiscordSignIn discordSignIn;
     private volatile RankingPanel rankingPanel;
     private ScheduledFuture<?> rankingTask;
     private NavigationButton navigationButton;
@@ -88,6 +89,7 @@ public class TrapHouseClanPlugin extends Plugin {
         dashboard = new TrapHouseDashboard(bossPanel, skillPanel, selectedTab, rankingPanel);
         rankingPanel.pointsLogLoader((query,done)->executor.execute(()->rankings.pointsLog(config,query,done)));
         rankingPanel.itemArt(awardItemImages);
+        rankingPanel.discordLogin(()->discordSignIn.start(config,message->{if(rankingPanel!=null)rankingPanel.loginStatus(message);}));
         rankingPanel.actions(name->{rankings.browse(name);executor.execute(this::syncRankings);},
             (id,join)->{rankings.register(id,join);executor.execute(this::syncRankings);},dashboard::showProfile);
         BufferedImage icon = ImageUtil.loadImageResource(getClass(), "icon.png");
@@ -102,6 +104,7 @@ public class TrapHouseClanPlugin extends Plugin {
     }
 
     @Override protected void shutDown() {
+        discordSignIn.cancel();
         overlayManager.remove(eventOverlay);
         loginSession = false;
         if (refreshTask != null) refreshTask.cancel(false);
@@ -123,6 +126,7 @@ public class TrapHouseClanPlugin extends Plugin {
     @Subscribe public void onConfigChanged(ConfigChanged event) {
         if (!"traphouse".equals(event.getGroup())) return;
         if (event.getKey().startsWith("ranking")) {
+            if(event.getKey().equals("rankingUrl"))discordSignIn.cancel();
             rankings.reset();
             SwingUtilities.invokeLater(() -> {
                 if (rankingPanel != null) rankingPanel.clear("Ranking settings changed; reconnecting");

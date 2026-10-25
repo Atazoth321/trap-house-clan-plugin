@@ -19,6 +19,9 @@ final class RankingPanel extends JPanel {
     private final JComboBox<String> manualRules = new JComboBox<>();
     private final JButton request;
     private final Runnable refresh;
+    private Runnable discordLogin=()->{};
+    void discordLogin(Runnable login){discordLogin=login;}
+    void loginStatus(String text){status.setText(text);status.setToolTipText(text);}
     private JsonObject snapshot;
     private JsonArray leaderboard = new JsonArray();
     private Consumer<String> browse = name -> {};
@@ -49,6 +52,7 @@ final class RankingPanel extends JPanel {
     RankingPanel(Runnable refresh, BiConsumer<String,String> reward) {
         super(new BorderLayout()); this.refresh = refresh;
         setBackground(ClanStyle.BACKGROUND);
+        add(ClanStyle.button("Sign in with Discord",()->discordLogin.run()),BorderLayout.NORTH);
         add(profileScroll,BorderLayout.CENTER);
         status.setToolTipText("Rankings are calculated by the clan service. Promotions are manual.");
         add(status,BorderLayout.SOUTH);

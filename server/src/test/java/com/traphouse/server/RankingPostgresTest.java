@@ -12,6 +12,54 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    private static final String DISCORD_ID="123456789012345678";
+    private java.net.http.HttpResponse<String> authRequest(int port,String path,String body)throws Exception {
+        java.net.http.HttpRequest.Builder request=java.net.http.HttpRequest.newBuilder(java.net.URI.create("http://127.0.0.1:"+port+path));
+        if(body!=null)request.header("Content-Type","application/json").POST(java.net.http.HttpRequest.BodyPublishers.ofString(body));
+        return java.net.http.HttpClient.newBuilder().followRedirects(java.net.http.HttpClient.Redirect.NEVER).build()
+            .send(request.build(),java.net.http.HttpResponse.BodyHandlers.ofString());
+    }
+    @Test public void discordDeviceLoginIsSingleUseBoundToSecretAndPreservesMemberPermissions()throws Exception {
+        RankingStore.execute(c,"INSERT INTO discord_member_links VALUES (?,?,now())",DISCORD_ID,member.id);c.commit();
+        String secret=DiscordLogin.secret(), browser=DiscordLogin.secret();UUID session=UUID.randomUUID();
+        RankingStore.execute(c,"INSERT INTO discord_login_sessions(id,device_hash,browser_hash) VALUES (?,?,?)",session,Policy.hash(secret),Policy.hash(browser));c.commit();
+        java.util.concurrent.atomic.AtomicInteger exchanges=new java.util.concurrent.atomic.AtomicInteger();
+        Map<String,String> env=new HashMap<>();env.put("TRAP_PUBLIC_URL","https://clan.example");env.put("TRAP_DISCORD_CLIENT_ID","123456789012345679");
+        DiscordLogin login=new DiscordLogin(this::connection,env,code->{exchanges.incrementAndGet();return DISCORD_ID;});
+        com.sun.net.httpserver.HttpServer http=com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1",0),0);
+        http.createContext("/",login::handle);http.start();int port=http.getAddress().getPort();
+        try {
+            assertEquals(400,authRequest(port,"/auth/discord/start?session="+session+"&browser=wrong",null).statusCode());
+            java.net.http.HttpResponse<String> redirect=authRequest(port,"/auth/discord/start?session="+session+"&browser="+browser,null);
+            assertEquals(302,redirect.statusCode());
+            String state=DiscordLogin.parameters(java.net.URI.create(redirect.headers().firstValue("Location").get()).getRawQuery()).get("state");
+            assertEquals(400,authRequest(port,"/auth/discord/callback?code=fake&state="+DiscordLogin.secret(),null).statusCode());assertEquals(0,exchanges.get());
+            String callback="/auth/discord/callback?code=approved&state="+state;
+            assertEquals(200,authRequest(port,callback,null).statusCode());
+            assertEquals(400,authRequest(port,callback,null).statusCode());assertEquals(1,exchanges.get());
+            assertEquals(410,authRequest(port,"/auth/discord/poll","{\"session\":\""+session+"\",\"secret\":\""+DiscordLogin.secret()+"\"}").statusCode());
+            String poll="{\"session\":\""+session+"\",\"secret\":\""+secret+"\",\"permission\":\"OWNER\",\"member\":\""+clanOwner.id+"\"}";
+            java.net.http.HttpResponse<String> response=authRequest(port,"/auth/discord/poll",poll);assertEquals(200,response.statusCode());
+            String token=JsonParser.parseString(response.body()).getAsJsonObject().get("token").getAsString();
+            RankingStore.Actor authenticated=RankingStore.authenticate(c,"Bearer "+token);
+            assertEquals(member.id,authenticated.id);assertEquals(RankSecurity.Role.MEMBER,authenticated.role);
+            rejected(403,()->RankSecurity.adjust(c,authenticated,member.id,adjustment(-1)));
+            assertEquals(410,authRequest(port,"/auth/discord/poll",poll).statusCode());
+            try(PreparedStatement s=RankingStore.query(c,"SELECT count(*) FROM credentials WHERE token_hash=?",token);ResultSet r=s.executeQuery()){r.next();assertEquals(0,r.getInt(1));}
+        } finally {http.stop(0);}
+    }
+    @Test public void unlinkedDiscordIdentityCannotClaimAnOwnerOrReceiveCredentials()throws Exception {
+        String secret=DiscordLogin.secret(),state=DiscordLogin.secret();UUID session=UUID.randomUUID();
+        RankingStore.execute(c,"INSERT INTO discord_login_sessions(id,device_hash,browser_hash,state_hash) VALUES (?,?,?,?)",session,Policy.hash(secret),Policy.hash(DiscordLogin.secret()),Policy.hash(state));c.commit();
+        DiscordLogin login=new DiscordLogin(this::connection,Collections.emptyMap(),code->DISCORD_ID);
+        com.sun.net.httpserver.HttpServer http=com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1",0),0);
+        http.createContext("/",login::handle);http.start();int port=http.getAddress().getPort();
+        try {
+            assertEquals(403,authRequest(port,"/auth/discord/callback?code=fake&state="+state+"&name=Owner&permission=OWNER",null).statusCode());
+            java.net.http.HttpResponse<String> pending=authRequest(port,"/auth/discord/poll","{\"session\":\""+session+"\",\"secret\":\""+secret+"\"}");
+            assertEquals(200,pending.statusCode());assertFalse(pending.body().contains("token"));assertEquals(0,count("discord_member_links"));
+        } finally {http.stop(0);}
+    }
     @Test public void pointsLogPreservesCollectionIdentityForActualItemArtwork()throws Exception {
         RankingStore.event(c,member,event("COLLECTION","abyssal whip"));
         JsonObject log=PointsLog.read(c,"player="+java.net.URLEncoder.encode(member.name,StandardCharsets.UTF_8)+"&group=true");

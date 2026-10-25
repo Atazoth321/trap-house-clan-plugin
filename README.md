@@ -56,6 +56,14 @@ In RuneLite, enable **Trap House Clan Plugin** in plugin settings, then click th
 
 Restart the development client after changing plugin code.
 
+### Jagex Account login in the development client
+
+The development client supports Jagex Accounts through its **Jagex auth** sidebar panel. Run `gradlew.bat run`, open that panel, click **Add Jagex Account**, and complete the official Jagex login window yourself. Select your character (for example, Atazoth), then click **Play Now**. See RuneLite's [Jagex Account development instructions](https://github.com/runelite/runelite/wiki/Using-Jagex-Accounts). Do not copy session credentials into scripts or share passwords, codes, or ranking tokens.
+
+The ranking API setting defaults to `https://trap-house-ranking-api.onrender.com`; an existing saved URL still takes precedence. Ranking sync remains an explicit opt-in and requires your own member token.
+
+Members can also use **Sign in with Discord** to obtain that credential automatically after leadership verifies and links their character once. See [Discord sign-in setup](docs/discord-sign-in.md). Discord authentication does not replace Jagex login and never grants clan permissions.
+
 ## Settings
 
 | Setting | Purpose |

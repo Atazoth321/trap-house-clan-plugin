@@ -15,10 +15,11 @@ import java.util.concurrent.*;
 public final class RankingServer {
     private static final Gson JSON = new Gson();
     private final DiscordWorker.Connections connections;
+    private final DiscordLogin discordLogin;
     private final Map<UUID, Window> windows = new HashMap<>();
     private static final class Window { long minute; int count; }
 
-    RankingServer(DiscordWorker.Connections connections) { this.connections = connections; }
+    RankingServer(DiscordWorker.Connections connections) { this.connections = connections; this.discordLogin=new DiscordLogin(connections); }
 
     private synchronized void rateLimit(UUID member) {
         long minute = System.currentTimeMillis() / 60000;
@@ -33,6 +34,7 @@ public final class RankingServer {
     }
 
     void handle(HttpExchange exchange) throws IOException {
+        if(DiscordLogin.matches(exchange.getRequestURI().getPath())) { discordLogin.handle(exchange); return; }
         int status = 200;
         JsonElement result;
         try {
@@ -170,6 +172,21 @@ public final class RankingServer {
         if (args.length == 2 && args[0].equals("add-member")) verifiedName(args[1]);
         try (Connection c = connect()) {
             c.setAutoCommit(false);
+            if(args.length==3&&args[0].equals("link-discord")) {
+                String name=verifiedName(args[1]), discord=DiscordLogin.snowflake(args[2]);
+                UUID member;
+                try(PreparedStatement s=RankingStore.query(c,"SELECT id FROM members WHERE normalized_name=? AND active FOR UPDATE",Policy.normalize(name));ResultSet r=s.executeQuery()) {
+                    if(!r.next())throw new IllegalArgumentException("Add and independently verify an active member first");member=r.getObject(1,UUID.class);
+                }
+                // Unique constraints reject relinking either identity. Never silently replace an existing link.
+                RankingStore.execute(c,"INSERT INTO discord_member_links(discord_user_id,member_id) VALUES (?,?) ON CONFLICT DO NOTHING",discord,member);
+                try(PreparedStatement s=RankingStore.query(c,"SELECT 1 FROM discord_member_links WHERE discord_user_id=? AND member_id=?",discord,member);ResultSet r=s.executeQuery()) {
+                    if(!r.next())throw new IllegalArgumentException("An identity is already linked; review and revoke the old link first");
+                }
+                JsonObject details=new JsonObject();details.addProperty("source","server operator CLI");details.addProperty("discordUserId",discord);
+                RankingStore.execute(c,"INSERT INTO audit(action,target,details) VALUES ('DISCORD_IDENTITY_LINKED',?,?::jsonb)",member,details.toString());
+                c.commit();System.out.println("Discord identity linked to the verified member. No permissions changed.");return;
+            }
             if (args.length == 2 && args[0].equals("add-member")) {
                 // Operator-only onboarding, after independently verifying membership and character ownership.
                 String name = verifiedName(args[1]);
@@ -226,7 +243,7 @@ public final class RankingServer {
                 c.commit();
                 System.out.println("Credential (shown once; expires in 90 days): " + token); return;
             }
-            throw new IllegalArgumentException("Commands: init | add-member <verified-character-name> | bootstrap-owner <verified-member-uuid> | issue-token <verified-character-name> member|admin");
+            throw new IllegalArgumentException("Commands: init | add-member <verified-character-name> | link-discord <verified-character-name> <discord-user-id> | bootstrap-owner <verified-member-uuid> | issue-token <verified-character-name> member|admin");
         }
     }
 }

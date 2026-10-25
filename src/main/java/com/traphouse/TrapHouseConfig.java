@@ -8,7 +8,7 @@ public interface TrapHouseConfig extends Config {
     default boolean rankingEnabled() { return false; }
 
     @ConfigItem(keyName="rankingUrl", name="Ranking API URL", description="HTTPS base URL of the TRAP HOUSE ranking server. No trailing path or query.", position=21)
-    default String rankingUrl() { return ""; }
+    default String rankingUrl() { return "https://trap-house-ranking-api.onrender.com"; }
 
     @ConfigItem(keyName="rankingToken", name="Ranking member token", description="Member-specific credential issued by clan staff. Stored in local RuneLite configuration; never share it.", secret=true, position=22)
     default String rankingToken() { return ""; }

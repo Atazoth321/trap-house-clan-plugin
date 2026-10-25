@@ -31,6 +31,8 @@ The listener defaults to **127.0.0.1**. Set `TRAP_BIND_ADDRESS=0.0.0.0` behind R
 
 ## Membership and credentials
 
+For browser-based member sign-in without manually distributing tokens, see [Discord sign-in and one-time character linking](../docs/discord-sign-in.md). This optional flow verifies Discord identity/server membership against operator-maintained character links and preserves the existing member permissions.
+
 Staff must independently verify **current TRAP HOUSE membership and character ownership** before adding a roster entry or issuing a token. A public name, clan-chat presence or client assertion is not proof. The administrator-maintained roster is the server authority; update it when members leave or rename.
 
 Example SQL using a generated UUID and lowercase normalized name:
