@@ -16,8 +16,8 @@ final class EventLeaderboardController {
     private final boolean skillEvent;
     private TrapHousePanel panel;
     private Future<?> request;
-    private ClanEvent event;
-    private boolean checked;
+    private volatile ClanEvent event;
+    private volatile boolean checked;
     private boolean active = true;
     private long generation;
     private long lastRefresh;
@@ -35,6 +35,10 @@ final class EventLeaderboardController {
         if (checked) panel.updateEvent(event, fetchedAt);
         if (request != null) panel.setLeaderboardLoading();
     }
+
+    ClanEvent getEvent() { return event; }
+
+    boolean isChecked() { return checked; }
 
     void refresh() {
         if (!active || request != null || panel == null) return;

@@ -9,6 +9,8 @@ A RuneLite sidebar for the **TRAP HOUSE** Old School RuneScape clan. Follow Boss
 - Automatic detection of active clan competitions, with separate competition-ID overrides for each tab.
 - Event titles, featured bosses or skills, competition dates, and gold, silver, and bronze ranks.
 - Automatic refresh every five minutes and a manual **Refresh leaderboard** button.
+- Private boss and skill event announcements once per login, without repeating on world hops.
+- Optional on-screen event overlay showing both targets and time remaining.
 - Fixed first-, second-, and third-place prizes of 10M, 5M, and 2.5M GP for both events.
 - TRAP HOUSE branding, an **Open Clan Website** button linking to https://traphouseosrs.net/, and an **Open Discord** button linking to https://discord.gg/thosrs.
 
@@ -48,6 +50,8 @@ Restart the development client after changing plugin code.
 | --- | --- |
 | Wise Old Man competition ID | Boss event override. Leave at `0` to detect an active boss competition automatically. |
 | Skill of the Month competition ID | Skill event override. Leave at `0` to detect an active single-skill competition automatically. |
+| Announce events on login | Show both events privately in game chat once per login. Enabled by default. |
+| Show event overlay | Show boss and skill targets and time remaining on screen. Disabled by default. |
 
 A competition's ID is the number in its Wise Old Man URL, such as `154611` in `https://wiseoldman.net/competitions/154611`. Overrides must belong to **Trap House group 2504** and match the tab's event type. Historical and upcoming competitions are labeled accordingly.
 

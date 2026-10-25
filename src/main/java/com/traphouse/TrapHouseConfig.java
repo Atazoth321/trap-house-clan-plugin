@@ -12,4 +12,10 @@ public interface TrapHouseConfig extends Config {
     @Range(min=0)
     default int skillCompetitionId() { return 0; }
 
+    @ConfigItem(keyName="announceOnLogin", name="Announce events on login", description="Show the boss and skill events in your game chat once per login.", position=3)
+    default boolean announceOnLogin() { return true; }
+
+    @ConfigItem(keyName="showEventOverlay", name="Show event overlay", description="Display the boss and skill event targets and time remaining on screen.", position=4)
+    default boolean showEventOverlay() { return false; }
+
 }
