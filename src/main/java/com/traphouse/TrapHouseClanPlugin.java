@@ -23,7 +23,7 @@ import net.runelite.api.events.GameTick;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.Text;
 
-@PluginDescriptor(name="Trap House Clan Plugin", description="TRAP HOUSE boss and Skill of the Month Wise Old Man event leaderboards", tags={"clan","events","boss","skills","traphouse","leaderboard"})
+@PluginDescriptor(name="Trap House Clan Plugin", description="TRAP HOUSE clan rankings, points and Wise Old Man event leaderboards", tags={"clan","events","boss","skills","traphouse","leaderboard","ranks"})
 public class TrapHouseClanPlugin extends Plugin {
     @Inject private ClientToolbar toolbar;
     @Inject private TrapHouseConfig config;
@@ -32,6 +32,10 @@ public class TrapHouseClanPlugin extends Plugin {
     @Inject private Client client;
     @Inject private OverlayManager overlayManager;
     @Inject private TrapHouseEventOverlay eventOverlay;
+    @Inject private RankingClient rankings;
+    @Inject private AwardItemImages awardItemImages;
+    private volatile RankingPanel rankingPanel;
+    private ScheduledFuture<?> rankingTask;
     private NavigationButton navigationButton;
     private TrapHouseDashboard dashboard;
     private volatile EventLeaderboardController bossBoard;
@@ -41,7 +45,9 @@ public class TrapHouseClanPlugin extends Plugin {
     private boolean skillAnnounced;
     private ScheduledFuture<?> refreshTask;
     private boolean active;
-    private String playerName;
+    private volatile String playerName;
+    private volatile boolean rankingMember;
+    private int progressTicks;
     private EventAlerts bossAlerts;
     private EventAlerts skillAlerts;
 
@@ -52,6 +58,7 @@ public class TrapHouseClanPlugin extends Plugin {
     @Override protected void startUp() {
         loginSession = false;
         playerName = null;
+        rankingMember = false;
         bossAlerts = new EventAlerts();
         skillAlerts = new EventAlerts();
         overlayManager.add(eventOverlay);
@@ -63,14 +70,26 @@ public class TrapHouseClanPlugin extends Plugin {
             refreshBoth();
         });
         refreshTask = executor.scheduleWithFixedDelay(() -> SwingUtilities.invokeLater(this::refreshBoth), 5, 5, TimeUnit.MINUTES);
+        rankingTask = executor.scheduleWithFixedDelay(this::syncRankings, 10, 30, TimeUnit.SECONDS);
     }
 
     private void createPanel(int selectedTab) {
+        if(rankingPanel!=null)rankingPanel.clear("Rebuilding clan sidebar");
         TrapHousePanel bossPanel = new TrapHousePanel(config, bossBoard::refresh, false);
         TrapHousePanel skillPanel = new TrapHousePanel(config, skillBoard::refresh, true);
         bossBoard.setPanel(bossPanel);
         skillBoard.setPanel(skillPanel);
-        dashboard = new TrapHouseDashboard(bossPanel, skillPanel, selectedTab);
+        rankingPanel = new RankingPanel(() -> executor.execute(this::syncRankings), (key, reason) -> {
+            if (config.rankingEnabled() && rankingMember) {
+                rankings.requestReward(playerName, key, reason);
+                executor.execute(this::syncRankings);
+            }
+        });
+        dashboard = new TrapHouseDashboard(bossPanel, skillPanel, selectedTab, rankingPanel);
+        rankingPanel.pointsLogLoader((query,done)->executor.execute(()->rankings.pointsLog(config,query,done)));
+        rankingPanel.itemArt(awardItemImages);
+        rankingPanel.actions(name->{rankings.browse(name);executor.execute(this::syncRankings);},
+            (id,join)->{rankings.register(id,join);executor.execute(this::syncRankings);},dashboard::showProfile);
         BufferedImage icon = ImageUtil.loadImageResource(getClass(), "icon.png");
         navigationButton = NavigationButton.builder().tooltip("TRAP HOUSE").icon(icon).priority(6).panel(dashboard).build();
         toolbar.addNavigation(navigationButton);
@@ -86,6 +105,8 @@ public class TrapHouseClanPlugin extends Plugin {
         overlayManager.remove(eventOverlay);
         loginSession = false;
         if (refreshTask != null) refreshTask.cancel(false);
+        if (rankingTask != null) rankingTask.cancel(false);
+        rankings.reset();
         refreshTask = null;
         SwingUtilities.invokeLater(() -> {
             active = false;
@@ -94,11 +115,21 @@ public class TrapHouseClanPlugin extends Plugin {
             if (navigationButton != null) toolbar.removeNavigation(navigationButton);
             navigationButton = null;
             dashboard = null;
+            if(rankingPanel!=null)rankingPanel.clear("Plugin stopped");
+            rankingPanel = null;
         });
     }
 
     @Subscribe public void onConfigChanged(ConfigChanged event) {
         if (!"traphouse".equals(event.getGroup())) return;
+        if (event.getKey().startsWith("ranking")) {
+            rankings.reset();
+            SwingUtilities.invokeLater(() -> {
+                if (rankingPanel != null) rankingPanel.clear("Ranking settings changed; reconnecting");
+            });
+            executor.execute(this::syncRankings);
+            return;
+        }
         if (!"competitionId".equals(event.getKey()) && !"skillCompetitionId".equals(event.getKey())) return;
         SwingUtilities.invokeLater(() -> {
             if (!active) return;
@@ -124,6 +155,7 @@ public class TrapHouseClanPlugin extends Plugin {
     @Subscribe public void onGameStateChanged(GameStateChanged event) {
         // Hopping and loading stay in the same session; returning to login resets it.
         if (event.getGameState() == GameState.LOGIN_SCREEN) {
+            rankingMember = false;
             loginSession = false;
             updatePlayer(null);
         }
@@ -131,6 +163,15 @@ public class TrapHouseClanPlugin extends Plugin {
 
     @Subscribe public void onGameTick(GameTick tick) {
         if (client.getGameState() != GameState.LOGGED_IN) return;
+        net.runelite.api.clan.ClanSettings settings = client.getClanSettings();
+        String localName = client.getLocalPlayer() == null ? null : client.getLocalPlayer().getName();
+        rankingMember = settings != null && localName != null
+            && "trap house".equals(RankingTracker.normalize(settings.getName()))
+            && settings.findMember(localName) != null;
+        if (config.rankingEnabled() && rankingMember && ++progressTicks >= 50) {
+            progressTicks=0;
+            rankings.progress(ProgressTracker.collect(client,localName,rankings.probes()));
+        }
         updatePlayer(client.getLocalPlayer() == null ? null : client.getLocalPlayer().getName());
         if (!loginSession) {
             loginSession = true;
@@ -155,11 +196,14 @@ public class TrapHouseClanPlugin extends Plugin {
     private void updatePlayer(String name) {
         if (java.util.Objects.equals(playerName, name)) return;
         playerName = name;
+        rankings.reset();
         SwingUtilities.invokeLater(() -> {
             if (!active) return;
+            if (rankingPanel != null) rankingPanel.clear(name == null ? "Log in to see clan rankings" : "Loading rankings for " + name);
             bossBoard.updatePlayer(name);
             skillBoard.updatePlayer(name);
         });
+        executor.execute(this::syncRankings);
     }
 
     private void pollAlerts(boolean skill, EventAlerts alerts) {
@@ -178,5 +222,33 @@ public class TrapHouseClanPlugin extends Plugin {
             : "[Trap House] " + kind + ": " + Text.removeTags(event.title) + " — "
                 + EventSummary.target(event) + " (" + EventSummary.timing(event, java.time.Instant.now()) + ").";
         client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", message, null);
+    }
+
+    private void syncRankings() {
+        RankingPanel panel = rankingPanel;
+        if (panel != null) rankings.sync(config, rankingMember ? playerName : null, panel);
+    }
+
+    private String trackingPlayer() {
+        if (!config.rankingEnabled() || !rankingMember || client.getGameState() != GameState.LOGGED_IN
+            || client.getLocalPlayer() == null) return null;
+        return client.getLocalPlayer().getName();
+    }
+
+    @Subscribe public void onNpcLootReceived(net.runelite.client.events.NpcLootReceived event) {
+        String player = trackingPlayer();
+        if (player == null) return;
+        java.util.Set<Integer> items = new java.util.HashSet<>();
+        for (net.runelite.client.game.ItemStack item : event.getItems()) {
+            if (items.add(item.getId())) rankings.enqueue(new RankingEvent(player, "LOOT", event.getNpc().getId() + ":" + item.getId()));
+        }
+    }
+
+    @Subscribe public void onChatMessage(net.runelite.api.events.ChatMessage event) {
+        String player = trackingPlayer();
+        if (player == null || (event.getType() != ChatMessageType.GAMEMESSAGE
+            && event.getType() != ChatMessageType.SPAM)) return;
+        RankingEvent observation = RankingTracker.chat(player, event.getMessage());
+        if (observation != null) rankings.enqueue(observation);
     }
 }

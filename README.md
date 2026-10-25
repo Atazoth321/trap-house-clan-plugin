@@ -2,6 +2,14 @@
 
 A RuneLite sidebar for the **TRAP HOUSE** Old School RuneScape clan. Follow Boss of the Week and Skill of the Month competitions from [Wise Old Man group 2504](https://wiseoldman.net/groups/2504), with event leaderboards and fixed prizes.
 
+The sidebar also includes **Profile**, **Ranks**, and **Leaderboard** tabs for an original clan ranking system. View server-calculated points, eligible rank, progress, point sources and recent awards; request manual rewards for administrator review. Existing Boss/Skill events and overlays remain available. Promotions and all in-game actions remain manual.
+
+The ranking service is a separate PostgreSQL-backed deployment; see [server setup and API](server/README.md). Ranking sync is off by default. To connect, clan staff deploy an HTTPS API, configure scoring rules/thresholds, verify members and issue individual member credentials. In plugin settings, enable ranking sync and enter the API origin and your member token. No awards are enabled until staff configure rules.
+
+The [reference review and staged plan](docs/reval-reference-review.md) records which Reval features have source implementations, which are explicit TODOs and which depend on unavailable backend code. The downloaded reference was inspected read-only; this system uses original TRAP HOUSE code.
+
+The expanded clan dashboard includes **Achievements**, **Events**, **Diary**, and **Competitions**, with point breakdowns, read-only milestone/combat-tier probes, searchable member profiles, event registration, and race standings. See [feature configuration and limits](docs/clan-features.md). Preview the branded screens with `.\gradlew.bat previewClan`; fixture data is explicitly labelled and never appears in the production plugin.
+
 ## Features
 
 - **Boss event:** Boss of the Week details and the top ten participants ranked by kills gained during the competition.
@@ -122,7 +130,9 @@ The combined image is saved as `build/trap-house-both-tabs.png`. Live previews r
 
 ## Privacy
 
-The plugin makes HTTPS read requests to `api.wiseoldman.net` for public clan competitions and participant scores. It does not send your player name, login details, or local kill counts.
+The Wise Old Man integration makes HTTPS read requests to `api.wiseoldman.net` for public competitions and participant scores; it does not send your player name to Wise Old Man.
+
+**Optional ranking sync** sends your logged-in character name, event UUID/time, supported NPC loot item/source IDs or combat/collection unlock names, and configured progress observations (such as milestone items, quest/skill state and combat-tier completion) to your configured HTTPS clan API, authenticated by your member token. Only a logged-in TRAP HOUSE clan member is tracked. Manual reward requests send your reason; event registration sends the selected event ID. Do not include private information in reward reasons. Other authenticated clan members can browse shared points and achievement progress; private manual request details are excluded. The service maintains a verified roster, award history and approval audit and may send award notifications to Discord. If staff enable optional EHP/EHB imports, the service sends roster names to Wise Old Man to read public profiles. Tokens are stored in local RuneLite configuration with masked display, not encrypted storage. No game login credentials, account hash, screenshots or player chat are collected. Disable ranking sync to stop tracking; pending memory-only data clears on logout, account/config change or shutdown. Already-submitted awards remain on the server; contact clan staff about data access/removal and retention.
 
 ## Development and distribution
 

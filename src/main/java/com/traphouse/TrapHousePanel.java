@@ -303,7 +303,7 @@ public class TrapHousePanel extends PluginPanel {
         button.addActionListener(e -> LinkBrowser.browse(url));
         return button;
     }
-    private static class Card extends JPanel {
+    static class Card extends JPanel {
         private final boolean header;
         Card(boolean header) { this.header = header; setOpaque(false); }
         @Override protected void paintComponent(Graphics graphics) {

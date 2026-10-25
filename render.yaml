@@ -1,0 +1,27 @@
+# Separate services: this does not replace the existing clan website.
+services:
+  - type: web
+    name: trap-house-ranking-api
+    runtime: docker
+    plan: starter
+    region: oregon
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: .
+    preDeployCommand: /app/bin/trap-house-server init
+    healthCheckPath: /ready
+    envVars:
+      - key: TRAP_BIND_ADDRESS
+        value: 0.0.0.0
+      - key: TRAP_DATABASE_URL
+        fromDatabase:
+          name: trap-house-ranking-db
+          property: connectionString
+
+databases:
+  - name: trap-house-ranking-db
+    databaseName: traphouse
+    user: traphouse
+    plan: basic-256mb
+    region: oregon
+    postgresMajorVersion: '16'
+    ipAllowList: []

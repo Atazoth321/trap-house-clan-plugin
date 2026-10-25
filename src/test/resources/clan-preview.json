@@ -1,0 +1,298 @@
+{
+    "profile":  {
+                    "name":  "TRAP Member",
+                    "points":  850,
+                    "rank":  "Corporal",
+                    "automaticRank":  "Sergeant",
+                    "assignedRank":  "Corporal",
+                    "rankLocked":  false,
+                    "protectedRank":  false,
+                    "promotionEligible":  true,
+                    "nextThreshold":  "Brigadier at 1500",
+                    "breakdown":  {
+                                      "Drops":  300,
+                                      "Pets":  100,
+                                      "Milestones":  200,
+                                      "Combat":  100,
+                                      "Collection":  50,
+                                      "Diaries":  50,
+                                      "Events":  50
+                                  },
+                    "metrics":  {
+                                    "ehp":  2048.8,
+                                    "ehb":  3348.8
+                                },
+                    "lifetimeEarnedPoints":  850,
+                    "balanceRank":  "Sergeant",
+                    "automaticRankThreshold":  500,
+                    "earnedRankHistory":  [
+                                              {
+                                                  "rank":  "Recruit",
+                                                  "threshold":  0,
+                                                  "pointsAtEarning":  0,
+                                                  "at":  "Sample earned rank / UTC"
+                                              },
+                                              {
+                                                  "rank":  "Pawn",
+                                                  "threshold":  50,
+                                                  "pointsAtEarning":  50,
+                                                  "at":  "Sample earned rank / UTC"
+                                              },
+                                              {
+                                                  "rank":  "Corporal",
+                                                  "threshold":  100,
+                                                  "pointsAtEarning":  100,
+                                                  "at":  "Sample earned rank / UTC"
+                                              },
+                                              {
+                                                  "rank":  "Novice",
+                                                  "threshold":  250,
+                                                  "pointsAtEarning":  250,
+                                                  "at":  "Sample earned rank / UTC"
+                                              },
+                                              {
+                                                  "rank":  "Sergeant",
+                                                  "threshold":  500,
+                                                  "pointsAtEarning":  500,
+                                                  "at":  "Sample earned rank / UTC"
+                                              }
+                                          ]
+                },
+    "ranks":  [
+                  {
+                      "name":  "Recruit",
+                      "threshold":  0
+                  },
+                  {
+                      "name":  "Pawn",
+                      "threshold":  50
+                  },
+                  {
+                      "name":  "Corporal",
+                      "threshold":  100
+                  },
+                  {
+                      "name":  "Novice",
+                      "threshold":  250
+                  },
+                  {
+                      "name":  "Sergeant",
+                      "threshold":  500
+                  },
+                  {
+                      "name":  "Colonel",
+                      "threshold":  1000
+                  },
+                  {
+                      "name":  "Brigadier",
+                      "threshold":  1500
+                  },
+                  {
+                      "name":  "Admiral",
+                      "threshold":  3000
+                  },
+                  {
+                      "name":  "Marshal",
+                      "threshold":  5000
+                  }
+              ],
+    "leaderboard":  [
+                        {
+                            "name":  "TRAP Leader",
+                            "points":  5200,
+                            "rank":  "Marshal"
+                        },
+                        {
+                            "name":  "TRAP Raider",
+                            "points":  2100,
+                            "rank":  "Brigadier"
+                        },
+                        {
+                            "name":  "TRAP Member",
+                            "points":  850,
+                            "rank":  "Corporal",
+                            "automaticRank":  "Sergeant",
+                            "assignedRank":  "Corporal",
+                            "rankLocked":  false,
+                            "protectedRank":  false,
+                            "promotionEligible":  true
+                        },
+                        {
+                            "name":  "TRAP Recruit",
+                            "points":  75,
+                            "rank":  "Recruit"
+                        }
+                    ],
+    "sources":  [
+                    {
+                        "type":  "LOOT",
+                        "key":  "example drop",
+                        "name":  "Configured rare drop",
+                        "points":  25,
+                        "dailyLimit":  1
+                    },
+                    {
+                        "type":  "MANUAL",
+                        "key":  "clan event attendance",
+                        "name":  "Clan event attendance",
+                        "points":  25,
+                        "dailyLimit":  1
+                    }
+                ],
+    "history":  [
+                    {
+                        "type":  "COMBAT",
+                        "key":  "Example combat task",
+                        "points":  50,
+                        "at":  "Sample award / UTC"
+                    }
+                ],
+    "rewards":  [
+                    {
+                        "key":  "clan event attendance",
+                        "status":  "PENDING"
+                    }
+                ],
+    "goals":  [
+                  {
+                      "id":  "10000000-0000-4000-8000-000000000001",
+                      "name":  "First Fire cape",
+                      "description":  "Observed in your inventory or equipment.",
+                      "category":  "Milestones",
+                      "section":  "MILESTONES",
+                      "source":  "ITEM",
+                      "sourceKey":  "6570",
+                      "target":  1,
+                      "progress":  1,
+                      "points":  50,
+                      "completed":  true
+                  },
+                  {
+                      "id":  "10000000-0000-4000-8000-000000000002",
+                      "name":  "First Infernal cape",
+                      "description":  "Observed in your inventory or equipment.",
+                      "category":  "Milestones",
+                      "section":  "MILESTONES",
+                      "source":  "ITEM",
+                      "sourceKey":  "21295",
+                      "target":  1,
+                      "progress":  0,
+                      "points":  150,
+                      "completed":  false
+                  },
+                  {
+                      "id":  "10000000-0000-4000-8000-000000000003",
+                      "name":  "Easy tier",
+                      "description":  "Live combat-point threshold.",
+                      "category":  "Combat",
+                      "section":  "COMBAT ACHIEVEMENTS",
+                      "source":  "CA_TIER",
+                      "sourceKey":  "4132",
+                      "target":  1,
+                      "progress":  1,
+                      "points":  25,
+                      "completed":  true
+                  },
+                  {
+                      "id":  "10000000-0000-4000-8000-000000000004",
+                      "name":  "Elite tier",
+                      "description":  "Live combat-point threshold.",
+                      "category":  "Combat",
+                      "section":  "COMBAT ACHIEVEMENTS",
+                      "source":  "CA_TIER",
+                      "sourceKey":  "14812",
+                      "target":  1,
+                      "progress":  0,
+                      "points":  150,
+                      "completed":  false
+                  },
+                  {
+                      "id":  "10000000-0000-4000-8000-000000000005",
+                      "name":  "First collection unlock",
+                      "description":  "Record one supported collection unlock.",
+                      "category":  "Diaries",
+                      "section":  "RECRUIT DIARY",
+                      "source":  "EVENT",
+                      "sourceKey":  "COLLECTION:*",
+                      "target":  1,
+                      "progress":  1,
+                      "points":  10,
+                      "completed":  true
+                  },
+                  {
+                      "id":  "10000000-0000-4000-8000-000000000006",
+                      "name":  "Attend a clan event",
+                      "description":  "An organizer verifies attendance.",
+                      "category":  "Diaries",
+                      "section":  "RECRUIT DIARY",
+                      "source":  "MANUAL",
+                      "sourceKey":  "clan event attendance",
+                      "claimKey":  "clan event attendance",
+                      "target":  1,
+                      "progress":  0,
+                      "points":  25,
+                      "completed":  false
+                  }
+              ],
+    "clanEvents":  [
+                       {
+                           "id":  "20000000-0000-4000-8000-000000000001",
+                           "title":  "TRAP HOUSE raid night",
+                           "description":  "Clan PvM / all experience levels welcome.",
+                           "startsAt":  "Sample schedule / UTC",
+                           "registrations":  12,
+                           "registered":  false,
+                           "registrationOpen":  true
+                       }
+                   ],
+    "races":  [
+                  {
+                      "id":  "30000000-0000-4000-8000-000000000001",
+                      "title":  "TRAP HOUSE boss race",
+                      "description":  "Sample race using accepted server observations.",
+                      "startsAt":  "Sample start",
+                      "endsAt":  "Sample end",
+                      "firsts":  [
+                                     {
+                                         "label":  "First rare drop",
+                                         "winner":  "TRAP Raider",
+                                         "points":  100
+                                     }
+                                 ],
+                      "standings":  [
+                                        {
+                                            "name":  "TRAP Raider",
+                                            "score":  34,
+                                            "projectedPoints":  300
+                                        },
+                                        {
+                                            "name":  "TRAP Member",
+                                            "score":  27,
+                                            "projectedPoints":  225
+                                        }
+                                    ]
+                  }
+              ],
+    "protectedRanks":  [
+                           {
+                               "name":  "Owner",
+                               "protected":  true
+                           },
+                           {
+                               "name":  "Deputy Owner",
+                               "protected":  true
+                           },
+                           {
+                               "name":  "Master",
+                               "protected":  true
+                           },
+                           {
+                               "name":  "Major",
+                               "protected":  true
+                           },
+                           {
+                               "name":  "Proselyte",
+                               "protected":  true
+                           }
+                       ]
+}

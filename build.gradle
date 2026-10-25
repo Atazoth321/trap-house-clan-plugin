@@ -38,3 +38,59 @@ tasks.register('previewBoth', JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.traphouse.TrapHouseBothTabsPreview'
 }
+
+tasks.register('previewClan', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.traphouse.TrapHouseClanPreview'
+}
+
+// The ranking service is a separate process; JDBC and server classes never ship in the plugin JAR.
+sourceSets {
+    server { java.srcDir 'server/src/main/java'; resources.srcDir 'server/src/main/resources' }
+    serverTest { java.srcDir 'server/src/test/java' }
+}
+dependencies {
+    serverImplementation 'com.google.code.gson:gson:2.10.1'
+    serverRuntimeOnly 'org.postgresql:postgresql:42.7.8'
+    serverTestImplementation sourceSets.server.output
+    serverTestImplementation 'com.google.code.gson:gson:2.10.1'
+    serverTestImplementation 'junit:junit:4.13.2'
+    serverTestRuntimeOnly 'org.postgresql:postgresql:42.7.8'
+}
+tasks.register('serverTest', Test) {
+    testClassesDirs = sourceSets.serverTest.output.classesDirs
+    classpath = sourceSets.serverTest.runtimeClasspath
+    useJUnit()
+    exclude '**/*PostgresTest.class'
+}
+tasks.register('serverIntegrationTest', Test) {
+    testClassesDirs = sourceSets.serverTest.output.classesDirs
+    classpath = sourceSets.serverTest.runtimeClasspath
+    include '**/*PostgresTest.class'
+    useJUnit()
+    doFirst {
+        if (!System.getenv('TRAP_TEST_DATABASE_URL')) {
+            throw new GradleException('Set TRAP_TEST_DATABASE_URL, TRAP_TEST_DATABASE_USER, and TRAP_TEST_DATABASE_PASSWORD to a disposable PostgreSQL database.')
+        }
+    }
+}
+tasks.register('runServer', JavaExec) {
+    classpath = sourceSets.server.runtimeClasspath
+    mainClass = 'com.traphouse.server.RankingServer'
+}
+tasks.named('check') { dependsOn 'serverTest' }
+
+tasks.register('serverJar', Jar) {
+    archiveClassifier = 'server'
+    from sourceSets.server.output
+}
+
+tasks.register('serverDist', Sync) {
+    dependsOn 'serverJar'
+    into layout.buildDirectory.dir('server-dist')
+    into('lib') {
+        from tasks.named('serverJar')
+        from configurations.serverRuntimeClasspath
+    }
+    into('bin') { from 'server/bin' }
+}

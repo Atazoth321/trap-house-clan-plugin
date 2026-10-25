@@ -1,0 +1,12 @@
+**
+!gradlew
+!build.gradle
+!settings.gradle
+!gradle/
+!gradle/**
+!server/
+!server/src/
+!server/src/**
+!server/bin/
+!server/bin/trap-house-server
+!server/Dockerfile

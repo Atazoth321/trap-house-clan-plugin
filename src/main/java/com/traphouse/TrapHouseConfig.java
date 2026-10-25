@@ -4,6 +4,14 @@ import net.runelite.client.config.*;
 
 @ConfigGroup("traphouse")
 public interface TrapHouseConfig extends Config {
+    @ConfigItem(keyName="rankingEnabled", name="Enable ranking sync", description="Opt in to sending your character name, supported events and configured achievement/progress observations to your clan ranking server.", position=20)
+    default boolean rankingEnabled() { return false; }
+
+    @ConfigItem(keyName="rankingUrl", name="Ranking API URL", description="HTTPS base URL of the TRAP HOUSE ranking server. No trailing path or query.", position=21)
+    default String rankingUrl() { return ""; }
+
+    @ConfigItem(keyName="rankingToken", name="Ranking member token", description="Member-specific credential issued by clan staff. Stored in local RuneLite configuration; never share it.", secret=true, position=22)
+    default String rankingToken() { return ""; }
     @ConfigItem(keyName="competitionId", name="Wise Old Man competition ID", description="0 automatically selects the current Trap House boss competition. Enter a competition ID to view a specific event, including ended events.", position=1)
     @Range(min=0)
     default int competitionId() { return 0; }

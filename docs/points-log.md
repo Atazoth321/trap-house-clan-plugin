@@ -1,0 +1,9 @@
+# Member points logs
+
+Each profile's “Points from” tile opens a read-only window for that member. The source filter, newest/oldest/highest sorting, search, grouping by source and award identity, signed totals, and 24-card pagination use the full server ledger. Grouped timestamps show the latest award. Dates are UTC.
+
+Item awards show real RuneLite item sprites and game names. Loot uses its recorded NPC:item ID key; collection awards use exact names from the full game catalogue, including untradeable items and pets. Catalogue lookup is chunked on the game thread; sprite loading is asynchronous and callbacks for closed windows or old filters are discarded. Events, adjustments, and unresolved historical awards retain category badges. API entries include sourceType and sourceKey; grouping preserves these identities. No points, eligibility rules, or permissions are changed by displaying an item.
+
+`GET /v1/points-log?player=Name&category=Drops&sort=newest&search=&group=false&page=1` requires an active member bearer credential. Categories: All, Drops, Pets, Milestones, Diaries, Challenges, Events, Combat, Collection, Misc. Returns player, count, total, page, pages, and entries with category, title, points, at, occurrences. Unknown and duplicate parameters are rejected; filters are bounded and SQL values parameterized. Owner corrections appear in Misc. Existing deduction, audit, and rank protections still apply.
+
+Run `gradlew previewClan --args=--window` for interactive, labeled sample allocations. `gradlew previewClan` writes `build/trap-house-points-log-preview.png`. Production displays unavailable states when it cannot load the authenticated ledger. PostgreSQL paging/grouping integration tests require a configured disposable database; unit and client tests run through `gradlew check`.
