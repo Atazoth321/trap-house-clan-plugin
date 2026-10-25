@@ -10,7 +10,7 @@ A RuneLite sidebar for the **TRAP HOUSE** Old School RuneScape clan. Follow Boss
 - Event titles, featured bosses or skills, competition dates, and gold, silver, and bronze ranks.
 - Automatic refresh every five minutes and a manual **Refresh leaderboard** button.
 - Private boss and skill event announcements once per login, without repeating on world hops.
-- Optional on-screen event overlay showing both targets and time remaining.
+- On-screen event overlay showing both targets and time remaining, enabled by default with a settings toggle to turn it off.
 - Separate boss and skill overlay toggles, with an optional top-three leaderboard for each event.
 - Your recorded event rank, kills or XP gained, and gap to the player above you in each sidebar tab.
 - Direct Wise Old Man competition links on both event tabs.
@@ -55,7 +55,7 @@ Restart the development client after changing plugin code.
 | Wise Old Man competition ID | Boss event override. Leave at `0` to detect an active boss competition automatically. |
 | Skill of the Month competition ID | Skill event override. Leave at `0` to detect an active single-skill competition automatically. |
 | Announce events on login | Show both events privately in game chat once per login. Enabled by default. |
-| Show event overlay | Show boss and skill targets and time remaining on screen. Disabled by default. |
+| Show event overlay | Show boss and skill targets and time remaining on screen. Enabled by default; turn this off to hide the overlay. |
 | Boss event in overlay | Include the boss event in the overlay. Enabled by default. |
 | Skill event in overlay | Include the skill event in the overlay. Enabled by default. |
 | Top three in overlay | Include the top three participants and their recorded scores. Disabled by default. |

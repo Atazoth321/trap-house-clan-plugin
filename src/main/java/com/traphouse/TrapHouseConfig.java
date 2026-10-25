@@ -16,7 +16,7 @@ public interface TrapHouseConfig extends Config {
     default boolean announceOnLogin() { return true; }
 
     @ConfigItem(keyName="showEventOverlay", name="Show event overlay", description="Display the boss and skill event targets and time remaining on screen.", position=4)
-    default boolean showEventOverlay() { return false; }
+    default boolean showEventOverlay() { return true; }
 
     @ConfigItem(keyName="showBossOverlay", name="Boss event in overlay", description="Include the boss event when the event overlay is enabled.", position=5)
     default boolean showBossOverlay() { return true; }
