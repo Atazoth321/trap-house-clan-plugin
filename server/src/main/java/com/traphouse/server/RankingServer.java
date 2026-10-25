@@ -169,8 +169,12 @@ public final class RankingServer {
     }
 
     static void command(String[] args) throws Exception {
+        command(args, RankingServer::connect);
+    }
+
+    static void command(String[] args, DiscordWorker.Connections connections) throws Exception {
         if (args.length == 2 && args[0].equals("add-member")) verifiedName(args[1]);
-        try (Connection c = connect()) {
+        try (Connection c = connections.open()) {
             c.setAutoCommit(false);
             if(args.length==3&&args[0].equals("link-discord")) {
                 String name=verifiedName(args[1]), discord=DiscordLogin.snowflake(args[2]);
@@ -184,7 +188,7 @@ public final class RankingServer {
                     if(!r.next())throw new IllegalArgumentException("An identity is already linked; review and revoke the old link first");
                 }
                 JsonObject details=new JsonObject();details.addProperty("source","server operator CLI");details.addProperty("discordUserId",discord);
-                RankingStore.execute(c,"INSERT INTO audit(action,target,details) VALUES ('DISCORD_IDENTITY_LINKED',?,?::jsonb)",member,details.toString());
+                operatorAudit(c,member,"DISCORD_IDENTITY_LINKED",details);
                 c.commit();System.out.println("Discord identity linked to the verified member. No permissions changed.");return;
             }
             if (args.length == 2 && args[0].equals("add-member")) {
@@ -205,7 +209,7 @@ public final class RankingServer {
                     JsonObject details = new JsonObject();
                     details.addProperty("source", "server operator CLI");
                     details.addProperty("memberName", name);
-                    RankingStore.execute(c, "INSERT INTO audit(action,target,details) VALUES ('MEMBER_PROVISIONED',?,?::jsonb)", member, details.toString());
+                    operatorAudit(c,member,"MEMBER_PROVISIONED",details);
                 }
                 c.commit();
                 System.out.println("Verified member UUID: " + member);
@@ -245,5 +249,13 @@ public final class RankingServer {
             }
             throw new IllegalArgumentException("Commands: init | add-member <verified-character-name> | link-discord <verified-character-name> <discord-user-id> | bootstrap-owner <verified-member-uuid> | issue-token <verified-character-name> member|admin");
         }
+    }
+
+    static void operatorAudit(Connection c, UUID member, String action, JsonObject details) throws SQLException {
+        // Legacy audit.actor is a required member FK, including for bootstrap operations.
+        // Explicit metadata distinguishes operator actions from authenticated member requests.
+        details.addProperty("actorKind","SERVER_OPERATOR");
+        details.addProperty("actorReference","affected member; operator command has no authenticated API actor");
+        RankingStore.execute(c,"INSERT INTO audit(actor,action,target,details) VALUES (?,?,?,?::jsonb)",member,action,member,details.toString());
     }
 }

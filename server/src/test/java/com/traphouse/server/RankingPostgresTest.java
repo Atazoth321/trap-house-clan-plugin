@@ -12,6 +12,26 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    @Test public void operatorOnboardingAndLinkingCommitWithRequiredAuditActor()throws Exception {
+        c.commit();
+        RankingServer.command(new String[]{"add-member","Atazoth"},this::connection);
+        UUID registered;
+        try(PreparedStatement s=RankingStore.query(c,"SELECT id FROM members WHERE normalized_name='atazoth'");ResultSet r=s.executeQuery()) {
+            assertTrue(r.next());registered=r.getObject(1,UUID.class);
+        }
+        RankingServer.command(new String[]{"add-member","Atazoth"},this::connection);
+        RankingServer.command(new String[]{"link-discord","Atazoth","384823194965639170"},this::connection);
+        try(PreparedStatement s=RankingStore.query(c,"SELECT actor,action,details FROM audit WHERE target=? ORDER BY id",registered);ResultSet r=s.executeQuery()) {
+            assertTrue(r.next());assertEquals(registered,r.getObject(1,UUID.class));assertEquals("MEMBER_PROVISIONED",r.getString(2));
+            assertEquals("SERVER_OPERATOR",JsonParser.parseString(r.getString(3)).getAsJsonObject().get("actorKind").getAsString());
+            assertTrue(r.next());assertEquals(registered,r.getObject(1,UUID.class));assertEquals("DISCORD_IDENTITY_LINKED",r.getString(2));assertFalse(r.next());
+        }
+        try(PreparedStatement s=RankingStore.query(c,"SELECT member_id FROM discord_member_links WHERE discord_user_id='384823194965639170'");ResultSet r=s.executeQuery()) {
+            assertTrue(r.next());assertEquals(registered,r.getObject(1,UUID.class));
+        }
+        assertEquals(0,count("point_adjustments"));assertEquals(0,count("ledger"));
+        try(PreparedStatement s=RankingStore.query(c,"SELECT count(*) FROM member_permissions WHERE member_id=?",registered);ResultSet r=s.executeQuery()){r.next();assertEquals(0,r.getInt(1));}
+    }
     private static final String DISCORD_ID="123456789012345678";
     private java.net.http.HttpResponse<String> authRequest(int port,String path,String body)throws Exception {
         java.net.http.HttpRequest.Builder request=java.net.http.HttpRequest.newBuilder(java.net.URI.create("http://127.0.0.1:"+port+path));
