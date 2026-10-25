@@ -160,9 +160,40 @@ public final class RankingServer {
         System.out.println("TRAP HOUSE ranking API listening on port " + port);
     }
 
+    static String verifiedName(String value) {
+        String name = value.trim();
+        if (!name.matches("[A-Za-z0-9 _-]{1,12}")) throw new IllegalArgumentException("Invalid character name");
+        return name;
+    }
+
     static void command(String[] args) throws Exception {
+        if (args.length == 2 && args[0].equals("add-member")) verifiedName(args[1]);
         try (Connection c = connect()) {
             c.setAutoCommit(false);
+            if (args.length == 2 && args[0].equals("add-member")) {
+                // Operator-only onboarding, after independently verifying membership and character ownership.
+                String name = verifiedName(args[1]);
+                UUID proposed = UUID.randomUUID();
+                boolean created;
+                try (PreparedStatement s = RankingStore.query(c,
+                    "INSERT INTO members(id,name,normalized_name) VALUES (?,?,?) ON CONFLICT(normalized_name) DO NOTHING",
+                    proposed, name, Policy.normalize(name))) { created = s.executeUpdate() == 1; }
+                UUID member;
+                try (PreparedStatement s = RankingStore.query(c, "SELECT id,active FROM members WHERE normalized_name=? FOR UPDATE", Policy.normalize(name));
+                     ResultSet r = s.executeQuery()) {
+                    if (!r.next() || !r.getBoolean("active")) throw new IllegalArgumentException("Member is inactive; review roster before reactivating");
+                    member = r.getObject("id", UUID.class);
+                }
+                if (created) {
+                    JsonObject details = new JsonObject();
+                    details.addProperty("source", "server operator CLI");
+                    details.addProperty("memberName", name);
+                    RankingStore.execute(c, "INSERT INTO audit(action,target,details) VALUES ('MEMBER_PROVISIONED',?,?::jsonb)", member, details.toString());
+                }
+                c.commit();
+                System.out.println("Verified member UUID: " + member);
+                return;
+            }
             if (args.length == 1 && args[0].equals("init")) {
                 try (InputStream input = RankingServer.class.getResourceAsStream("/schema.sql"); Statement s = c.createStatement()) {
                     if (input == null) throw new IllegalStateException("Schema resource missing");
@@ -181,8 +212,7 @@ public final class RankingServer {
                 c.commit();System.out.println("Owner permission provisioned. Existing member credentials now use Owner permission.");return;
             }
             if (args.length == 3 && args[0].equals("issue-token") && (args[2].equals("member") || args[2].equals("admin"))) {
-                String name = args[1].trim();
-                if (!name.matches("[A-Za-z0-9 _-]{1,12}")) throw new IllegalArgumentException("Invalid character name");
+                String name = verifiedName(args[1]);
                 // Staff must independently verify membership and ownership before issuing credentials.
                 UUID member;
                 try (PreparedStatement s = RankingStore.query(c, "SELECT id FROM members WHERE normalized_name=? AND active", Policy.normalize(name)); ResultSet r = s.executeQuery()) {
@@ -196,7 +226,7 @@ public final class RankingServer {
                 c.commit();
                 System.out.println("Credential (shown once; expires in 90 days): " + token); return;
             }
-            throw new IllegalArgumentException("Commands: init | bootstrap-owner <verified-member-uuid> | issue-token <verified-character-name> member|admin");
+            throw new IllegalArgumentException("Commands: init | add-member <verified-character-name> | bootstrap-owner <verified-member-uuid> | issue-token <verified-character-name> member|admin");
         }
     }
 }
