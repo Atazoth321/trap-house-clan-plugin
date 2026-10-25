@@ -161,11 +161,17 @@ final class DiscordLogin {
         exchange.sendResponseHeaders(status,bytes.length);try(OutputStream out=exchange.getResponseBody()){out.write(bytes);}finally{exchange.close();}
     }
     private static String encode(String value){return URLEncoder.encode(value,StandardCharsets.UTF_8);}
-    private JsonObject fetch(HttpRequest request)throws Exception {
+    static String verificationError(String step,int status) {
+        if(step.equals("token"))return "Discord sign-in configuration was rejected (HTTP "+status+"). Check that the Render Client ID and Client Secret belong to the same Discord application and that its redirect URL matches exactly. Then start a new sign-in from RuneLite.";
+        if(step.equals("identity"))return "Discord could not verify your account (HTTP "+status+"). Start a new sign-in from RuneLite and authorize it again.";
+        return "Discord server membership could not be verified (HTTP "+status+"). Check that TRAP_DISCORD_GUILD_ID is your clan server ID and that the Discord account you authorized has joined that server. Then start a new sign-in from RuneLite.";
+    }
+    private JsonObject fetch(HttpRequest request,String step)throws Exception {
         HttpResponse<InputStream> response=HTTP.send(request,HttpResponse.BodyHandlers.ofInputStream());
         try(InputStream input=response.body()) {
             byte[] bytes=input.readNBytes(65537);
-            if(response.statusCode()!=200||bytes.length>65536)throw new Policy.Rejected(403,"Discord authorization or clan server membership could not be verified");
+            if(response.statusCode()!=200)throw new Policy.Rejected(403,verificationError(step,response.statusCode()));
+            if(bytes.length>65536)throw new Policy.Rejected(503,"Discord returned an invalid response; start a new sign-in shortly");
             return JsonParser.parseString(new String(bytes,StandardCharsets.UTF_8)).getAsJsonObject();
         }
     }
@@ -173,11 +179,11 @@ final class DiscordLogin {
         String form="grant_type=authorization_code&code="+encode(code)+"&client_id="+encode(required("TRAP_DISCORD_CLIENT_ID"))
             +"&client_secret="+encode(required("TRAP_DISCORD_CLIENT_SECRET"))+"&redirect_uri="+encode(origin()+"/auth/discord/callback");
         JsonObject tokens=fetch(HttpRequest.newBuilder(URI.create("https://discord.com/api/v10/oauth2/token")).timeout(Duration.ofSeconds(15))
-            .header("Content-Type","application/x-www-form-urlencoded").POST(HttpRequest.BodyPublishers.ofString(form)).build());
+            .header("Content-Type","application/x-www-form-urlencoded").POST(HttpRequest.BodyPublishers.ofString(form)).build(),"token");
         String access=Policy.text(tokens,"access_token",4096);
-        JsonObject user=fetch(HttpRequest.newBuilder(URI.create("https://discord.com/api/v10/users/@me")).timeout(Duration.ofSeconds(15)).header("Authorization","Bearer "+access).build());
+        JsonObject user=fetch(HttpRequest.newBuilder(URI.create("https://discord.com/api/v10/users/@me")).timeout(Duration.ofSeconds(15)).header("Authorization","Bearer "+access).build(),"identity");
         fetch(HttpRequest.newBuilder(URI.create("https://discord.com/api/v10/users/@me/guilds/"+snowflake(required("TRAP_DISCORD_GUILD_ID"))+"/member"))
-            .timeout(Duration.ofSeconds(15)).header("Authorization","Bearer "+access).build());
+            .timeout(Duration.ofSeconds(15)).header("Authorization","Bearer "+access).build(),"membership");
         return snowflake(Policy.text(user,"id",20));
     }
 }

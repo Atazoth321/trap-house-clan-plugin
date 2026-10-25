@@ -8,6 +8,12 @@ import org.junit.*;
 import static org.junit.Assert.*;
 
 public class DiscordLoginTest {
+    @Test public void verificationFailuresIdentifyTheStageWithoutProviderResponseData() {
+        assertTrue(DiscordLogin.verificationError("token",401).contains("Client ID and Client Secret"));
+        assertTrue(DiscordLogin.verificationError("identity",401).contains("verify your account"));
+        assertTrue(DiscordLogin.verificationError("membership",404).contains("TRAP_DISCORD_GUILD_ID"));
+        assertTrue(DiscordLogin.verificationError("membership",404).contains("HTTP 404"));
+    }
     private HttpServer server;
     private String origin;
     private final HttpClient http=HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build();
