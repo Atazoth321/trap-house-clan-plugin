@@ -12,6 +12,42 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    private void joiningSchema()throws Exception {
+        try(InputStream input=RankingServer.class.getResourceAsStream("/discord-joining.sql");Statement s=c.createStatement()){s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));}
+    }
+    @Test public void discordJoiningNeedsOwnerApprovalAndDoesNotGrantPermissions()throws Exception {
+        joiningSchema();String ownerDiscord="111111111111111111",applicant="222222222222222222",staff="333333333333333333";
+        RankingStore.execute(c,"INSERT INTO discord_member_links(discord_user_id,member_id) VALUES (?,?),(?,?)",ownerDiscord,clanOwner.id,staff,admin.id);
+        UUID request=DiscordJoining.request(c,applicant,"NewJoiner");assertEquals(request,DiscordJoining.request(c,applicant,"newjoiner"));
+        assertEquals(3,count("members"));assertEquals(2,count("discord_member_links"));assertEquals(1,count("discord_join_outbox"));
+        for(String role:new String[]{"ADMINISTRATOR","EVENT_MANAGER","MEMBER"}) {
+            RankingStore.execute(c,"INSERT INTO member_permissions(member_id,permission) VALUES (?,?) ON CONFLICT(member_id) DO UPDATE SET permission=excluded.permission",admin.id,role);
+            rejected(403,()->DiscordJoining.review(c,staff,request,true,"Verified in-game ownership"));
+        }
+        assertEquals(3,count("members"));assertEquals(0,count("audit"));
+        rejected(400,()->DiscordJoining.review(c,ownerDiscord,request,true,"short"));
+        DiscordJoining.review(c,ownerDiscord,request,true,"Verified in-game character ownership and current clan membership");
+        assertEquals(4,count("members"));assertEquals(3,count("discord_member_links"));assertEquals(1,count("audit"));
+        try(PreparedStatement s=RankingStore.query(c,"SELECT m.id,p.permission FROM discord_member_links l JOIN members m ON m.id=l.member_id LEFT JOIN member_permissions p ON p.member_id=m.id WHERE l.discord_user_id=?",applicant);ResultSet r=s.executeQuery()){assertTrue(r.next());assertNull(r.getString(2));}
+        rejected(409,()->DiscordJoining.review(c,ownerDiscord,request,true,"Repeated verified approval"));
+        rejected(409,()->DiscordJoining.request(c,applicant,"AnotherName"));
+        assertEquals(1,count("credentials")); // Only the preexisting fixture credential exists.
+        assertEquals(0,count("ledger"));assertEquals(0,count("point_adjustments"));
+    }
+    @Test public void discordJoiningPreservesExistingPointsAndCannotReplaceLinks()throws Exception {
+        joiningSchema();String ownerDiscord="111111111111111111",applicant="222222222222222222";
+        RankingStore.execute(c,"INSERT INTO discord_member_links(discord_user_id,member_id) VALUES (?,?)",ownerDiscord,clanOwner.id);
+        RankingStore.event(c,member,event("COLLECTION","abyssal whip"));
+        UUID request=DiscordJoining.request(c,applicant,member.name);DiscordJoining.review(c,ownerDiscord,request,true,"Verified ownership and clan membership in game");
+        try(PreparedStatement s=RankingStore.query(c,"SELECT member_id FROM discord_member_links WHERE discord_user_id=?",applicant);ResultSet r=s.executeQuery()){assertTrue(r.next());assertEquals(member.id,r.getObject(1,UUID.class));}
+        assertEquals(100,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());assertEquals(3,count("members"));
+        UUID conflicting=DiscordJoining.request(c,"444444444444444444",member.name);
+        rejected(409,()->DiscordJoining.review(c,ownerDiscord,conflicting,true,"Attempted conflicting identity link"));
+        DiscordJoining.review(c,ownerDiscord,conflicting,false,"Rejected: character already linked to its verified owner");
+        assertEquals(2,count("discord_member_links"));assertEquals(2,count("audit"));
+        RankingStore.execute(c,"UPDATE member_permissions SET permission='MEMBER' WHERE member_id=?",clanOwner.id);
+        rejected(403,()->DiscordJoining.pending(c,ownerDiscord));
+    }
     @Test public void dropCatalogReceivedStatusIsPersonalAndUsesActualAwards()throws Exception {
         AutomaticRewards.seed(c);
         JsonObject before=PointsLog.dropRewards(c,member.id,"Bandos chestplate","newest").get(0).getAsJsonObject();

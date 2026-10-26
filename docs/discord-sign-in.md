@@ -1,5 +1,7 @@
 # Discord sign-in and verified character linking
 
+For the easier member onboarding flow, configure [Discord link requests and Owner approval](discord-joining.md). Members can then use a Discord button or `/link`, and the Owner reviews in Discord. The operator linking commands below remain a supported fallback and bootstrap path.
+
 Members click **Sign in with Discord** in the plugin's Profile tab. Their browser opens Discord's authorization page. After approval, the plugin receives its own credential automatically and enables ranking sync. No token needs to be sent through chat or pasted into settings. Credentials still expire after 90 days; sign in again to replace an expired credential. This release does not implement silent refresh or Discord-based permission assignment.
 
 ## One-time Owner setup

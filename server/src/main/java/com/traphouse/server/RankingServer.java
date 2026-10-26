@@ -16,10 +16,11 @@ public final class RankingServer {
     private static final Gson JSON = new Gson();
     private final DiscordWorker.Connections connections;
     private final DiscordLogin discordLogin;
+    private final DiscordInteractions discordInteractions;
     private final Map<UUID, Window> windows = new HashMap<>();
     private static final class Window { long minute; int count; }
 
-    RankingServer(DiscordWorker.Connections connections) { this.connections = connections; this.discordLogin=new DiscordLogin(connections); }
+    RankingServer(DiscordWorker.Connections connections) { this.connections = connections; this.discordLogin=new DiscordLogin(connections);this.discordInteractions=new DiscordInteractions(connections,System.getenv()); }
 
     private synchronized void rateLimit(UUID member) {
         long minute = System.currentTimeMillis() / 60000;
@@ -34,6 +35,7 @@ public final class RankingServer {
     }
 
     void handle(HttpExchange exchange) throws IOException {
+        if(exchange.getRequestURI().getPath().equals("/discord/interactions")){discordInteractions.handle(exchange);return;}
         if(DiscordLogin.matches(exchange.getRequestURI().getPath())) { discordLogin.handle(exchange); return; }
         int status = 200;
         JsonElement result;
@@ -156,6 +158,8 @@ public final class RankingServer {
         notifications.scheduleWithFixedDelay(() -> RankSecurity.promotions(RankingServer::connect),10,30,TimeUnit.SECONDS);
         String webhook = System.getenv("TRAP_DISCORD_WEBHOOK");
         if (webhook != null && !webhook.isBlank()) notifications.scheduleWithFixedDelay(new DiscordWorker(RankingServer::connect, webhook), 5, 5, TimeUnit.SECONDS);
+        String bot=System.getenv("TRAP_DISCORD_BOT_TOKEN");
+        if(bot!=null&&!bot.isBlank())notifications.scheduleWithFixedDelay(new DiscordJoinBot(RankingServer::connect,System.getenv()),5,5,TimeUnit.SECONDS);
         if(!"false".equalsIgnoreCase(System.getenv("TRAP_WOM_STATS_ENABLED")))notifications.scheduleWithFixedDelay(new WiseOldManStats(RankingServer::connect),15,30,TimeUnit.SECONDS);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> { server.stop(2); pool.shutdownNow(); notifications.shutdownNow(); }));
         server.start();
@@ -173,6 +177,7 @@ public final class RankingServer {
     }
 
     static void command(String[] args, DiscordWorker.Connections connections) throws Exception {
+        if(args.length==1&&args[0].equals("discord-setup")){new DiscordJoinBot(connections,System.getenv()).setup();System.out.println("Discord commands registered and Link RuneLite button posted.");return;}
         if (args.length == 2 && args[0].equals("add-member")) verifiedName(args[1]);
         try (Connection c = connections.open()) {
             c.setAutoCommit(false);
@@ -235,6 +240,9 @@ public final class RankingServer {
                     s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));
                 }
                 AutomaticRewards.seed(c);
+                try(InputStream input=RankingServer.class.getResourceAsStream("/discord-joining.sql");Statement s=c.createStatement()) {
+                    if(input==null)throw new IllegalStateException("Discord joining schema missing");s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));
+                }
                 c.commit(); System.out.println("Schema initialized."); return;
             }
             if(args.length==2&&args[0].equals("bootstrap-owner")) {
@@ -259,7 +267,7 @@ public final class RankingServer {
                 c.commit();
                 System.out.println("Credential (shown once; expires in 90 days): " + token); return;
             }
-            throw new IllegalArgumentException("Commands: init | add-member <verified-character-name> | link-discord <verified-character-name> <discord-user-id> | bootstrap-owner <verified-member-uuid> | issue-token <verified-character-name> member|admin");
+            throw new IllegalArgumentException("Commands: init | discord-setup | add-member <verified-character-name> | link-discord <verified-character-name> <discord-user-id> | bootstrap-owner <verified-member-uuid> | issue-token <verified-character-name> member|admin");
         }
     }
 

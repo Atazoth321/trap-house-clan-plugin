@@ -68,6 +68,8 @@ The backend deployment seeds [150 tracking goals and the Owner-selected higher r
 
 [Automatic drop and pet rules](docs/automatic-drops-and-pets.md) cover 118 named drop items and 55 new pet collection unlocks. Raid drops require the updated plugin and RuneLite Loot Tracker; pet unlocks require collection-log chat notifications.
 
+[Discord linking requests and Owner approval](docs/discord-joining.md) let members request their character link with a Discord button or `/link`, and the Owner approve in Discord after verification. One-time bot/application configuration is required; existing Discord sign-in remains available.
+
 The [WOM efficiency importer](docs/efficiency-rewards.md) displays EHP/EHB and awards 5 points per new EHP and 10 per new EHB after a saved baseline, sharing a 100-point weekly cap.
 
 ## Settings

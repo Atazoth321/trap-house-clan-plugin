@@ -110,7 +110,7 @@ final class DiscordLogin {
                         try(PreparedStatement s=RankingStore.query(c,"SELECT m.id FROM discord_member_links l JOIN members m ON m.id=l.member_id WHERE l.discord_user_id=? AND m.active",discord);ResultSet r=s.executeQuery()) {
                             if(!r.next()) {
                                 c.rollback();
-                                reply(exchange,403,"text/html; charset=utf-8",page("Account linking required","Ask clan leadership to link Discord user ID "+discord+" to your verified OSRS character, then sign in again. No access has been granted."));return;
+                                reply(exchange,403,"text/html; charset=utf-8",page("Account linking required","In the clan Discord, click Link RuneLite or use /link to request a character link. After the Owner verifies and approves it, start sign-in again in RuneLite. If the button is not configured, ask leadership to link Discord user ID "+discord+". No access has been granted."));return;
                             }
                             member=r.getObject(1,UUID.class);
                         }
