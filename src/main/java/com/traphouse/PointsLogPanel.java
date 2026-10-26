@@ -16,6 +16,7 @@ final class PointsLogPanel extends JPanel {
     private final JLabel summary=ProfileStyle.label("Loading...",12,ProfileStyle.ACCENT),pagination=ProfileStyle.label("Page 1",11,ProfileStyle.MUTED);
     private final JPanel cards=new JPanel(new GridLayout(0,4,8,8));
     private final JPanel rewardCards=new JPanel(new GridLayout(0,4,8,8));
+    private final JComboBox<String> dropStatus=new JComboBox<>(new String[]{"All drops","Not received yet","Received"});
     private final JTabbedPane views=new JTabbedPane();
     private final JPanel rewards=new JPanel(new BorderLayout(8,8));
     private final JScrollPane rewardScroll=new JScrollPane(rewards);
@@ -37,10 +38,13 @@ final class PointsLogPanel extends JPanel {
         cards.setBackground(ProfileStyle.BACKGROUND);JPanel content=new JPanel(new BorderLayout());content.setBackground(ProfileStyle.BACKGROUND);content.add(cards,BorderLayout.NORTH);
         JScrollPane scroll=new JScrollPane(content);scroll.setBorder(null);scroll.getViewport().setBackground(ProfileStyle.BACKGROUND);scroll.getVerticalScrollBar().setUnitIncrement(16);
         rewardCards.setBackground(ProfileStyle.BACKGROUND);rewards.setBackground(ProfileStyle.BACKGROUND);
-        rewards.add(ProfileStyle.label("Current rewards per drop. Daily caps apply per source; reviewed claims need staff approval.",11,ProfileStyle.MUTED),BorderLayout.NORTH);
+        JPanel rewardHeader=new JPanel(new BorderLayout(8,8));rewardHeader.setOpaque(false);
+        rewardHeader.add(ProfileStyle.label("Received status uses recorded awards only; older untracked drops are not included.",11,ProfileStyle.MUTED),BorderLayout.CENTER);
+        rewardHeader.add(dropStatus,BorderLayout.EAST);rewards.add(rewardHeader,BorderLayout.NORTH);
         rewards.add(rewardCards,BorderLayout.CENTER);rewardScroll.setBorder(null);rewardScroll.getVerticalScrollBar().setUnitIncrement(16);
         views.addTab("Award history",scroll);add(views,BorderLayout.CENTER);
         Runnable filter=()->{page=1;load();};source.addActionListener(e->filter.run());sort.addActionListener(e->filter.run());group.addActionListener(e->filter.run());
+        dropStatus.addActionListener(e->filter.run());
         Timer debounce=new Timer(300,e->filter.run());debounce.setRepeats(false);
         search.getDocument().addDocumentListener(new javax.swing.event.DocumentListener(){public void insertUpdate(javax.swing.event.DocumentEvent e){debounce.restart();}public void removeUpdate(javax.swing.event.DocumentEvent e){debounce.restart();}public void changedUpdate(javax.swing.event.DocumentEvent e){debounce.restart();}});
         prev.addActionListener(e->{page--;load();});next.addActionListener(e->{page++;load();});
@@ -81,13 +85,18 @@ final class PointsLogPanel extends JPanel {
         rewardCards.removeAll();
         for(JsonElement value:RankingPanel.array(data,"availableDrops")) {
             JsonObject entry=value.getAsJsonObject();String title=entry.get("title").getAsString();
-            JPanel card=ProfileStyle.card(null);card.setPreferredSize(new Dimension(200,155));
+            boolean known=entry.has("received"),received=known&&entry.get("received").getAsBoolean();
+            if(!known&&dropStatus.getSelectedIndex()!=0)continue;
+            if(dropStatus.getSelectedIndex()==1&&received||dropStatus.getSelectedIndex()==2&&!received)continue;
+            JPanel card=ProfileStyle.card(null);card.setPreferredSize(new Dimension(200,185));
             JLabel name=ProfileStyle.label(title,11,ProfileStyle.TEXT);name.setToolTipText(title);card.add(name);
             JLabel icon=ProfileStyle.label("D",32,ProfileStyle.ACCENT);icon.setAlignmentX(Component.CENTER_ALIGNMENT);card.add(icon);
             card.add(ProfileStyle.label(String.format("+%,d pts per drop",entry.get("points").getAsLong()),13,ProfileStyle.ACCENT));
             boolean manual="MANUAL".equals(entry.get("sourceType").getAsString());
             card.add(ProfileStyle.label(manual?"Staff-reviewed claim":"Automatic reward",10,ProfileStyle.MUTED));
             card.add(ProfileStyle.label("Daily cap: "+entry.get("dailyLimit").getAsInt()+" per source",10,ProfileStyle.MUTED));
+            card.add(ProfileStyle.label(!known?"Status unavailable; update backend":received?"Received x"+entry.get("receivedCount").getAsLong():"Not received yet",11,received?ProfileStyle.ACCENT:ProfileStyle.MUTED));
+            if(received)card.add(ProfileStyle.label(String.format("%,d pts earned",entry.get("earnedPoints").getAsLong()),10,ProfileStyle.MUTED));
             card.setToolTipText(entry.get("sourceKey").getAsString());rewardCards.add(card);
             itemArt.load(entry,(itemName,image)->{
                 Runnable apply=()->{if(!active||request!=revision)return;name.setText(itemName);name.setToolTipText(itemName);icon.setText("");icon.setIcon(image);card.revalidate();card.repaint();};
@@ -95,7 +104,7 @@ final class PointsLogPanel extends JPanel {
             });
         }
         if(!data.has("availableDrops"))rewardCards.add(ProfileStyle.label("Reward catalog unavailable. Deploy the updated backend.",12,ProfileStyle.MUTED));
-        else if(data.getAsJsonArray("availableDrops").size()==0)rewardCards.add(ProfileStyle.label("No enabled drop rewards match your search.",12,ProfileStyle.MUTED));
+        else if(rewardCards.getComponentCount()==0)rewardCards.add(ProfileStyle.label("No enabled drop rewards match these filters.",12,ProfileStyle.MUTED));
         rewardCards.revalidate();rewardCards.repaint();
     }
 }

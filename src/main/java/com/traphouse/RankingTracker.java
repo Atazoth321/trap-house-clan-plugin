@@ -11,7 +11,7 @@ final class RankingTracker {
     static List<RankingEvent> containerLoot(String player,net.runelite.client.plugins.loottracker.LootReceived event) {
         if(event.getType()!=net.runelite.http.api.loottracker.LootRecordType.EVENT)return Collections.emptyList();
         String source=normalize(event.getName());
-        if(!source.equals("chambers of xeric")&&!source.equals("theatre of blood")&&!source.equals("tombs of amascut"))return Collections.emptyList();
+        if(!source.equals("chambers of xeric")&&!source.equals("theatre of blood")&&!source.equals("tombs of amascut")&&!source.equals("barrows"))return Collections.emptyList();
         List<RankingEvent> result=new ArrayList<>();Set<Integer> seen=new HashSet<>();
         for(net.runelite.client.game.ItemStack item:event.getItems()) {
             if(seen.add(item.getId()))result.add(new RankingEvent(player,"LOOT","chest:"+source+":"+item.getId()));

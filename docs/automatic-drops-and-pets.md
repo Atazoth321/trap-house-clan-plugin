@@ -1,6 +1,6 @@
 # Automatic drop and pet rewards
 
-`init` installs the `automatic-rewards-v1` catalog once. It enables 50 named drop items and 55 named pet collection unlocks without replacing existing rules, including disabled rules. Subsequent deployments preserve staff edits. The catalog is in `server/src/main/java/com/traphouse/server/AutomaticRewards.java`.
+`init` installs the base catalog and the additive `automatic-rewards-v2` expansion once. It enables 118 named drop items and 55 named pet collection unlocks without replacing existing rules, including disabled rules. Subsequent deployments preserve staff edits. The catalog is in `server/src/main/java/com/traphouse/server/AutomaticRewards.java`.
 
 ## How scoring works
 
@@ -8,13 +8,33 @@ Members must enable ranking, authenticate their linked character, and be recogni
 
 NPC drops use exact NPC/item pairs from RuneLite's `NpcLootReceived`. Only the personal loot event is submitted, once per distinct item in each callback; item quantity does not multiply points. Buying, trading, banking, or seeing someone else's drop message does not trigger this path.
 
-Raids use RuneLite Loot Tracker's personal reward-container `LootReceived` event for Chambers of Xeric, Theatre of Blood, and Tombs of Amascut. Keep **Loot Tracker enabled**. Only EVENT records from those three source names are accepted by this plugin path; NPC records are ignored here to avoid double submission alongside NPC loot tracking. Mode/source names outside this exact allowlist are not covered.
+Raids use RuneLite Loot Tracker's personal reward-container `LootReceived` event for Chambers of Xeric, Theatre of Blood, Tombs of Amascut, and Barrows. Keep **Loot Tracker enabled**. Only EVENT records from those four source names are accepted by this plugin path; NPC records are ignored here to avoid double submission alongside NPC loot tracking. Mode/source names outside this exact allowlist are not covered.
 
 Each enabled drop rule allows **two awards per member per UTC day per exact source/item key**. NPC phase variants have separate keys and therefore separate caps; this is not a global two-drop daily limit. Exact request retries cannot pay twice. A later genuine drop gets a new request ID and can pay again within its cap. Items outside the catalog earn no automatic drop points.
 
 ## Drop rewards
 
 Open **Profile → Points from: Drops → Available drops** to browse the current enabled reward rules before earning a drop. Cards show actual item icons where RuneLite can resolve them, points per drop, automatic versus staff-reviewed rewards, and daily caps. Search filters item names; Highest points sorts the catalog by reward. Matching NPC phase rules are combined into one item card. Award history remains in its own tab. The catalog uses the live database rule amounts, so disabled rewards are omitted and staff edits appear on the next reload. Deploy the updated backend and restart the updated plugin to use this view.
+
+Choose **All drops**, **Not received yet**, or **Received** to filter the catalog. Received cards show the member's recorded award count and total points actually earned, independent of the current reward price or Owner deductions. NPC phase awards for matching item cards are combined. Duplicate observation retries do not increase the count. These statuses reflect recorded scoring history, not a historical import of the player's collection log; untracked past drops cannot be inferred. Staff-reviewed generic reward claims are labeled separately and reflect their own recorded approvals.
+
+The v2 expansion adds **68 distinct items**, taking the catalog from 50 to **118**. Existing deployments receive only the additional source/item rules, preserving customized/disabled rules and leaving previously removed base rules removed. No historical drop backpay is issued. New reward groups:
+
+| Encounter | Added rewards | Points |
+| --- | --- | ---: |
+| Barrows | All 24 undamaged equipment rewards | 150 each |
+| Dagannoth Kings | Berserker/archers ring, seers ring, warrior ring, dragon axe | 200 / 150 / 100 / 100 |
+| Corporeal Beast | Elysian, arcane, spectral sigils / spirit shield / holy elixir | 1,000 / 750 / 600 / 100 / 150 |
+| King Black Dragon | Draconic visage, dragon pickaxe | 300 / 200 |
+| Kalphite Queen | Dragon chainbody, dragon 2h sword | 200 / 100 |
+| Sarachnis | Sarachnis cudgel | 200 |
+| God Wars bosses | Armadyl/Bandos/Zamorak hilts, all three godsword shards | 350 / 300 / 250 / 100 |
+| Nex | Damaged Torva helm/body/legs, nihil horn, ancient hilt | 750 / 900 / 800 / 1,000 / 500 |
+| Phantom Muspah | Venator shard, ancient icon | 350 / 150 |
+| Wilderness bosses | Voidwaker pieces, weapon upgrade components, boss rings, dragon pickaxe, dragon 2h sword | 600 / 300 / 200–300 / 200 / 100 |
+| Desert Treasure II bosses | Respective vestiges, Virtus mask/top/bottom, chromium ingot | 600 / 500 / 600 / 600 / 150 |
+
+Barrows requires the updated plugin and enabled RuneLite Loot Tracker, just like the raid container path. The catalog covers configured encounter NPC variants only; quest, arena, and other unlisted copies are not implied to be supported. Item/NPC constants and Barrows event naming were checked against cached RuneLite API/client sources; actual new encounter callbacks and live database deployment have not been verified in-game.
 
 | Encounter | Supported items | Points per item |
 | --- | --- | ---: |

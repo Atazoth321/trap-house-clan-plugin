@@ -12,6 +12,30 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    @Test public void dropCatalogReceivedStatusIsPersonalAndUsesActualAwards()throws Exception {
+        AutomaticRewards.seed(c);
+        JsonObject before=PointsLog.dropRewards(c,member.id,"Bandos chestplate","newest").get(0).getAsJsonObject();
+        assertFalse(before.get("received").getAsBoolean());assertEquals(0,before.get("receivedCount").getAsInt());
+        JsonObject drop=event("LOOT","2215:11832");RankingStore.event(c,member,drop);RankingStore.event(c,member,drop);
+        JsonObject after=PointsLog.dropRewards(c,member.id,"Bandos chestplate","newest").get(0).getAsJsonObject();
+        assertTrue(after.get("received").getAsBoolean());assertEquals(1,after.get("receivedCount").getAsInt());assertEquals(300,after.get("earnedPoints").getAsInt());
+        assertFalse(PointsLog.dropRewards(c,admin.id,"Bandos chestplate","newest").get(0).getAsJsonObject().get("received").getAsBoolean());
+        RankingStore.event(c,member,event("LOOT","2042:12922"));RankingStore.event(c,member,event("LOOT","2043:12922"));
+        JsonObject fang=PointsLog.dropRewards(c,member.id,"Tanzanite fang","newest").get(0).getAsJsonObject();
+        assertEquals(2,fang.get("receivedCount").getAsInt());assertEquals(500,fang.get("earnedPoints").getAsInt());
+    }
+    @Test public void dropExpansionUpgradesV1OnceWithoutRestoringRemovedOrDisabledRules()throws Exception {
+        RankingStore.execute(c,"INSERT INTO configuration_migrations(name) VALUES ('automatic-rewards-v1')");
+        RankingStore.execute(c,"INSERT INTO rules(type,event_key,points,daily_limit,enabled,category) VALUES ('LOOT','319:12819',42,1,false,'Drops')");
+        AutomaticRewards.seed(c);
+        assertArrayEquals(new int[]{150,2},RankingStore.rule(c,"LOOT","chest:barrows:4708"));
+        assertArrayEquals(new int[]{1000,2},RankingStore.rule(c,"LOOT","11278:26372"));
+        rejected(422,()->RankingStore.rule(c,"LOOT","319:12819"));
+        rejected(422,()->RankingStore.rule(c,"LOOT","2215:11832")); // Removed base rule stays removed.
+        RankingStore.execute(c,"UPDATE rules SET points=45 WHERE event_key='chest:barrows:4708'");
+        AutomaticRewards.seed(c);assertArrayEquals(new int[]{45,2},RankingStore.rule(c,"LOOT","chest:barrows:4708"));
+        assertEquals(0,count("ledger"));
+    }
     @Test public void dropCatalogUsesEnabledCurrentRulesWithoutRequiringAwards()throws Exception {
         AutomaticRewards.seed(c);
         RankingStore.execute(c,"UPDATE rules SET points=321 WHERE type='LOOT' AND event_key='2215:11832'");
@@ -19,10 +43,10 @@ public class RankingPostgresTest {
         assertEquals(0,log.get("count").getAsInt());
         JsonArray rewards=log.getAsJsonArray("availableDrops");assertEquals(1,rewards.size());
         assertEquals(321,rewards.get(0).getAsJsonObject().get("points").getAsInt());
-        assertEquals(1,PointsLog.dropRewards(c,"Tanzanite fang","highest").size()); // Three NPC phases, one item card.
+        assertEquals(1,PointsLog.dropRewards(c,member.id,"Tanzanite fang","highest").size()); // Three NPC phases, one item card.
         RankingStore.execute(c,"UPDATE rules SET enabled=false WHERE type='LOOT' AND event_key='2215:11832'");
-        assertEquals(0,PointsLog.dropRewards(c,"Bandos chestplate","highest").size());
-        assertEquals(0,PointsLog.dropRewards(c,"' OR 1=1 --","newest").size());
+        assertEquals(0,PointsLog.dropRewards(c,member.id,"Bandos chestplate","highest").size());
+        assertEquals(0,PointsLog.dropRewards(c,member.id,"' OR 1=1 --","newest").size());
         assertEquals(0,count("ledger"));
     }
     @Test public void automaticPetsPayOnceAndDropsUseServerAmountsAndCaps()throws Exception {

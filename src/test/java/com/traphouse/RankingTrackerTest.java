@@ -16,6 +16,8 @@ public class RankingTrackerTest {
         assertTrue(RankingTracker.containerLoot("Member",event).isEmpty());
         event.setType(net.runelite.http.api.loottracker.LootRecordType.EVENT);event.setName("Unknown chest");
         assertTrue(RankingTracker.containerLoot("Member",event).isEmpty());
+        event.setName("Barrows");event.setItems(java.util.Collections.singletonList(new net.runelite.client.game.ItemStack(4708,1)));
+        assertEquals("chest:barrows:4708",RankingTracker.containerLoot("Member",event).get(0).key);
     }
     @Test public void petCollectionUnlockRetainsExactIdentity() {
         RankingEvent event=RankingTracker.chat("Member","New item added to your collection log: <col=ff0000>Pet kraken</col>");

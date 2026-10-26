@@ -9,6 +9,7 @@ public class AwardItemImagesTest {
     @Test public void lootIdentityUsesActualItemIdAndCollectionUsesExactRecordedName(){
         assertEquals(4151,AwardItemImages.itemId(entry("{sourceType:'LOOT',sourceKey:'415:4151'}")));
         assertEquals(27277,AwardItemImages.itemId(entry("{sourceType:'LOOT',sourceKey:'chest:tombs of amascut:27277'}")));
+        assertEquals(4708,AwardItemImages.itemId(entry("{sourceType:'LOOT',sourceKey:'chest:barrows:4708'}")));
         assertEquals("baby mole",AwardItemImages.itemName(entry("{sourceType:'COLLECTION',sourceKey:'baby mole',category:'Pets',title:'Pet award'}")));
         assertEquals("Abyssal whip",AwardItemImages.itemName(entry("{category:'Drops',title:'Abyssal whip'}")));
         assertEquals("",AwardItemImages.itemName(entry("{category:'Events',title:'Boss event'}")));

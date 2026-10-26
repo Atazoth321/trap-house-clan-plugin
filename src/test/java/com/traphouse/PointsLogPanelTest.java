@@ -9,6 +9,20 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class PointsLogPanelTest {
+    @Test public void dropCatalogSeparatesReceivedAndUnreceivedItems()throws Exception {
+        SwingUtilities.invokeAndWait(()->{
+            JsonObject log=data("Member",1,0);JsonArray catalog=new JsonArray();
+            JsonObject received=new Gson().fromJson("{category:'Drops',title:'Bandos chestplate',points:300,sourceType:'LOOT',sourceKey:'2215:11832',dailyLimit:2,received:true,receivedCount:2,earnedPoints:600}",JsonObject.class);
+            JsonObject missing=new Gson().fromJson("{category:'Drops',title:'Elysian sigil',points:1000,sourceType:'LOOT',sourceKey:'319:12819',dailyLimit:2,received:false,receivedCount:0,earnedPoints:0}",JsonObject.class);
+            catalog.add(received);catalog.add(missing);log.add("availableDrops",catalog);
+            PointsLogPanel panel=new PointsLogPanel("Member","Drops",(q,done)->done.accept(log));
+            assertTrue(text(panel,"Received x2"));assertTrue(text(panel,"600 pts earned"));assertTrue(text(panel,"Not received yet"));
+            JTabbedPane tabs=find(panel,JTabbedPane.class);JComboBox<?> status=find((Container)tabs.getComponentAt(0),JComboBox.class);
+            status.setSelectedItem("Not received yet");assertTrue(text(panel,"Elysian sigil"));assertFalse(text(panel,"Bandos chestplate"));
+            status.setSelectedItem("Received");assertTrue(text(panel,"Bandos chestplate"));assertFalse(text(panel,"Elysian sigil"));
+            panel.close();
+        });
+    }
     @Test public void dropCatalogShowsCurrentRewardsEvenWithoutAwards()throws Exception {
         SwingUtilities.invokeAndWait(()->{
             JsonObject log=data("Member",1,0);JsonArray catalog=new JsonArray();

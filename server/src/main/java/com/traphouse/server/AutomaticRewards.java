@@ -64,6 +64,63 @@ final class AutomaticRewards {
             "Tumeken's guardian","Muphin","Butch","Baron","Lil'viathan","Wisp"}) {
             rules.add(new Rule("COLLECTION",Policy.normalize(pet),pet,"Pets",750,1));
         }
+        rules.addAll(expandedRules());
+        return Collections.unmodifiableList(rules);
+    }
+    static List<Rule> expandedRules() {
+        List<Rule> rules=new ArrayList<>();
+        loot(rules,new int[]{2267},6737,"Berserker ring",200);
+        loot(rules,new int[]{2267},6735,"Warrior ring",100);
+        loot(rules,new int[]{2266},6731,"Seers ring",150);
+        loot(rules,new int[]{2265},6733,"Archers ring",200);
+        loot(rules,new int[]{2265,2266,2267},6739,"Dragon axe",100);
+        loot(rules,new int[]{319},12819,"Elysian sigil",1000);
+        loot(rules,new int[]{319},12823,"Spectral sigil",600);
+        loot(rules,new int[]{319},12827,"Arcane sigil",750);
+        loot(rules,new int[]{319},12829,"Spirit shield",100);
+        loot(rules,new int[]{319},12833,"Holy elixir",150);
+        loot(rules,new int[]{239},11286,"Draconic visage",300);
+        loot(rules,new int[]{963,965},3140,"Dragon chainbody",200);
+        loot(rules,new int[]{963,965,2054,6609,6610,6611,6612,11992,11993,11994,11998},7158,"Dragon 2h sword",100);
+        loot(rules,new int[]{2054,239,6609,6610,6611,6612,11992,11993,11994,11998},11920,"Dragon pickaxe",200);
+        loot(rules,new int[]{8713},23528,"Sarachnis cudgel",200);
+        loot(rules,new int[]{2215},11812,"Bandos hilt",300);
+        loot(rules,new int[]{3162},11810,"Armadyl hilt",350);
+        loot(rules,new int[]{3129},11816,"Zamorak hilt",250);
+        loot(rules,new int[]{2215,2205,3162,3129},11818,"Godsword shard 1",100);
+        loot(rules,new int[]{2215,2205,3162,3129},11820,"Godsword shard 2",100);
+        loot(rules,new int[]{2215,2205,3162,3129},11822,"Godsword shard 3",100);
+        int[] nex={11278,11279,11280,11281,11282};
+        loot(rules,nex,26376,"Torva full helm (damaged)",750);
+        loot(rules,nex,26378,"Torva platebody (damaged)",900);
+        loot(rules,nex,26380,"Torva platelegs (damaged)",800);
+        loot(rules,nex,26372,"Nihil horn",1000);
+        loot(rules,nex,26370,"Ancient hilt",500);
+        int[] muspah={12077,12078,12079,12080,12082};
+        loot(rules,muspah,27614,"Venator shard",350);
+        loot(rules,muspah,27627,"Ancient icon",150);
+        int[] bear={6609,11992},spider={6610,11998},skeleton={6611,6612,11993,11994};
+        loot(rules,bear,27681,"Voidwaker hilt",600);
+        loot(rules,spider,27687,"Voidwaker gem",600);
+        loot(rules,skeleton,27684,"Voidwaker blade",600);
+        loot(rules,bear,27667,"Claws of callisto",300);
+        loot(rules,spider,27670,"Fangs of venenatis",300);
+        loot(rules,skeleton,27673,"Skull of vet'ion",300);
+        loot(rules,bear,12603,"Tyrannical ring",200);
+        loot(rules,spider,12605,"Treasonous ring",200);
+        loot(rules,skeleton,12601,"Ring of the gods",300);
+        loot(rules,new int[]{12166,12167},28281,"Magus vestige",600);
+        loot(rules,new int[]{12223,12224},28285,"Ultor vestige",600);
+        loot(rules,new int[]{12214,12215},28283,"Venator vestige",600);
+        loot(rules,new int[]{12204,12205},28279,"Bellator vestige",600);
+        int[] dt2={12166,12167,12223,12224,12214,12215,12204,12205};
+        loot(rules,dt2,26241,"Virtus mask",500);
+        loot(rules,dt2,26243,"Virtus robe top",600);
+        loot(rules,dt2,26245,"Virtus robe bottom",600);
+        loot(rules,dt2,28276,"Chromium ingot",150);
+        int[] barrows={4708,4710,4712,4714,4716,4718,4720,4722,4724,4726,4728,4730,4732,4734,4736,4738,4745,4747,4749,4751,4753,4755,4757,4759};
+        String[] names={"Ahrim's hood","Ahrim's staff","Ahrim's robetop","Ahrim's robeskirt","Dharok's helm","Dharok's greataxe","Dharok's platebody","Dharok's platelegs","Guthan's helm","Guthan's warspear","Guthan's platebody","Guthan's chainskirt","Karil's coif","Karil's crossbow","Karil's leathertop","Karil's leatherskirt","Torag's helm","Torag's hammers","Torag's platebody","Torag's platelegs","Verac's helm","Verac's flail","Verac's brassard","Verac's plateskirt"};
+        for(int i=0;i<barrows.length;i++)rules.add(new Rule("LOOT","chest:barrows:"+barrows[i],names[i],"Drops",150,2));
         return Collections.unmodifiableList(rules);
     }
     private static void loot(List<Rule> rules,int[] npcs,int item,String name,int points) {
@@ -76,13 +133,19 @@ final class AutomaticRewards {
         }
     }
     static void seed(Connection c)throws SQLException {
+        seed(c,"automatic-rewards-v1",rules());
+        // Existing v1 installations must still receive the new catalog. Insert only
+        // expansion keys so previously removed base rules are not resurrected.
+        seed(c,"automatic-rewards-v2",expandedRules());
+    }
+    private static void seed(Connection c,String migration,List<Rule> catalog)throws SQLException {
         try(Statement s=c.createStatement()){s.execute("SELECT pg_advisory_xact_lock(72419051001)");}
-        try(PreparedStatement s=RankingStore.query(c,"SELECT 1 FROM configuration_migrations WHERE name='automatic-rewards-v1'");ResultSet r=s.executeQuery()) {if(r.next())return;}
-        for(Rule rule:rules()) {
+        try(PreparedStatement s=RankingStore.query(c,"SELECT 1 FROM configuration_migrations WHERE name=?",migration);ResultSet r=s.executeQuery()) {if(r.next())return;}
+        for(Rule rule:catalog) {
             // Respect custom amounts, categories, caps, and deliberately disabled rules.
             RankingStore.execute(c,"INSERT INTO rules(type,event_key,points,daily_limit,enabled,category,display_name) VALUES (?,?,?,?,true,?,?) ON CONFLICT(type,event_key) DO NOTHING",
                 rule.type,rule.key,rule.points,rule.limit,rule.category,rule.name);
         }
-        RankingStore.execute(c,"INSERT INTO configuration_migrations(name) VALUES ('automatic-rewards-v1')");
+        RankingStore.execute(c,"INSERT INTO configuration_migrations(name) VALUES (?)",migration);
     }
 }

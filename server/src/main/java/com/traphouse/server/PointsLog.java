@@ -40,18 +40,19 @@ final class PointsLog {
             while(r.next()){JsonObject e=new JsonObject();e.addProperty("category",r.getString(1));e.addProperty("title",r.getString(2));e.addProperty("points",r.getLong(3));e.addProperty("at",r.getTimestamp(4).toInstant().toString());e.addProperty("occurrences",r.getLong(5));e.addProperty("sourceType",r.getString(6));e.addProperty("sourceKey",r.getString(7));entries.add(e);}
         }
         result.addProperty("player",name);result.addProperty("count",count);result.addProperty("total",total);result.addProperty("page",page);result.addProperty("pages",pages);result.add("entries",entries);
-        if(p.get("category").equals("Drops"))result.add("availableDrops",dropRewards(c,p.get("search"),p.get("sort")));
+        if(p.get("category").equals("Drops"))result.add("availableDrops",dropRewards(c,member,p.get("search"),p.get("sort")));
         return result;
     }
-    static JsonArray dropRewards(Connection c,String search,String sort)throws SQLException {
+    static JsonArray dropRewards(Connection c,UUID member,String search,String sort)throws SQLException {
         JsonArray rewards=new JsonArray();
         // Read current enabled server policy, not historical awards or hardcoded prices.
         // Collapse identical NPC phase rules into a single item card.
-        String sql="SELECT type,coalesce(nullif(display_name,''),event_key) AS title,points,daily_limit,min(event_key) AS source_key FROM rules WHERE enabled AND (category='Drops' OR (category='' AND type='LOOT')) AND strpos(lower(coalesce(nullif(display_name,''),event_key)),lower(?))>0 GROUP BY type,coalesce(nullif(display_name,''),event_key),points,daily_limit ORDER BY "+(sort.equals("highest")?"points DESC,title":"title,points DESC")+",type,source_key LIMIT 1000";
-        try(PreparedStatement s=query(c,sql,search);ResultSet r=s.executeQuery()) {
+        String sql="WITH earned AS (SELECT coalesce(e.type,'MANUAL') AS type,coalesce(e.event_key,m.event_key) AS event_key,count(*) AS occurrences,sum(l.points) AS earned_points FROM ledger l LEFT JOIN events e ON e.id=l.event_id LEFT JOIN manual_rewards m ON m.id=l.reward_id WHERE l.member_id=? GROUP BY coalesce(e.type,'MANUAL'),coalesce(e.event_key,m.event_key)) SELECT rule.type,coalesce(nullif(rule.display_name,''),rule.event_key) AS title,rule.points,rule.daily_limit,min(rule.event_key) AS source_key,coalesce(sum(earned.occurrences),0),coalesce(sum(earned.earned_points),0) FROM rules rule LEFT JOIN earned ON earned.type=rule.type AND earned.event_key=rule.event_key WHERE rule.enabled AND (rule.category='Drops' OR (rule.category='' AND rule.type='LOOT')) AND strpos(lower(coalesce(nullif(rule.display_name,''),rule.event_key)),lower(?))>0 GROUP BY rule.type,coalesce(nullif(rule.display_name,''),rule.event_key),rule.points,rule.daily_limit ORDER BY "+(sort.equals("highest")?"points DESC,title":"title,points DESC")+",rule.type,source_key LIMIT 1000";
+        try(PreparedStatement s=query(c,sql,member,search);ResultSet r=s.executeQuery()) {
             while(r.next()) {
                 JsonObject item=new JsonObject();item.addProperty("sourceType",r.getString(1));item.addProperty("title",r.getString(2));
                 item.addProperty("points",r.getInt(3));item.addProperty("dailyLimit",r.getInt(4));item.addProperty("sourceKey",r.getString(5));item.addProperty("category","Drops");
+                item.addProperty("receivedCount",r.getLong(6));item.addProperty("earnedPoints",r.getLong(7));item.addProperty("received",r.getLong(6)>0);
                 rewards.add(item);
             }
         }

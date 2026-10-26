@@ -18,10 +18,13 @@ public class AutomaticRewardsTest {
                 assertEquals("LOOT",rule.type);assertEquals("Drops",rule.category);assertEquals(2,rule.limit);items.add(rule.name);
             }
         }
-        assertEquals(55,pets);assertEquals(50,items.size());
+        assertEquals(55,pets);assertEquals(118,items.size());
         assertTrue(keys.contains("LOOT:2215:11832"));
         assertTrue(keys.contains("LOOT:chest:tombs of amascut:27277"));
         assertTrue(keys.contains("COLLECTION:pet kraken"));
+        assertTrue(keys.contains("LOOT:319:12819"));
+        assertTrue(keys.contains("LOOT:11278:26372"));
+        assertTrue(keys.contains("LOOT:chest:barrows:4708"));
         assertFalse(keys.contains("LOOT:6632:11832")); // Pet Graardor must never be a loot source.
     }
 }

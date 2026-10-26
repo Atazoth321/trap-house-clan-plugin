@@ -24,7 +24,7 @@ final class AwardItemImages implements PointsLogPanel.ItemArt {
             if(entry.has("itemId")){int id=entry.get("itemId").getAsInt();return id>0?id:-1;}
             String type=value(entry,"sourceType"),key=value(entry,"sourceKey");
             if(type.equals("LOOT")&&key.matches("[0-9]+:[0-9]+"))return Integer.parseInt(key.substring(key.indexOf(':')+1));
-            if(type.equals("LOOT")&&key.matches("chest:(chambers of xeric|theatre of blood|tombs of amascut):[0-9]+"))return Integer.parseInt(key.substring(key.lastIndexOf(':')+1));
+            if(type.equals("LOOT")&&key.matches("chest:(chambers of xeric|theatre of blood|tombs of amascut|barrows):[0-9]+"))return Integer.parseInt(key.substring(key.lastIndexOf(':')+1));
         }catch(RuntimeException invalid){return -1;}return -1;
     }
     static String itemName(JsonObject entry) {
