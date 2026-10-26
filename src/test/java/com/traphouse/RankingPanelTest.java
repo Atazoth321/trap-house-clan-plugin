@@ -8,6 +8,29 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class RankingPanelTest {
+    @Test public void profileFitsNarrowSidebarWithoutClippingRightHandTotals()throws Exception {
+        SwingUtilities.invokeAndWait(()-> {
+            RankingPanel panel=new RankingPanel(()->{});
+            JsonObject data=new JsonParser().parse(new java.io.InputStreamReader(RankingPanelTest.class.getResourceAsStream("/clan-preview.json"),java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
+            data.getAsJsonObject("profile").addProperty("points",4405);
+            panel.showData(data);
+            for(int width:new int[]{225,250,300}) {
+                panel.setSize(width,600);layoutAll(panel);
+                JScrollPane scroll=null;
+                for(Component child:panel.getComponents())if(child instanceof JScrollPane)scroll=(JScrollPane)child;
+                assertNotNull(scroll);scroll.doLayout();scroll.getViewport().doLayout();layoutAll((Container)scroll.getViewport().getView());
+                assertEquals(scroll.getViewport().getExtentSize().width,scroll.getViewport().getView().getWidth());
+                JLabel total=findLabel(panel,"4,405");assertNotNull(total);
+                assertTrue("Points text must have visible width: "+total.getBounds(),total.getWidth()>=total.getFontMetrics(total.getFont()).stringWidth(total.getText()));
+                Rectangle bounds=SwingUtilities.convertRectangle(total.getParent(),total.getBounds(),scroll.getViewport().getView());
+                assertTrue("Points must remain inside the sidebar at width "+width,bounds.x>=0&&bounds.x+bounds.width<=scroll.getViewport().getExtentSize().width);
+                assertTrue("Long profile must scroll vertically",scroll.getViewport().getView().getHeight()>scroll.getViewport().getExtentSize().height);
+            }
+        });
+    }
+    private static void layoutAll(Container container) {
+        container.doLayout();for(Component child:container.getComponents())if(child instanceof Container)layoutAll((Container)child);
+    }
     @Test public void clickingLeaderboardMemberOpensReadOnlyProfileAndBackReturnsToLeaderboard()throws Exception {
         SwingUtilities.invokeAndWait(()-> {
             RankingPanel panel=new RankingPanel(()->{});

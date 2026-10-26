@@ -38,7 +38,7 @@ final class RankingPanel extends JPanel {
     void pointsLogLoader(BiConsumer<JsonObject,Consumer<JsonObject>> loader){logLoader=loader;}
     private JButton pointsTile(String member,String category,long points) {
         JButton button=new JButton();button.setLayout(new BorderLayout());button.add(ProfileStyle.tile(abbreviated(points),category,ProfileStyle.ACCENT));
-        button.setBackground(ProfileStyle.CARD);button.setBorder(BorderFactory.createEmptyBorder());button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.setBackground(ProfileStyle.CARD);button.setBorder(BorderFactory.createEmptyBorder());button.setMargin(new Insets(0,0,0,0));button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         button.setToolTipText("View "+member+"'s "+category+" points log");button.getAccessibleContext().setAccessibleName(category+" points log");
         button.addActionListener(e->{
             JDialog dialog=new JDialog(SwingUtilities.getWindowAncestor(this),"TRAP HOUSE - "+member+"'s Points Log",Dialog.ModalityType.MODELESS);
@@ -131,9 +131,9 @@ final class RankingPanel extends JPanel {
 
         JPanel hero=ProfileStyle.card(null),identity=ProfileStyle.row();
         identity.add(ProfileStyle.rank(name,string(player,"rank",automatic),ProfileStyle.TEXT),BorderLayout.CENTER);
-        JPanel total=new JPanel();total.setOpaque(false);total.setLayout(new BoxLayout(total,BoxLayout.Y_AXIS));
+        JPanel total=new JPanel(new GridLayout(0,1));total.setOpaque(false);
         JLabel amount=ProfileStyle.label(formatted(points),14,ProfileStyle.ACCENT),caption=ProfileStyle.label("TRAP points",9,ProfileStyle.MUTED);
-        amount.setAlignmentX(Component.RIGHT_ALIGNMENT);caption.setAlignmentX(Component.RIGHT_ALIGNMENT);
+        amount.setHorizontalAlignment(SwingConstants.RIGHT);caption.setHorizontalAlignment(SwingConstants.RIGHT);
         total.add(amount);total.add(caption);identity.add(total,BorderLayout.EAST);hero.add(identity);
         long lower=0,upper=points;boolean next=false;String nextRank="";
         long earnedThreshold=player.has("automaticRankThreshold")?number(player,"automaticRankThreshold"):-1;

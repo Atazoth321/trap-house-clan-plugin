@@ -12,9 +12,17 @@ final class ClanStyle {
     static final Color RED = new Color(255, 77, 91), GOLD = new Color(237, 190, 102), GREEN = new Color(121, 202, 152);
 
     static JPanel column() {
-        JPanel panel = new JPanel(); panel.setBackground(BACKGROUND);
+        JPanel panel = new SidebarColumn(); panel.setBackground(BACKGROUND);
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(new EmptyBorder(8, 8, 12, 8)); return panel;
+    }
+    /** A hidden horizontal scrollbar must not leave the viewport wider than the sidebar. */
+    private static final class SidebarColumn extends JPanel implements Scrollable {
+        @Override public Dimension getPreferredScrollableViewportSize(){return getPreferredSize();}
+        @Override public int getScrollableUnitIncrement(Rectangle visible,int orientation,int direction){return 16;}
+        @Override public int getScrollableBlockIncrement(Rectangle visible,int orientation,int direction){return Math.max(16,visible.height-16);}
+        @Override public boolean getScrollableTracksViewportWidth(){return true;}
+        @Override public boolean getScrollableTracksViewportHeight(){return false;}
     }
     static JPanel card(String title) {
         return card(title,false);
@@ -54,7 +62,10 @@ final class ClanStyle {
     static void finish(JPanel panel) {
         for (Component child : panel.getComponents()) {
             if (child instanceof JPanel) finish((JPanel) child);
-            if (child instanceof JComponent) ((JComponent) child).setMaximumSize(new Dimension(Integer.MAX_VALUE, child.getPreferredSize().height));
+            if (child instanceof JComponent) {
+                ((JComponent) child).setMaximumSize(new Dimension(Integer.MAX_VALUE, child.getPreferredSize().height));
+                ((JComponent) child).setMinimumSize(new Dimension(0, child.getMinimumSize().height));
+            }
         }
         panel.revalidate(); panel.repaint();
     }
