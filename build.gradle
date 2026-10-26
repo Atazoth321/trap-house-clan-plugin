@@ -80,6 +80,45 @@ tasks.register('runServer', JavaExec) {
 }
 tasks.named('check') { dependsOn 'serverTest' }
 
+// Local packaging checks; the official Hub build and review remain authoritative.
+tasks.register('verifyPluginHub') {
+    dependsOn tasks.named('jar')
+    doLast {
+        def metadata = new Properties()
+        file('runelite-plugin.properties').withInputStream { metadata.load(it) }
+        ['displayName', 'author', 'description', 'tags', 'plugins'].each {
+            if (!metadata.getProperty(it)?.trim()) throw new GradleException("Missing Plugin Hub metadata: ${it}")
+        }
+        if (metadata.getProperty('build') != 'standard') throw new GradleException('Expected standard Plugin Hub build')
+        if (!file('LICENSE').isFile()) throw new GradleException('Missing license')
+        def icon = javax.imageio.ImageIO.read(file('icon.png'))
+        if (icon == null || icon.width > 48 || icon.height > 72) throw new GradleException('Plugin Hub icon must be at most 48x72')
+        def archive = new java.util.zip.ZipFile(tasks.named('jar').get().archiveFile.get().asFile)
+        try {
+            metadata.getProperty('plugins').split(',').each {
+                if (archive.getEntry(it.trim().replace('.', '/') + '.class') == null) throw new GradleException("Missing entry point: ${it}")
+            }
+            archive.entries().each { entry ->
+                if (entry.name.startsWith('com/traphouse/server/') || entry.name.startsWith('org/postgresql/')) {
+                    throw new GradleException("Backend code must not ship in the plugin: ${entry.name}")
+                }
+                if (entry.name.endsWith('.class')) {
+                    archive.getInputStream(entry).withCloseable { input ->
+                        def header = new DataInputStream(input)
+                        if (header.readInt() != (int) 0xCAFEBABE) throw new GradleException('Invalid class header')
+                        header.readUnsignedShort()
+                        if (header.readUnsignedShort() > 55) throw new GradleException("Class requires newer than Java 11: ${entry.name}")
+                    }
+                }
+            }
+            ['icon.png', 'ranks/recruit.png', 'ranks/owner.png'].each {
+                if (archive.getEntry('com/traphouse/' + it) == null) throw new GradleException("Missing bundled resource: ${it}")
+            }
+        } finally { archive.close() }
+        logger.lifecycle('Local Plugin Hub packaging checks passed; official Hub CI/review is still required.')
+    }
+}
+
 tasks.register('serverJar', Jar) {
     archiveClassifier = 'server'
     from sourceSets.server.output

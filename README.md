@@ -4,7 +4,21 @@ A RuneLite sidebar for the **TRAP HOUSE** Old School RuneScape clan. Follow Boss
 
 The sidebar also includes **Profile**, **Ranks**, and **Leaderboard** tabs for an original clan ranking system. View server-calculated points, eligible rank, progress, point sources and recent awards; request manual rewards for administrator review. Existing Boss/Skill events and overlays remain available. Promotions and all in-game actions remain manual.
 
-The ranking service is a separate PostgreSQL-backed deployment; see [server setup and API](server/README.md). Ranking sync is off by default. To connect, clan staff deploy an HTTPS API, configure scoring rules/thresholds, verify members and issue individual member credentials. In plugin settings, enable ranking sync and enter the API origin and your member token. No awards are enabled until staff configure rules.
+The ranking service is a separate PostgreSQL-backed deployment; see [server setup and API](server/README.md). Ranking sync is off by default. Members request their character link through the clan Discord, wait for Owner approval, then use **Sign in with Discord** in the plugin. Successful sign-in saves their individual credential and enables sync. Staff must deploy and configure the backend first; supported default rules are seeded during initialization.
+
+## Installing through Plugin Hub
+
+This existing plugin is being prepared for submission; **it is not confirmed as listed or approved**. After RuneLite approves and lists it, open Plugin Hub in normal RuneLite, search **Trap House Clan Plugin**, and install it. No source code, IntelliJ, or development launcher is needed for a listed plugin. Jagex Accounts continue using normal RuneLite login.
+
+See [submission status and reviewer notes](docs/plugin-hub-submission.md). Building locally or pushing to this repository does not publish a Plugin Hub release.
+
+## Data and external services
+
+- Event tabs query `api.wiseoldman.net` for public clan competitions and standings while enabled.
+- Ranking sync is opt-in. The configured HTTPS ranking server receives your character name, supported loot/collection/combat observations, and configured achievement/progress values. It stores awarded points and history and provides member profiles and leaderboards to authenticated clan members.
+- **Sign in with Discord** opens a browser and contacts the configured server to obtain a member credential. The backend uses your Discord identity to find the Owner-approved character link. It can query Wise Old Man for member statistics and send configured leadership notifications to Discord.
+- The credential is stored in RuneLite configuration. Treat it as a secret; the plugin does not need your Jagex password or session credentials. Disabling ranking sync stops activity submissions; it does not erase previously stored server history.
+- The clan operates its ranking service. Plugin Hub review does not independently verify member awards, and the plugin never automatically changes actual in-game clan ranks.
 
 The [reference review and staged plan](docs/reval-reference-review.md) records which Reval features have source implementations, which are explicit TODOs and which depend on unavailable backend code. The downloaded reference was inspected read-only; this system uses original TRAP HOUSE code.
 
