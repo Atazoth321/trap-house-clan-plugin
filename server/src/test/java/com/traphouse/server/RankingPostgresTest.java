@@ -12,6 +12,24 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    @Test public void easyCowhideTestDropSeedsExistingInstallsAndEnforcesCapsWithoutDuplicateAwards()throws Exception {
+        RankingStore.execute(c,"INSERT INTO configuration_migrations(name) VALUES ('automatic-rewards-v1'),('automatic-rewards-v2')");
+        AutomaticRewards.seed(c);AutomaticRewards.seed(c);
+        for(AutomaticRewards.Rule rule:AutomaticRewards.testDropRules())assertArrayEquals(new int[]{1,1},RankingStore.rule(c,"LOOT",rule.key));
+        JsonObject first=event("LOOT","2790:1739");
+        assertEquals(1,RankingStore.event(c,member,first).get("points").getAsInt());
+        assertEquals("DUPLICATE",RankingStore.event(c,member,first).get("status").getAsString());
+        rejected(422,()->RankingStore.event(c,member,event("LOOT","2790:1739")));
+        rejected(422,()->RankingStore.event(c,member,event("LOOT","2792:1739")));
+        rejected(422,()->RankingStore.event(c,member,event("LOOT","2790:526")));
+        assertEquals(1,count("ledger"));
+        RankingStore.execute(c,"UPDATE rules SET enabled=false,points=3 WHERE type='LOOT' AND event_key='2790:1739'");
+        RankingStore.execute(c,"DELETE FROM rules WHERE type='LOOT' AND event_key='2791:1739'");
+        AutomaticRewards.seed(c);
+        rejected(422,()->RankingStore.rule(c,"LOOT","2790:1739"));
+        rejected(422,()->RankingStore.rule(c,"LOOT","2791:1739"));
+        assertEquals(1,count("ledger"));
+    }
     private static final String LINK_OWNER="111111111111111111";
     private UUID approvedLink()throws Exception {
         joiningSchema();
