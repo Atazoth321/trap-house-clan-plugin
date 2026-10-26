@@ -8,7 +8,7 @@ The ranking service is a separate PostgreSQL-backed deployment; see [server setu
 
 ## Installing through Plugin Hub
 
-This plugin already has a Plugin Hub listing under `trap-house-clan-plugin`. Open Plugin Hub in normal RuneLite, search **Trap House Clan Plugin**, and install it. No source code, IntelliJ, or development launcher is needed. Jagex Accounts continue using normal RuneLite login. The expanded ranking/reward update is pending review in [PR #19437](https://github.com/runelite/plugin-hub/pull/19437); installing the current listing does not provide this update until RuneLite approves and distributes it.
+This plugin already has a Plugin Hub listing under `trap-house-clan-plugin`. Open Plugin Hub in normal RuneLite, search **Trap House Clan Plugin**, and install it. No source code, IntelliJ, or development launcher is needed. Jagex Accounts continue using normal RuneLite login. The expanded ranking/reward update was merged in [PR #19437](https://github.com/runelite/plugin-hub/pull/19437). The subsequent Fire cape and Dragon defender variant fix requires a follow-up Plugin Hub update; it is available in normal RuneLite only after RuneLite approves and distributes that update.
 
 See [submission status and reviewer notes](docs/plugin-hub-submission.md). Building locally or pushing to this repository does not publish a Plugin Hub release.
 

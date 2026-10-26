@@ -1,6 +1,8 @@
 # Plugin Hub submission
 
-This updates the existing TRAP HOUSE listing at `plugins/trap-house-clan-plugin`, not a replacement project or second listing. The previous approved manifest points to commit `6b47575a9e41f648be8debb397d075c9e7520557`. The expanded update is submitted in [PR #19437](https://github.com/runelite/plugin-hub/pull/19437); RuneLite controls its review and distribution.
+This updates the existing TRAP HOUSE listing at `plugins/trap-house-clan-plugin`, not a replacement project or second listing. The expanded update was merged in [PR #19437](https://github.com/runelite/plugin-hub/pull/19437), with the manifest pointing to commit `bd17a093c687f3b37d0d6276fc8f45a3f097aaed`. RuneLite controls review and distribution of subsequent updates.
+
+The next client update recognizes RuneLite's mapped Fire cape and Dragon defender variants in inventory, equipment and loaded bank containers. Previously these milestones compared only the regular item IDs, so ornamented, broken or locked versions could leave progress at zero. Other item milestones retain their existing matching behavior. Regression tests cover every currently mapped variant across all three containers and reject unrelated items. The source also contains server-side link-management changes, which are excluded from the standard Plugin Hub artifact.
 
 ## Local checks
 
