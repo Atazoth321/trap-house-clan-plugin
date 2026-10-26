@@ -6,6 +6,12 @@ The [current reward balance](reward-balance.md) supersedes earlier raid, pet, an
 
 ## How scoring works
 
+### Easy live drop test
+
+After the updated server deploys, kill a regular cow in the cow field northeast of Lumbridge and receive its cowhide. The enabled `Cowhide (easy test drop)` rule pays **1 point**, at most once per supported cow NPC variant per member per UTC day (four variants, at most four points/day). Calves are excluded. Buying, trading or withdrawing a cowhide does not count; it must be your personal NPC loot event. A later kill of an already-paid variant that day earns no more test points.
+
+This uses the existing plugin's NPC loot tracking and only requires a server update. Enable ranking sync, sign in as the linked clan member and wait for the next ranking refresh after the kill. Look under **Profile → Points from: Drops** for the award. The `easy-test-cowhide-v1` migration adds only these four rules and preserves existing disabled/custom rules and all previous awards. Subsequent deployments do not restore a deliberately disabled or removed test rule.
+
 Members must enable ranking, authenticate their linked character, and be recognized as an active TRAP HOUSE member. The plugin sends observations; the backend selects points, enforces daily limits and character binding, and records positive ledger entries. Client-specified point amounts are rejected. Earned rank retention, protected leadership ranks, and Owner-only deductions are unchanged. Actual in-game ranks are never changed.
 
 NPC drops use exact NPC/item pairs from RuneLite's `NpcLootReceived`. Only the personal loot event is submitted, once per distinct item in each callback; item quantity does not multiply points. Buying, trading, banking, or seeing someone else's drop message does not trigger this path.

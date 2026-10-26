@@ -5,6 +5,14 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class AutomaticRewardsTest {
+    @Test public void easyTestDropOnlyRewardsCowhideFromOrdinaryCows() {
+        Set<String> keys=new HashSet<>();
+        for(AutomaticRewards.Rule rule:AutomaticRewards.testDropRules()) {
+            assertEquals("LOOT",rule.type);assertEquals("Drops",rule.category);
+            assertEquals(1,rule.points);assertEquals(1,rule.limit);assertTrue(keys.add(rule.key));
+        }
+        assertEquals(new HashSet<>(Arrays.asList("2790:1739","2791:1739","2793:1739","2795:1739")),keys);
+    }
     @Test public void namedAllowlistHasUniqueKeysAndBoundedRewards() {
         Set<String> keys=new HashSet<>();Set<String> items=new HashSet<>();int pets=0;
         for(AutomaticRewards.Rule rule:AutomaticRewards.rules()) {

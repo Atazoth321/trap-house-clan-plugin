@@ -126,6 +126,14 @@ final class AutomaticRewards {
     private static void loot(List<Rule> rules,int[] npcs,int item,String name,int points) {
         for(int npc:npcs)rules.add(new Rule("LOOT",npc+":"+item,name,"Drops",points,2));
     }
+    static List<Rule> testDropRules() {
+        List<Rule> rules=new ArrayList<>();
+        // Ordinary cows only, excluding calves, quest encounters and minigames.
+        for(int npc:new int[]{2790,2791,2793,2795}) {
+            rules.add(new Rule("LOOT",npc+":1739","Cowhide (easy test drop)","Drops",1,1));
+        }
+        return Collections.unmodifiableList(rules);
+    }
     private static void raid(List<Rule> rules,String source,int[] items,String[] names) {
         for(int i=0;i<items.length;i++) {
             boolean mega=items[i]==20997||items[i]==22486||items[i]==27277;
@@ -138,6 +146,7 @@ final class AutomaticRewards {
         // expansion keys so previously removed base rules are not resurrected.
         seed(c,"automatic-rewards-v2",expandedRules());
         lowerBarrowsRewards(c);
+        seed(c,"easy-test-cowhide-v1",testDropRules());
     }
     private static void lowerBarrowsRewards(Connection c)throws SQLException {
         try(Statement s=c.createStatement()){s.execute("SELECT pg_advisory_xact_lock(72419051001)");}
