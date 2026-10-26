@@ -12,6 +12,19 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    @Test public void dropCatalogUsesEnabledCurrentRulesWithoutRequiringAwards()throws Exception {
+        AutomaticRewards.seed(c);
+        RankingStore.execute(c,"UPDATE rules SET points=321 WHERE type='LOOT' AND event_key='2215:11832'");
+        JsonObject log=PointsLog.read(c,"player=Member&category=Drops&search=Bandos+chestplate");
+        assertEquals(0,log.get("count").getAsInt());
+        JsonArray rewards=log.getAsJsonArray("availableDrops");assertEquals(1,rewards.size());
+        assertEquals(321,rewards.get(0).getAsJsonObject().get("points").getAsInt());
+        assertEquals(1,PointsLog.dropRewards(c,"Tanzanite fang","highest").size()); // Three NPC phases, one item card.
+        RankingStore.execute(c,"UPDATE rules SET enabled=false WHERE type='LOOT' AND event_key='2215:11832'");
+        assertEquals(0,PointsLog.dropRewards(c,"Bandos chestplate","highest").size());
+        assertEquals(0,PointsLog.dropRewards(c,"' OR 1=1 --","newest").size());
+        assertEquals(0,count("ledger"));
+    }
     @Test public void automaticPetsPayOnceAndDropsUseServerAmountsAndCaps()throws Exception {
         AutomaticRewards.seed(c);
         JsonObject pet=event("COLLECTION","pet kraken");

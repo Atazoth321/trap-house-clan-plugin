@@ -9,6 +9,20 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class PointsLogPanelTest {
+    @Test public void dropCatalogShowsCurrentRewardsEvenWithoutAwards()throws Exception {
+        SwingUtilities.invokeAndWait(()->{
+            JsonObject log=data("Member",1,0);JsonArray catalog=new JsonArray();
+            JsonObject drop=new JsonObject();drop.addProperty("category","Drops");drop.addProperty("title","Bandos chestplate");drop.addProperty("points",300);drop.addProperty("sourceType","LOOT");drop.addProperty("sourceKey","2215:11832");drop.addProperty("dailyLimit",2);catalog.add(drop);log.add("availableDrops",catalog);
+            PointsLogPanel panel=new PointsLogPanel("Member","Drops",(q,done)->done.accept(log));
+            JTabbedPane tabs=find(panel,JTabbedPane.class);
+            assertEquals("Available drops",tabs.getTitleAt(tabs.getSelectedIndex()));
+            assertTrue(text(panel,"Bandos chestplate"));assertTrue(text(panel,"+300 pts per drop"));
+            assertTrue(text(panel,"Automatic reward"));assertTrue(text(panel,"Daily cap: 2 per source"));
+            assertTrue(text(panel,"No matching awards.")); // History remains available independently.
+            find(panel,JComboBox.class).setSelectedItem("Pets");assertEquals(1,tabs.getTabCount());
+            panel.close();
+        });
+    }
     @Test public void actualItemArtReplacesBadgeAndStaleImagesCannotChangeNewCards()throws Exception {
         SwingUtilities.invokeAndWait(()->{
             java.util.List<java.util.function.BiConsumer<String,Icon>> artwork=new ArrayList<>();

@@ -39,6 +39,22 @@ final class PointsLog {
         try(PreparedStatement s=query(c,base+"SELECT category,title,points,created_at,occurrences,source_type,source_key FROM rows ORDER BY "+order+",category,title,points LIMIT 24 OFFSET "+((page-1)*24),args);ResultSet r=s.executeQuery()) {
             while(r.next()){JsonObject e=new JsonObject();e.addProperty("category",r.getString(1));e.addProperty("title",r.getString(2));e.addProperty("points",r.getLong(3));e.addProperty("at",r.getTimestamp(4).toInstant().toString());e.addProperty("occurrences",r.getLong(5));e.addProperty("sourceType",r.getString(6));e.addProperty("sourceKey",r.getString(7));entries.add(e);}
         }
-        result.addProperty("player",name);result.addProperty("count",count);result.addProperty("total",total);result.addProperty("page",page);result.addProperty("pages",pages);result.add("entries",entries);return result;
+        result.addProperty("player",name);result.addProperty("count",count);result.addProperty("total",total);result.addProperty("page",page);result.addProperty("pages",pages);result.add("entries",entries);
+        if(p.get("category").equals("Drops"))result.add("availableDrops",dropRewards(c,p.get("search"),p.get("sort")));
+        return result;
+    }
+    static JsonArray dropRewards(Connection c,String search,String sort)throws SQLException {
+        JsonArray rewards=new JsonArray();
+        // Read current enabled server policy, not historical awards or hardcoded prices.
+        // Collapse identical NPC phase rules into a single item card.
+        String sql="SELECT type,coalesce(nullif(display_name,''),event_key) AS title,points,daily_limit,min(event_key) AS source_key FROM rules WHERE enabled AND (category='Drops' OR (category='' AND type='LOOT')) AND strpos(lower(coalesce(nullif(display_name,''),event_key)),lower(?))>0 GROUP BY type,coalesce(nullif(display_name,''),event_key),points,daily_limit ORDER BY "+(sort.equals("highest")?"points DESC,title":"title,points DESC")+",type,source_key LIMIT 1000";
+        try(PreparedStatement s=query(c,sql,search);ResultSet r=s.executeQuery()) {
+            while(r.next()) {
+                JsonObject item=new JsonObject();item.addProperty("sourceType",r.getString(1));item.addProperty("title",r.getString(2));
+                item.addProperty("points",r.getInt(3));item.addProperty("dailyLimit",r.getInt(4));item.addProperty("sourceKey",r.getString(5));item.addProperty("category","Drops");
+                rewards.add(item);
+            }
+        }
+        return rewards;
     }
 }

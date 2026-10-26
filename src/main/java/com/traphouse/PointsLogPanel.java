@@ -15,6 +15,10 @@ final class PointsLogPanel extends JPanel {
     private final JCheckBox group=new JCheckBox("Group");
     private final JLabel summary=ProfileStyle.label("Loading...",12,ProfileStyle.ACCENT),pagination=ProfileStyle.label("Page 1",11,ProfileStyle.MUTED);
     private final JPanel cards=new JPanel(new GridLayout(0,4,8,8));
+    private final JPanel rewardCards=new JPanel(new GridLayout(0,4,8,8));
+    private final JTabbedPane views=new JTabbedPane();
+    private final JPanel rewards=new JPanel(new BorderLayout(8,8));
+    private final JScrollPane rewardScroll=new JScrollPane(rewards);
     private final JButton prev=ClanStyle.button("Prev",()->{}),next=ClanStyle.button("Next",()->{});
     private final String member;
     private final BiConsumer<JsonObject,Consumer<JsonObject>> loader;
@@ -31,7 +35,11 @@ final class PointsLogPanel extends JPanel {
         source.setSelectedItem(category);filters.add(source);filters.add(sort);filters.add(ProfileStyle.label("Search:",11,ProfileStyle.TEXT));filters.add(search);filters.add(group);
         paging.add(summary);paging.add(prev);paging.add(pagination);paging.add(next);top.add(filters,BorderLayout.NORTH);top.add(paging,BorderLayout.SOUTH);add(top,BorderLayout.NORTH);
         cards.setBackground(ProfileStyle.BACKGROUND);JPanel content=new JPanel(new BorderLayout());content.setBackground(ProfileStyle.BACKGROUND);content.add(cards,BorderLayout.NORTH);
-        JScrollPane scroll=new JScrollPane(content);scroll.setBorder(null);scroll.getViewport().setBackground(ProfileStyle.BACKGROUND);scroll.getVerticalScrollBar().setUnitIncrement(16);add(scroll,BorderLayout.CENTER);
+        JScrollPane scroll=new JScrollPane(content);scroll.setBorder(null);scroll.getViewport().setBackground(ProfileStyle.BACKGROUND);scroll.getVerticalScrollBar().setUnitIncrement(16);
+        rewardCards.setBackground(ProfileStyle.BACKGROUND);rewards.setBackground(ProfileStyle.BACKGROUND);
+        rewards.add(ProfileStyle.label("Current rewards per drop. Daily caps apply per source; reviewed claims need staff approval.",11,ProfileStyle.MUTED),BorderLayout.NORTH);
+        rewards.add(rewardCards,BorderLayout.CENTER);rewardScroll.setBorder(null);rewardScroll.getVerticalScrollBar().setUnitIncrement(16);
+        views.addTab("Award history",scroll);add(views,BorderLayout.CENTER);
         Runnable filter=()->{page=1;load();};source.addActionListener(e->filter.run());sort.addActionListener(e->filter.run());group.addActionListener(e->filter.run());
         Timer debounce=new Timer(300,e->filter.run());debounce.setRepeats(false);
         search.getDocument().addDocumentListener(new javax.swing.event.DocumentListener(){public void insertUpdate(javax.swing.event.DocumentEvent e){debounce.restart();}public void removeUpdate(javax.swing.event.DocumentEvent e){debounce.restart();}public void changedUpdate(javax.swing.event.DocumentEvent e){debounce.restart();}});
@@ -41,15 +49,18 @@ final class PointsLogPanel extends JPanel {
     void close(){active=false;revision++;}
     private void load() {
         if(!active)return;long request=++revision;prev.setEnabled(false);next.setEnabled(false);summary.setText("Loading...");cards.removeAll();cards.revalidate();cards.repaint();
+        rewardCards.removeAll();rewardCards.add(ProfileStyle.label("Loading current drop rewards...",12,ProfileStyle.MUTED));rewardCards.revalidate();rewardCards.repaint();
+        if(!"Drops".equals(source.getSelectedItem()))views.remove(rewardScroll);
         JsonObject query=new JsonObject();query.addProperty("player",member);query.addProperty("category",(String)source.getSelectedItem());query.addProperty("sort",new String[]{"newest","oldest","highest"}[sort.getSelectedIndex()]);query.addProperty("search",search.getText());query.addProperty("group",group.isSelected());query.addProperty("page",page);
         loader.accept(query,data->{if(!SwingUtilities.isEventDispatchThread()){SwingUtilities.invokeLater(()->accept(request,data));}else accept(request,data);});
     }
     private void accept(long request,JsonObject data) {
         if(!active||request!=revision)return;
-        if(data==null||data.has("error")){summary.setText("Points log unavailable. Change a filter to retry.");return;}
+        if(data==null||data.has("error")){summary.setText("Points log unavailable. Change a filter to retry.");rewardCards.removeAll();rewardCards.add(ProfileStyle.label("Drop rewards unavailable. Change a filter to retry.",12,ProfileStyle.MUTED));rewardCards.revalidate();rewardCards.repaint();return;}
         if(!RankingTracker.normalize(member).equals(RankingTracker.normalize(data.get("player").getAsString()))){summary.setText("Member mismatch; reload profile.");return;}
         page=data.get("page").getAsInt();int pages=data.get("pages").getAsInt();long count=data.get("count").getAsLong();
         summary.setText(String.format("%,d entries | %+,d pts",count,data.get("total").getAsLong()));pagination.setText("Page "+page+"/"+pages);prev.setEnabled(page>1);next.setEnabled(page<pages);
+        if("Drops".equals(source.getSelectedItem()))showRewards(request,data);
         for(JsonElement value:RankingPanel.array(data,"entries")) {
             JsonObject e=value.getAsJsonObject();String category=e.get("category").getAsString(),title=e.get("title").getAsString();long points=e.get("points").getAsLong();
             Color color=ProfileStyle.ACCENT;
@@ -64,5 +75,27 @@ final class PointsLogPanel extends JPanel {
             card.add(ProfileStyle.label(String.format("%+,d pts",points),13,points<0?ProfileStyle.ACCENT:ProfileStyle.TEXT));card.add(ProfileStyle.label(e.get("at").getAsString().replace("T"," ").replace("Z"," UTC"),9,ProfileStyle.MUTED));cards.add(card);
         }
         if(count==0)cards.add(ProfileStyle.label("No matching awards.",12,ProfileStyle.MUTED));cards.revalidate();cards.repaint();
+    }
+    private void showRewards(long request,JsonObject data) {
+        if(views.indexOfComponent(rewardScroll)<0){views.insertTab("Available drops",null,rewardScroll,"See rewards before receiving a drop",0);views.setSelectedComponent(rewardScroll);}
+        rewardCards.removeAll();
+        for(JsonElement value:RankingPanel.array(data,"availableDrops")) {
+            JsonObject entry=value.getAsJsonObject();String title=entry.get("title").getAsString();
+            JPanel card=ProfileStyle.card(null);card.setPreferredSize(new Dimension(200,155));
+            JLabel name=ProfileStyle.label(title,11,ProfileStyle.TEXT);name.setToolTipText(title);card.add(name);
+            JLabel icon=ProfileStyle.label("D",32,ProfileStyle.ACCENT);icon.setAlignmentX(Component.CENTER_ALIGNMENT);card.add(icon);
+            card.add(ProfileStyle.label(String.format("+%,d pts per drop",entry.get("points").getAsLong()),13,ProfileStyle.ACCENT));
+            boolean manual="MANUAL".equals(entry.get("sourceType").getAsString());
+            card.add(ProfileStyle.label(manual?"Staff-reviewed claim":"Automatic reward",10,ProfileStyle.MUTED));
+            card.add(ProfileStyle.label("Daily cap: "+entry.get("dailyLimit").getAsInt()+" per source",10,ProfileStyle.MUTED));
+            card.setToolTipText(entry.get("sourceKey").getAsString());rewardCards.add(card);
+            itemArt.load(entry,(itemName,image)->{
+                Runnable apply=()->{if(!active||request!=revision)return;name.setText(itemName);name.setToolTipText(itemName);icon.setText("");icon.setIcon(image);card.revalidate();card.repaint();};
+                if(SwingUtilities.isEventDispatchThread())apply.run();else SwingUtilities.invokeLater(apply);
+            });
+        }
+        if(!data.has("availableDrops"))rewardCards.add(ProfileStyle.label("Reward catalog unavailable. Deploy the updated backend.",12,ProfileStyle.MUTED));
+        else if(data.getAsJsonArray("availableDrops").size()==0)rewardCards.add(ProfileStyle.label("No enabled drop rewards match your search.",12,ProfileStyle.MUTED));
+        rewardCards.revalidate();rewardCards.repaint();
     }
 }

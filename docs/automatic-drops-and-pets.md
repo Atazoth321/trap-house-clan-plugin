@@ -14,6 +14,8 @@ Each enabled drop rule allows **two awards per member per UTC day per exact sour
 
 ## Drop rewards
 
+Open **Profile → Points from: Drops → Available drops** to browse the current enabled reward rules before earning a drop. Cards show actual item icons where RuneLite can resolve them, points per drop, automatic versus staff-reviewed rewards, and daily caps. Search filters item names; Highest points sorts the catalog by reward. Matching NPC phase rules are combined into one item card. Award history remains in its own tab. The catalog uses the live database rule amounts, so disabled rewards are omitted and staff edits appear on the next reload. Deploy the updated backend and restart the updated plugin to use this view.
+
 | Encounter | Supported items | Points per item |
 | --- | --- | ---: |
 | Abyssal demons | Abyssal whip | 100 |
