@@ -179,8 +179,36 @@ public final class RankingServer {
     static void command(String[] args, DiscordWorker.Connections connections) throws Exception {
         if(args.length==1&&args[0].equals("discord-setup")){new DiscordJoinBot(connections,System.getenv()).setup();System.out.println("Discord commands registered and Link RuneLite button posted.");return;}
         if (args.length == 2 && args[0].equals("add-member")) verifiedName(args[1]);
+        if(args.length==4&&args[0].equals("correct-member-name")) {
+            verifiedName(args[1]);verifiedName(args[2]);
+            if(args[3].trim().length()<10||args[3].length()>1000)throw new IllegalArgumentException("Give a correction reason of 10–1000 characters");
+        }
         try (Connection c = connections.open()) {
             c.setAutoCommit(false);
+            if(args.length==4&&args[0].equals("correct-member-name")) {
+                String oldName=verifiedName(args[1]),newName=verifiedName(args[2]);UUID member;String storedName;
+                try(PreparedStatement s=RankingStore.query(c,"SELECT id,name FROM members WHERE normalized_name=? AND active FOR UPDATE",Policy.normalize(oldName));ResultSet r=s.executeQuery()) {
+                    if(!r.next())throw new IllegalArgumentException("Original active member not found; no correction made");
+                    member=r.getObject(1,UUID.class);storedName=r.getString(2);
+                }
+                try(PreparedStatement s=RankingStore.query(c,"SELECT id FROM members WHERE normalized_name=? AND id<>?",Policy.normalize(newName),member);ResultSet r=s.executeQuery()) {
+                    if(r.next())throw new IllegalArgumentException("Correct name already has a member record; operator review is required. No records were merged");
+                }
+                String discord;
+                try(PreparedStatement s=RankingStore.query(c,"SELECT discord_user_id FROM discord_member_links WHERE member_id=? FOR UPDATE",member);ResultSet r=s.executeQuery()) {
+                    if(!r.next())throw new IllegalArgumentException("Original member has no Discord link; no correction made");
+                    discord=r.getString(1);
+                }
+                RankingStore.execute(c,"UPDATE members SET name=?,normalized_name=? WHERE id=?",newName,Policy.normalize(newName),member);
+                RankingStore.execute(c,"UPDATE credentials SET revoked=true WHERE member_id=? AND NOT revoked",member);
+                RankingStore.execute(c,"DELETE FROM discord_login_sessions WHERE member_id=?",member);
+                JsonObject details=new JsonObject();details.addProperty("source","server operator CLI");
+                details.addProperty("oldName",storedName);details.addProperty("newName",newName);
+                details.addProperty("discordUserId",discord);details.addProperty("reason",args[3].trim());
+                operatorAudit(c,member,"MEMBER_NAME_CORRECTED",details);
+                c.commit();
+                System.out.println("Corrected "+storedName+" to "+newName+". Member UUID, Discord link, points and history preserved. Old credentials revoked; sign in with Discord again.");return;
+            }
             if(args.length==3&&args[0].equals("link-discord")) {
                 String name=verifiedName(args[1]), discord=DiscordLogin.snowflake(args[2]);
                 UUID member;
@@ -267,7 +295,7 @@ public final class RankingServer {
                 c.commit();
                 System.out.println("Credential (shown once; expires in 90 days): " + token); return;
             }
-            throw new IllegalArgumentException("Commands: init | discord-setup | add-member <verified-character-name> | link-discord <verified-character-name> <discord-user-id> | bootstrap-owner <verified-member-uuid> | issue-token <verified-character-name> member|admin");
+            throw new IllegalArgumentException("Commands: init | discord-setup | add-member <verified-character-name> | correct-member-name <old-name> <verified-correct-name> <reason> | link-discord <verified-character-name> <discord-user-id> | bootstrap-owner <verified-member-uuid> | issue-token <verified-character-name> member|admin");
         }
     }
 

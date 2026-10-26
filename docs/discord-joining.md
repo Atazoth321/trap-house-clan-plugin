@@ -52,6 +52,16 @@ Use the **same Discord application** already configured for RuneLite sign-in.
 
 ## Enforcement and records
 
+### Correcting a name after approval
+
+After independently verifying the correct character belongs to the same linked person, a trusted operator can run this in the Render API service Shell after deploying the updated server:
+
+```sh
+/app/bin/trap-house-server correct-member-name "BSB" "Oakie Pokie" "Correcting the mistaken name entered during Discord linking"
+```
+
+This transaction preserves the member UUID, Discord link, points, progress and history. It revokes existing member credentials, clears associated login sessions, and records the old/new names and reason in the operator audit. The member must sign in with Discord again in RuneLite. The original approval request remains as historical evidence. Missing/inactive/unlinked members and a corrected name already belonging to another record fail without merging or replacing identities. This command corrects a name for the same person; it does not transfer an account to a different person.
+
 - The public interaction endpoint verifies Ed25519 signatures against the raw body and timestamp, rejects signatures older/newer than five minutes, checks application and guild IDs, and derives the Discord user from the signed guild member payload.
 - `/pending`, approval buttons, and approval modal submissions all independently require a linked, active backend Owner. Administrator, Event Manager, Member, unlinked users, and forged role fields do not qualify. Discord success/error messages are private interaction replies.
 - Requests are unique per pending Discord identity and pending normalized RSN. Exact duplicate submissions reuse the pending request; an applicant may submit at most five new requests per day. Requests remain pending until reviewed; they do not automatically grant access or expire into approval.

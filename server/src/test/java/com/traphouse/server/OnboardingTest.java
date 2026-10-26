@@ -19,6 +19,17 @@ public class OnboardingTest {
         }
     }
 
+    @Test public void rejectsInvalidCorrectionsBeforeOpeningDatabase()throws Exception {
+        for(String[] args:new String[][]{
+            {"correct-member-name","BSB","invalid';--","Verified correction"},
+            {"correct-member-name","","Oakie Pokie","Verified correction"},
+            {"correct-member-name","BSB","Oakie Pokie","short"}
+        }) {
+            try {RankingServer.command(args,()->{throw new AssertionError("Invalid correction opened database");});fail("Invalid correction accepted");}
+            catch(IllegalArgumentException expected) { }
+        }
+    }
+
     @Test public void operatorAuditSuppliesRequiredActorAndMarksItsMeaning()throws Exception {
         UUID member=UUID.randomUUID();
         for(String action:new String[]{"MEMBER_PROVISIONED","DISCORD_IDENTITY_LINKED"}) {
