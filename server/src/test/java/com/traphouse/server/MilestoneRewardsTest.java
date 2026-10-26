@@ -6,6 +6,19 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class MilestoneRewardsTest {
+    @Test public void currentRewardsDoublePreviousPolicyWithoutChangingThresholds()throws Exception {
+        long total=0;
+        for(JsonElement entry:MilestoneCatalog.rewards()) {
+            int original=entry.getAsJsonObject().get("points").getAsInt();
+            int current=MilestoneCatalog.currentReward(original);
+            assertEquals(MilestoneCatalog.boostedReward(original)*2,current);
+            total+=current;
+        }
+        assertEquals(15070,total);
+        assertEquals(120,MilestoneCatalog.currentReward(40));
+        assertEquals(750,MilestoneCatalog.currentReward(250));
+        assertEquals(100000,MilestoneCatalog.currentReward(100000));
+    }
     @Test public void increasedRewardsRemainModerateAndBelowColonel()throws Exception {
         long total=0;
         for(JsonElement entry:MilestoneCatalog.rewards()) {

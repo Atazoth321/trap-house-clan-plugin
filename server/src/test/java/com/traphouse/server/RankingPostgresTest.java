@@ -52,6 +52,20 @@ public class RankingPostgresTest {
             assertTrue(r.next());assertEquals(5,r.getInt(1));assertTrue(r.next());assertEquals(5,r.getInt(1));assertFalse(r.next());
         }
         assertEquals(1,count("point_adjustments"));
+        MilestoneCatalog.applyCurrentRewards(c);
+        assertEquals(3,count("ledger"));
+        assertEquals(18,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        MilestoneCatalog.applyCurrentRewards(c);
+        ClanFeatures.sync(c,member,observation(goal,50));
+        assertEquals(3,count("ledger"));assertEquals(1,count("point_adjustments"));
+    }
+    @Test public void activityRewardsMigrateOncePreservingCapsAndDisabledRules()throws Exception {
+        RankingStore.execute(c,"INSERT INTO rules(type,event_key,points,daily_limit,enabled,category) VALUES ('LOOT','test',70,2,true,'Drops'),('LOOT','disabled',80,3,false,'Pets')");
+        for(int i=0;i<2;i++)try(InputStream input=RankingServer.class.getResourceAsStream("/activity-rewards-v3.sql");Statement s=c.createStatement()){s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));}
+        assertArrayEquals(new int[]{140,2},RankingStore.rule(c,"LOOT","test"));
+        try(PreparedStatement s=RankingStore.query(c,"SELECT points,enabled FROM rules WHERE event_key='disabled'");ResultSet r=s.executeQuery()){assertTrue(r.next());assertEquals(80,r.getInt(1));assertFalse(r.getBoolean(2));}
+        assertArrayEquals(new int[]{750,1},RankingStore.rule(c,"MANUAL","verified pet unlock"));
+        assertEquals(0,count("ledger"));
     }
     @Test public void rewardRolloutCreditsTrackedCompletionsOnceAndPreservesStaffEdits()throws Exception {
         try(InputStream input=RankingServer.class.getResourceAsStream("/starter-goals.sql");Statement s=c.createStatement()){s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));}

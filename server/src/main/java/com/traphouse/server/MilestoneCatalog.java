@@ -12,14 +12,19 @@ final class MilestoneCatalog {
         if(points<1||points>100000)throw new IllegalArgumentException("Invalid reward");
         return Math.min(100000,((points*3+5)/10)*5);
     }
-    static void applyRewardBoost(Connection c)throws IOException,SQLException {
+    static int currentReward(int original) { return Math.min(100000,boostedReward(original)*2); }
+    static void applyRewardBoost(Connection c)throws IOException,SQLException { applyRewardBoost(c,false); }
+    static void applyCurrentRewards(Connection c)throws IOException,SQLException { applyRewardBoost(c,true); }
+    private static void applyRewardBoost(Connection c,boolean current)throws IOException,SQLException {
+        String migration=current?"milestone-rewards-v3":"milestone-rewards-v2";
         try(Statement s=c.createStatement()){s.execute("SELECT pg_advisory_xact_lock(72419051001)");}
-        try(PreparedStatement s=RankingStore.query(c,"SELECT 1 FROM configuration_migrations WHERE name='milestone-rewards-v2'");ResultSet r=s.executeQuery()) {
+        try(PreparedStatement s=RankingStore.query(c,"SELECT 1 FROM configuration_migrations WHERE name=?",migration);ResultSet r=s.executeQuery()) {
             if(r.next())return;
         }
         for(JsonElement entry:rewards()) {
             JsonObject reward=entry.getAsJsonObject();UUID goal=UUID.fromString(reward.get("id").getAsString());
-            int original=reward.get("points").getAsInt(),increased=boostedReward(original);
+            int base=reward.get("points").getAsInt();
+            int original=current?boostedReward(base):base,increased=current?currentReward(base):boostedReward(base);
             String name,category;
             try(PreparedStatement s=RankingStore.query(c,"SELECT name,category,points,enabled FROM goals WHERE id=? FOR UPDATE",goal);ResultSet r=s.executeQuery()) {
                 if(!r.next())throw new IllegalStateException("Reward goal missing from catalog");
@@ -36,12 +41,12 @@ final class MilestoneCatalog {
                     try(PreparedStatement total=RankingStore.query(c,"SELECT coalesce(sum(l.points),0) FROM ledger l JOIN events e ON e.id=l.event_id WHERE l.member_id=? AND e.type='GOAL' AND e.event_key=?",member.id,goal.toString());ResultSet amounts=total.executeQuery()){amounts.next();paid=amounts.getLong(1);}
                     int difference=(int)Math.max(0L,increased-paid);if(difference==0)continue;
                     UUID event=UUID.randomUUID();
-                    UUID request=UUID.nameUUIDFromBytes(("milestone-rewards-v2:"+member.id+":"+goal).getBytes(StandardCharsets.UTF_8));
+                    UUID request=UUID.nameUUIDFromBytes((migration+":"+member.id+":"+goal).getBytes(StandardCharsets.UTF_8));
                     int inserted;
                     try(PreparedStatement insert=RankingStore.query(c,"INSERT INTO events(id,member_id,client_id,type,event_key,observed_at,points) VALUES (?,?,?,'GOAL',?,now(),?) ON CONFLICT(member_id,client_id) DO NOTHING",event,member.id,request,goal.toString(),difference)){inserted=insert.executeUpdate();}
                     if(inserted==1) {
                         RankingStore.award(c,member,event,null,difference,name+" - milestone reward increase",category);
-                        JsonObject details=new JsonObject();details.addProperty("source","milestone-rewards-v2 deployment migration");
+                        JsonObject details=new JsonObject();details.addProperty("source",migration+" deployment migration");
                         details.addProperty("goal",goal.toString());details.addProperty("points",difference);
                         details.addProperty("previouslyAwarded",paid);details.addProperty("newReward",increased);
                         details.addProperty("reason","Owner-authorized milestone reward increase");
@@ -50,7 +55,7 @@ final class MilestoneCatalog {
                 }
             }
         }
-        RankingStore.execute(c,"INSERT INTO configuration_migrations(name) VALUES ('milestone-rewards-v2')");
+        RankingStore.execute(c,"INSERT INTO configuration_migrations(name) VALUES (?)",migration);
     }
     static JsonArray rewards() throws IOException {
         try(InputStream input=MilestoneCatalog.class.getResourceAsStream("/milestone-rewards-v1.json")) {

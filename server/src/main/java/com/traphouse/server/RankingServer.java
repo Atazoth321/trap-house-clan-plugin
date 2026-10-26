@@ -229,6 +229,11 @@ public final class RankingServer {
                 MilestoneCatalog.seed(c);
                 MilestoneCatalog.applyRewards(c);
                 MilestoneCatalog.applyRewardBoost(c);
+                MilestoneCatalog.applyCurrentRewards(c);
+                try(InputStream input=RankingServer.class.getResourceAsStream("/activity-rewards-v3.sql");Statement s=c.createStatement()) {
+                    if(input==null)throw new IllegalStateException("Activity rewards missing");
+                    s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));
+                }
                 c.commit(); System.out.println("Schema initialized."); return;
             }
             if(args.length==2&&args[0].equals("bootstrap-owner")) {
