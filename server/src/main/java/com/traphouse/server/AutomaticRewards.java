@@ -120,7 +120,7 @@ final class AutomaticRewards {
         loot(rules,dt2,28276,"Chromium ingot",150);
         int[] barrows={4708,4710,4712,4714,4716,4718,4720,4722,4724,4726,4728,4730,4732,4734,4736,4738,4745,4747,4749,4751,4753,4755,4757,4759};
         String[] names={"Ahrim's hood","Ahrim's staff","Ahrim's robetop","Ahrim's robeskirt","Dharok's helm","Dharok's greataxe","Dharok's platebody","Dharok's platelegs","Guthan's helm","Guthan's warspear","Guthan's platebody","Guthan's chainskirt","Karil's coif","Karil's crossbow","Karil's leathertop","Karil's leatherskirt","Torag's helm","Torag's hammers","Torag's platebody","Torag's platelegs","Verac's helm","Verac's flail","Verac's brassard","Verac's plateskirt"};
-        for(int i=0;i<barrows.length;i++)rules.add(new Rule("LOOT","chest:barrows:"+barrows[i],names[i],"Drops",150,2));
+        for(int i=0;i<barrows.length;i++)rules.add(new Rule("LOOT","chest:barrows:"+barrows[i],names[i],"Drops",50,2));
         return Collections.unmodifiableList(rules);
     }
     private static void loot(List<Rule> rules,int[] npcs,int item,String name,int points) {
@@ -137,6 +137,18 @@ final class AutomaticRewards {
         // Existing v1 installations must still receive the new catalog. Insert only
         // expansion keys so previously removed base rules are not resurrected.
         seed(c,"automatic-rewards-v2",expandedRules());
+        lowerBarrowsRewards(c);
+    }
+    private static void lowerBarrowsRewards(Connection c)throws SQLException {
+        try(Statement s=c.createStatement()){s.execute("SELECT pg_advisory_xact_lock(72419051001)");}
+        String migration="barrows-rewards-v1";
+        try(PreparedStatement s=RankingStore.query(c,"SELECT 1 FROM configuration_migrations WHERE name=?",migration);ResultSet r=s.executeQuery()){if(r.next())return;}
+        // Future awards only: never deduct points or rewrite historical ledger entries.
+        // Preserve disabled rules, custom amounts, and all existing daily limits.
+        for(Rule rule:expandedRules())if(rule.key.startsWith("chest:barrows:")) {
+            RankingStore.execute(c,"UPDATE rules SET points=? WHERE type='LOOT' AND event_key=? AND enabled AND points=150",rule.points,rule.key);
+        }
+        RankingStore.execute(c,"INSERT INTO configuration_migrations(name) VALUES (?)",migration);
     }
     private static void seed(Connection c,String migration,List<Rule> catalog)throws SQLException {
         try(Statement s=c.createStatement()){s.execute("SELECT pg_advisory_xact_lock(72419051001)");}

@@ -12,6 +12,21 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    @Test public void lowerBarrowsPolicyChangesFutureAwardsWithoutDeductions()throws Exception {
+        RankingStore.execute(c,"INSERT INTO configuration_migrations(name) VALUES ('automatic-rewards-v1'),('automatic-rewards-v2')");
+        RankingStore.execute(c,"INSERT INTO rules(type,event_key,points,daily_limit,enabled,category) VALUES ('LOOT','chest:barrows:4708',150,2,true,'Drops'),('LOOT','chest:barrows:4710',25,1,true,'Drops'),('LOOT','chest:barrows:4712',150,1,false,'Drops')");
+        JsonObject first=event("LOOT","chest:barrows:4708");RankingStore.event(c,member,first);
+        AutomaticRewards.seed(c);
+        assertArrayEquals(new int[]{50,2},RankingStore.rule(c,"LOOT","chest:barrows:4708"));
+        assertArrayEquals(new int[]{25,1},RankingStore.rule(c,"LOOT","chest:barrows:4710"));
+        rejected(422,()->RankingStore.rule(c,"LOOT","chest:barrows:4712"));
+        assertEquals(150,RankingStore.event(c,member,first).get("points").getAsInt());
+        assertEquals(50,RankingStore.event(c,member,event("LOOT","chest:barrows:4708")).get("points").getAsInt());
+        assertEquals(200,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        assertEquals(0,count("point_adjustments"));assertEquals(2,count("ledger"));
+        RankingStore.execute(c,"UPDATE rules SET points=150 WHERE event_key='chest:barrows:4708'");
+        AutomaticRewards.seed(c);assertArrayEquals(new int[]{150,2},RankingStore.rule(c,"LOOT","chest:barrows:4708"));
+    }
     private void joiningSchema()throws Exception {
         try(InputStream input=RankingServer.class.getResourceAsStream("/discord-joining.sql");Statement s=c.createStatement()){s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));}
     }
@@ -64,7 +79,7 @@ public class RankingPostgresTest {
         RankingStore.execute(c,"INSERT INTO configuration_migrations(name) VALUES ('automatic-rewards-v1')");
         RankingStore.execute(c,"INSERT INTO rules(type,event_key,points,daily_limit,enabled,category) VALUES ('LOOT','319:12819',42,1,false,'Drops')");
         AutomaticRewards.seed(c);
-        assertArrayEquals(new int[]{150,2},RankingStore.rule(c,"LOOT","chest:barrows:4708"));
+        assertArrayEquals(new int[]{50,2},RankingStore.rule(c,"LOOT","chest:barrows:4708"));
         assertArrayEquals(new int[]{1000,2},RankingStore.rule(c,"LOOT","11278:26372"));
         rejected(422,()->RankingStore.rule(c,"LOOT","319:12819"));
         rejected(422,()->RankingStore.rule(c,"LOOT","2215:11832")); // Removed base rule stays removed.

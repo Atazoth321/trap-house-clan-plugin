@@ -22,7 +22,7 @@ The v2 expansion adds **68 distinct items**, taking the catalog from 50 to **118
 
 | Encounter | Added rewards | Points |
 | --- | --- | ---: |
-| Barrows | All 24 undamaged equipment rewards | 150 each |
+| Barrows | All 24 undamaged equipment rewards | 50 each |
 | Dagannoth Kings | Berserker/archers ring, seers ring, warrior ring, dragon axe | 200 / 150 / 100 / 100 |
 | Corporeal Beast | Elysian, arcane, spectral sigils / spirit shield / holy elixir | 1,000 / 750 / 600 / 100 / 150 |
 | King Black Dragon | Draconic visage, dragon pickaxe | 300 / 200 |
@@ -74,3 +74,6 @@ This tracks newly observed collection unlocks, not the complete historical colle
 Gradle build, plugin/server unit tests, and IDE compilation passed. Tests cover raid event filtering, per-callback item deduplication, pet message parsing, and catalog bounds/uniqueness. PostgreSQL tests cover automatic awards, permanent pet deduplication, drop caps/retries, rejection of client-supplied points, and preservation of disabled/custom rules; they require a disposable database and have not been run locally.
 
 These are authenticated client observations, not independent Jagex proof. A modified client can fabricate observations. The existing server authentication, membership checks, allowlists, limits, and immutable award records remain the enforcement boundary.
+
+
+Barrows reward adjustment: the one-time deployment migration lowers unchanged enabled 150-point Barrows rules to 50 points per piece. Disabled rules, other custom amounts, and daily limits are preserved. Historical awards are retained at their original value; no points are deducted, and subsequent operator edits survive redeployment. This database migration has integration coverage but has not been executed against the live service from this workspace.

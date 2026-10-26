@@ -16,6 +16,7 @@ public class AutomaticRewardsTest {
                 assertEquals("Pets",rule.category);assertEquals(750,rule.points);assertEquals(1,rule.limit);pets++;
             } else {
                 assertEquals("LOOT",rule.type);assertEquals("Drops",rule.category);assertEquals(2,rule.limit);items.add(rule.name);
+                if(rule.key.startsWith("chest:barrows:"))assertEquals(50,rule.points);
             }
         }
         assertEquals(55,pets);assertEquals(118,items.size());
