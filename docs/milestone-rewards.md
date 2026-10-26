@@ -1,5 +1,7 @@
 # Milestone rewards (current policy: v3)
 
+The one-time milestone amounts below remain current. See [current reward balance](reward-balance.md) for the later changes to repeatable sources, pets, and starter clan diary bonuses; those supersede the activity defaults in this document.
+
 The Owner authorized selecting and applying these values. `init` runs the `milestone-rewards-v1` configuration migration after seeding the catalog. It assigns rewards only to the 143 listed goals whose current reward is zero, preserves previously configured positive rewards and disabled goals, and records a migration marker so redeploying cannot overwrite later edits. The v2 migration increases unchanged enabled policy rewards by approximately 50%, rounded to the nearest five points, and adds a one-time positive ledger top-up for active members whose goals were already paid. Existing award rows are never edited, previous Owner deductions remain intact, and no negative adjustments occur. The normal progress pipeline issues one positive ledger award per completed goal when the member next syncs. Historical awarded goals are never paid again.
 
 ## Skills

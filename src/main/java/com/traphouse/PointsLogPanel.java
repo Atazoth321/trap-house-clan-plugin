@@ -88,13 +88,15 @@ final class PointsLogPanel extends JPanel {
             boolean known=entry.has("received"),received=known&&entry.get("received").getAsBoolean();
             if(!known&&dropStatus.getSelectedIndex()!=0)continue;
             if(dropStatus.getSelectedIndex()==1&&received||dropStatus.getSelectedIndex()==2&&!received)continue;
-            JPanel card=ProfileStyle.card(null);card.setPreferredSize(new Dimension(200,185));
+            JPanel card=ProfileStyle.card(null);card.setPreferredSize(new Dimension(200,205));
             JLabel name=ProfileStyle.label(title,11,ProfileStyle.TEXT);name.setToolTipText(title);card.add(name);
             JLabel icon=ProfileStyle.label("D",32,ProfileStyle.ACCENT);icon.setAlignmentX(Component.CENTER_ALIGNMENT);card.add(icon);
             card.add(ProfileStyle.label(String.format("+%,d pts per drop",entry.get("points").getAsLong()),13,ProfileStyle.ACCENT));
             boolean manual="MANUAL".equals(entry.get("sourceType").getAsString());
             card.add(ProfileStyle.label(manual?"Staff-reviewed claim":"Automatic reward",10,ProfileStyle.MUTED));
-            card.add(ProfileStyle.label("Daily cap: "+entry.get("dailyLimit").getAsInt()+" per source",10,ProfileStyle.MUTED));
+            String scope=entry.has("capScope")?entry.get("capScope").getAsString():"source";
+            card.add(ProfileStyle.label("Daily cap: "+entry.get("dailyLimit").getAsInt()+" per "+scope,10,ProfileStyle.MUTED));
+            if(entry.has("familyDailyLimit"))card.add(ProfileStyle.label("All Barrows pieces: "+entry.get("familyDailyLimit").getAsInt()+" per day",10,ProfileStyle.MUTED));
             card.add(ProfileStyle.label(!known?"Status unavailable; update backend":received?"Received x"+entry.get("receivedCount").getAsLong():"Not received yet",11,received?ProfileStyle.ACCENT:ProfileStyle.MUTED));
             if(received)card.add(ProfileStyle.label(String.format("%,d pts earned",entry.get("earnedPoints").getAsLong()),10,ProfileStyle.MUTED));
             card.setToolTipText(entry.get("sourceKey").getAsString());rewardCards.add(card);

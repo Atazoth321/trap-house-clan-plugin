@@ -12,6 +12,34 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    @Test public void balancePolicyPreservesHistoryCustomRulesAndEfficiencyState()throws Exception {
+        AutomaticRewards.seed(c);
+        RankingStore.execute(c,"UPDATE rules SET points=333 WHERE type='LOOT' AND event_key='chest:chambers of xeric:21034'");
+        RankingStore.execute(c,"UPDATE rules SET enabled=false WHERE type='LOOT' AND event_key='chest:tombs of amascut:25975'");
+        RankingStore.event(c,member,event("COLLECTION","pet kraken"));
+        Instant now=Instant.now();EfficiencyRewards.observe(c,member,java.math.BigDecimal.TEN,java.math.BigDecimal.ONE,now,now);
+        BalancedRewards.apply(c);
+        assertArrayEquals(new int[]{75,1},RankingStore.rule(c,"MANUAL","verified easy diary tier"));
+        assertArrayEquals(new int[]{400,1},RankingStore.rule(c,"MANUAL","verified elite diary tier"));
+        assertArrayEquals(new int[]{150,2},RankingStore.rule(c,"LOOT","chest:chambers of xeric:21079"));
+        assertArrayEquals(new int[]{333,2},RankingStore.rule(c,"LOOT","chest:chambers of xeric:21034"));
+        rejected(422,()->RankingStore.rule(c,"LOOT","chest:tombs of amascut:25975"));
+        assertEquals(750,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        assertArrayEquals(new int[]{500,1},RankingStore.rule(c,"COLLECTION","pet kraken"));
+        assertEquals(1,count("efficiency_reward_state"));assertEquals(0,count("point_adjustments"));
+        RankingStore.execute(c,"UPDATE rules SET points=500 WHERE event_key='chest:chambers of xeric:21079'");
+        BalancedRewards.apply(c);assertArrayEquals(new int[]{500,2},RankingStore.rule(c,"LOOT","chest:chambers of xeric:21079"));
+        assertEquals(1,count("ledger"));
+    }
+    @Test public void variantItemCapsAndBarrowsFamilyCapCannotBeBypassed()throws Exception {
+        AutomaticRewards.seed(c);BalancedRewards.apply(c);
+        RankingStore.event(c,member,event("LOOT","2042:12922"));RankingStore.event(c,member,event("LOOT","2043:12922"));
+        rejected(422,()->RankingStore.event(c,member,event("LOOT","2044:12922")));
+        JsonObject first=event("LOOT","chest:barrows:4708");RankingStore.event(c,member,first);RankingStore.event(c,member,first);
+        for(int item:new int[]{4710,4712,4714})RankingStore.event(c,member,event("LOOT","chest:barrows:"+item));
+        rejected(422,()->RankingStore.event(c,member,event("LOOT","chest:barrows:4716")));
+        assertEquals(6,count("ledger"));assertEquals(700,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+    }
     @Test public void lowerBarrowsPolicyChangesFutureAwardsWithoutDeductions()throws Exception {
         RankingStore.execute(c,"INSERT INTO configuration_migrations(name) VALUES ('automatic-rewards-v1'),('automatic-rewards-v2')");
         RankingStore.execute(c,"INSERT INTO rules(type,event_key,points,daily_limit,enabled,category) VALUES ('LOOT','chest:barrows:4708',150,2,true,'Drops'),('LOOT','chest:barrows:4710',25,1,true,'Drops'),('LOOT','chest:barrows:4712',150,1,false,'Drops')");
@@ -136,20 +164,20 @@ public class RankingPostgresTest {
         EfficiencyRewards.observe(c,member,new java.math.BigDecimal("99"),new java.math.BigDecimal("49"),now.plusSeconds(120),now.plusSeconds(120));assertEquals(1,count("ledger"));
         EfficiencyRewards.observe(c,member,new java.math.BigDecimal("101"),new java.math.BigDecimal("51"),now.plusSeconds(180),now.plusSeconds(180));assertEquals(1,count("ledger"));
         EfficiencyRewards.observe(c,member,new java.math.BigDecimal("200"),new java.math.BigDecimal("100"),now.plusSeconds(240),now.plusSeconds(240));assertEquals(2,count("ledger"));
-        assertEquals(100,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        assertEquals(250,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
         Instant monday=Instant.parse("2026-10-26T12:00:00Z");
         EfficiencyRewards.observe(c,member,new java.math.BigDecimal("200"),new java.math.BigDecimal("100"),monday,monday);assertEquals(2,count("ledger"));
         EfficiencyRewards.observe(c,member,new java.math.BigDecimal("201"),new java.math.BigDecimal("101"),monday.plusSeconds(60),monday.plusSeconds(60));assertEquals(3,count("ledger"));
-        assertEquals(115,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        assertEquals(270,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
         assertEquals(0,count("point_adjustments"));
-        assertEquals(115,PointsLog.read(c,"player=Member&category=Efficiency&sort=newest").get("total").getAsInt());
+        assertEquals(270,PointsLog.read(c,"player=Member&category=Efficiency&sort=newest").get("total").getAsInt());
     }
     @Test public void efficiencyFractionalGainsAccumulateButStaleDataCannotStartBaseline()throws Exception {
         Instant now=Instant.parse("2026-10-25T12:00:00Z");
         EfficiencyRewards.observe(c,member,java.math.BigDecimal.TEN,java.math.BigDecimal.ZERO,now.minusSeconds(90000),now);assertEquals(0,count("efficiency_reward_state"));
         EfficiencyRewards.observe(c,member,java.math.BigDecimal.TEN,java.math.BigDecimal.ZERO,now,now);
-        EfficiencyRewards.observe(c,member,new java.math.BigDecimal("10.1"),java.math.BigDecimal.ZERO,now.plusSeconds(10),now.plusSeconds(10));assertEquals(0,count("ledger"));
-        EfficiencyRewards.observe(c,member,new java.math.BigDecimal("10.2"),java.math.BigDecimal.ZERO,now.plusSeconds(20),now.plusSeconds(20));assertEquals(1,count("ledger"));
+        EfficiencyRewards.observe(c,member,new java.math.BigDecimal("10.05"),java.math.BigDecimal.ZERO,now.plusSeconds(10),now.plusSeconds(10));assertEquals(0,count("ledger"));
+        EfficiencyRewards.observe(c,member,new java.math.BigDecimal("10.1"),java.math.BigDecimal.ZERO,now.plusSeconds(20),now.plusSeconds(20));assertEquals(1,count("ledger"));
     }
     @Test public void rewardBoostTopsUpPaidGoalsOnceWithoutRewritingAwardsOrDeductions()throws Exception {
         try(InputStream input=RankingServer.class.getResourceAsStream("/starter-goals.sql");Statement s=c.createStatement()){s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));}

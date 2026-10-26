@@ -240,6 +240,7 @@ public final class RankingServer {
                     s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));
                 }
                 AutomaticRewards.seed(c);
+                BalancedRewards.apply(c);
                 try(InputStream input=RankingServer.class.getResourceAsStream("/discord-joining.sql");Statement s=c.createStatement()) {
                     if(input==null)throw new IllegalStateException("Discord joining schema missing");s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));
                 }

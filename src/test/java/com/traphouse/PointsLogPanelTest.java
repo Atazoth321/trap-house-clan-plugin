@@ -9,6 +9,14 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class PointsLogPanelTest {
+    @Test public void barrowsCatalogExplainsSharedItemAndFamilyCaps()throws Exception {
+        SwingUtilities.invokeAndWait(()->{
+            JsonObject log=data("Member",1,0);JsonArray catalog=new JsonArray();
+            catalog.add(new Gson().fromJson("{category:'Drops',title:'Ahrims hood',points:50,sourceType:'LOOT',sourceKey:'chest:barrows:4708',dailyLimit:2,capScope:'item',familyDailyLimit:4,received:false,receivedCount:0,earnedPoints:0}",JsonObject.class));log.add("availableDrops",catalog);
+            PointsLogPanel panel=new PointsLogPanel("Member","Drops",(q,done)->done.accept(log));
+            assertTrue(text(panel,"Daily cap: 2 per item"));assertTrue(text(panel,"All Barrows pieces: 4 per day"));panel.close();
+        });
+    }
     @Test public void dropCatalogSeparatesReceivedAndUnreceivedItems()throws Exception {
         SwingUtilities.invokeAndWait(()->{
             JsonObject log=data("Member",1,0);JsonArray catalog=new JsonArray();

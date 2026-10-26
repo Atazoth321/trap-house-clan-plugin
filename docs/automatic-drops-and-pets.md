@@ -1,5 +1,7 @@
 # Automatic drop and pet rewards
 
+The [current reward balance](reward-balance.md) supersedes earlier raid, pet, and manual-claim defaults below. Pet unlocks now default to 500 points, common raid uniques have lower rewards, supported items share caps across sources, and Barrows pays at most four pieces/day at default prices. Historical points remain intact.
+
 `init` installs the base catalog and the additive `automatic-rewards-v2` expansion once. It enables 118 named drop items and 55 named pet collection unlocks without replacing existing rules, including disabled rules. Subsequent deployments preserve staff edits. The catalog is in `server/src/main/java/com/traphouse/server/AutomaticRewards.java`.
 
 ## How scoring works
@@ -10,7 +12,7 @@ NPC drops use exact NPC/item pairs from RuneLite's `NpcLootReceived`. Only the p
 
 Raids use RuneLite Loot Tracker's personal reward-container `LootReceived` event for Chambers of Xeric, Theatre of Blood, Tombs of Amascut, and Barrows. Keep **Loot Tracker enabled**. Only EVENT records from those four source names are accepted by this plugin path; NPC records are ignored here to avoid double submission alongside NPC loot tracking. Mode/source names outside this exact allowlist are not covered.
 
-Each enabled drop rule allows **two awards per member per UTC day per exact source/item key**. NPC phase variants have separate keys and therefore separate caps; this is not a global two-drop daily limit. Exact request retries cannot pay twice. A later genuine drop gets a new request ID and can pay again within its cap. Items outside the catalog earn no automatic drop points.
+Supported automatic drop items allow **two awards per member per UTC day per item ID**, shared across source/NPC phase keys. Barrows additionally allows four awarded pieces total per day. Numeric custom caps are retained; unlisted custom loot rules keep per-source limits. Exact request retries cannot pay twice. A later genuine drop gets a new request ID and can pay again within its cap. Items outside the enabled catalog earn no automatic drop points.
 
 ## Drop rewards
 
@@ -50,15 +52,15 @@ Barrows requires the updated plugin and enabled RuneLite Loot Tracker, just like
 | Thermonuclear smoke devil | Occult necklace | 150 |
 | Alchemical Hydra | Hydra's claw / hydra leather | 500 / 300 |
 | Chambers of Xeric | Twisted bow | 1,000 |
-| Chambers of Xeric | Elder maul, Kodai insignia, ancestral pieces, Dinh's bulwark, dragon hunter crossbow, dexterous/arcane scrolls, dragon claws | 500 |
+| Chambers of Xeric | Elder maul, Kodai insignia, ancestral pieces, Dinh's bulwark, dragon hunter crossbow, dexterous/arcane scrolls, dragon claws | 150–750; see the balance guide for individual rewards |
 | Theatre of Blood | Uncharged scythe of vitur | 1,000 |
-| Theatre of Blood | Ghrazi rapier, uncharged sanguinesti staff, avernic hilt, justiciar pieces | 500 |
+| Theatre of Blood | Ghrazi rapier, uncharged sanguinesti staff, avernic hilt, justiciar pieces | 300–600; see the balance guide for individual rewards |
 | Tombs of Amascut | Uncharged Tumeken's shadow | 1,000 |
-| Tombs of Amascut | Osmumten's fang, Elidinis' ward, Lightbearer, Masori pieces | 500 |
+| Tombs of Amascut | Osmumten's fang, Elidinis' ward, Lightbearer, Masori pieces | 200–500; see the balance guide for individual rewards |
 
 ## Pets
 
-Each of the 55 named pet collection unlocks pays **750 points once per member per pet**. Examples include Pet kraken, Hellpuppy, Vorki, Ikkle hydra, Olmlet, Lil' zik, Tumeken's guardian, Heron, Beaver, Rocky, and Bloodhound. See the catalog for the complete exact-name allowlist. No wildcard pet messages are rewarded.
+Each of the 55 named pet collection unlocks pays **500 points once per member per pet**. Examples include Pet kraken, Hellpuppy, Vorki, Ikkle hydra, Olmlet, Lil' zik, Tumeken's guardian, Heron, Beaver, Rocky, and Bloodhound. See the catalog for the complete exact-name allowlist. No wildcard pet messages are rewarded.
 
 Enable the game's **collection log notification chat messages**. A supported `New item added to your collection log: <pet name>` system message triggers scoring. The generic funny-feeling message alone cannot identify the pet and does not score. Repeated collection messages and new request IDs cannot pay for the same named pet twice, including on another day. Recolours, transmogs, and duplicate pet drops do not receive separate rules.
 

@@ -162,8 +162,9 @@ final class RankingPanel extends JPanel {
         JsonObject metrics=player.has("metrics")?player.getAsJsonObject("metrics"):new JsonObject();
         JPanel efficiency=new JPanel(new GridLayout(1,2,4,0));efficiency.setOpaque(false);
         efficiency.add(ProfileStyle.tile(metric(metrics,"ehp"),"EHP",ProfileStyle.GREEN));efficiency.add(ProfileStyle.tile(metric(metrics,"ehb"),"EHB",ProfileStyle.GREEN));
-        efficiency.setToolTipText("Wise Old Man: 5 pts/EHP gained, 10 pts/EHB gained; 100 pts/week maximum. "
-            +(metrics.has("baselineAt")?"This week: "+number(metrics,"weeklyPoints")+" / 100. ":"Waiting for a fresh starting baseline. ")
+        long weeklyCap=metrics.has("weeklyCap")?number(metrics,"weeklyCap"):100;
+        efficiency.setToolTipText("Wise Old Man: "+(metrics.has("ehpRate")?number(metrics,"ehpRate"):5)+" pts/EHP gained, "+(metrics.has("ehbRate")?number(metrics,"ehbRate"):10)+" pts/EHB gained; "+weeklyCap+" pts/week maximum. "
+            +(metrics.has("baselineAt")?"This week: "+number(metrics,"weeklyPoints")+" / "+weeklyCap+". ":"Waiting for a fresh starting baseline. ")
             +(metrics.has("fetchedAt")?"Last fetched: "+string(metrics,"fetchedAt",""):"Not imported yet."));ClanStyle.add(profile,efficiency);
         compactProfileGoals(data);
         profileRankDetails(player,automatic);

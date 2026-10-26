@@ -88,6 +88,16 @@ final class RankingStore {
     }
 
     static void checkCap(Connection c, UUID member, String type, String key, int limit) throws SQLException {
+        String sharedItem=BalancedRewards.sharedItem(type,key);
+        if(sharedItem!=null) {
+            try(PreparedStatement s=query(c,"SELECT count(*) FROM events WHERE member_id=? AND type='LOOT' AND substring(event_key from '[^:]+$')=? AND received_at >= date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'",member,sharedItem);ResultSet r=s.executeQuery()) {
+                r.next();if(r.getLong(1)>=limit)throw new Policy.Rejected(422,"Daily item reward limit reached across all sources");
+            }
+            if(BalancedRewards.barrows(type,key))try(PreparedStatement s=query(c,"SELECT count(*) FROM events WHERE member_id=? AND type='LOOT' AND event_key LIKE 'chest:barrows:%' AND received_at >= date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'",member);ResultSet r=s.executeQuery()) {
+                r.next();if(r.getLong(1)>=BalancedRewards.BARROWS_DAILY_LIMIT)throw new Policy.Rejected(422,"Daily Barrows reward limit reached (four pieces total)");
+            }
+            return;
+        }
         String sql = type.equals("MANUAL")
             ? "SELECT count(*) FROM manual_rewards WHERE member_id=? AND event_key=? AND status='APPROVED' AND reviewed_at >= date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'"
             : "SELECT count(*) FROM events WHERE member_id=? AND event_key=? AND type=? AND received_at >= date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'";

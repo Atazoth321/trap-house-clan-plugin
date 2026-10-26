@@ -90,6 +90,7 @@ final class ClanFeatures {
         try(PreparedStatement s=query(c,"SELECT category,sum(points) FROM point_entries WHERE member_id=? GROUP BY category",actor.id);ResultSet r=s.executeQuery()){while(r.next())breakdown.addProperty(r.getString(1),r.getLong(2));}
         data.getAsJsonObject("profile").add("breakdown",breakdown);
         JsonObject metrics=new JsonObject();
+        metrics.addProperty("ehpRate",EfficiencyRewards.EHP_RATE);metrics.addProperty("ehbRate",EfficiencyRewards.EHB_RATE);metrics.addProperty("weeklyCap",EfficiencyRewards.WEEKLY_CAP);
         try(PreparedStatement s=query(c,"SELECT ehp,ehb,fetched_at FROM member_metrics WHERE member_id=?",actor.id);ResultSet r=s.executeQuery()){
             if(r.next()){metrics.addProperty("ehp",r.getBigDecimal(1));metrics.addProperty("ehb",r.getBigDecimal(2));metrics.addProperty("fetchedAt",r.getTimestamp(3).toInstant().toString());}
         }

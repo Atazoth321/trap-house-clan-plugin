@@ -53,6 +53,8 @@ final class PointsLog {
                 JsonObject item=new JsonObject();item.addProperty("sourceType",r.getString(1));item.addProperty("title",r.getString(2));
                 item.addProperty("points",r.getInt(3));item.addProperty("dailyLimit",r.getInt(4));item.addProperty("sourceKey",r.getString(5));item.addProperty("category","Drops");
                 item.addProperty("receivedCount",r.getLong(6));item.addProperty("earnedPoints",r.getLong(7));item.addProperty("received",r.getLong(6)>0);
+                item.addProperty("capScope",BalancedRewards.sharedItem(r.getString(1),r.getString(5))==null?"source":"item");
+                if(BalancedRewards.barrows(r.getString(1),r.getString(5)))item.addProperty("familyDailyLimit",BalancedRewards.BARROWS_DAILY_LIMIT);
                 rewards.add(item);
             }
         }
