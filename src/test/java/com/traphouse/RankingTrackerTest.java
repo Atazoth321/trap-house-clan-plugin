@@ -4,6 +4,24 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class RankingTrackerTest {
+    @Test public void raidLootUsesPersonalContainerItemsAndIgnoresNpcCallbacks() {
+        java.util.List<net.runelite.client.game.ItemStack> items=java.util.Arrays.asList(
+            new net.runelite.client.game.ItemStack(27277,1),new net.runelite.client.game.ItemStack(27277,1));
+        net.runelite.client.plugins.loottracker.LootReceived event=new net.runelite.client.plugins.loottracker.LootReceived(
+            "Tombs of Amascut",0,net.runelite.http.api.loottracker.LootRecordType.EVENT,items,1,null);
+        java.util.List<RankingEvent> results=RankingTracker.containerLoot("Member",event);
+        assertEquals(1,results.size());assertEquals("LOOT",results.get(0).type);
+        assertEquals("chest:tombs of amascut:27277",results.get(0).key);
+        event.setType(net.runelite.http.api.loottracker.LootRecordType.NPC);
+        assertTrue(RankingTracker.containerLoot("Member",event).isEmpty());
+        event.setType(net.runelite.http.api.loottracker.LootRecordType.EVENT);event.setName("Unknown chest");
+        assertTrue(RankingTracker.containerLoot("Member",event).isEmpty());
+    }
+    @Test public void petCollectionUnlockRetainsExactIdentity() {
+        RankingEvent event=RankingTracker.chat("Member","New item added to your collection log: <col=ff0000>Pet kraken</col>");
+        assertEquals("COLLECTION",event.type);assertEquals("pet kraken",event.key);
+        assertNull(RankingTracker.chat("Member","You have a funny feeling like you're being followed."));
+    }
     @Test public void parsesOnlySupportedSystemMessages() {
         RankingEvent item = RankingTracker.chat("Member", "New item added to your collection log: <col=ff0000>Abyssal whip</col>");
         assertEquals("COLLECTION", item.type);

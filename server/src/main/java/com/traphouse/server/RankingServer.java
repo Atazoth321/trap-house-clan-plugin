@@ -234,6 +234,7 @@ public final class RankingServer {
                     if(input==null)throw new IllegalStateException("Activity rewards missing");
                     s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));
                 }
+                AutomaticRewards.seed(c);
                 c.commit(); System.out.println("Schema initialized."); return;
             }
             if(args.length==2&&args[0].equals("bootstrap-owner")) {

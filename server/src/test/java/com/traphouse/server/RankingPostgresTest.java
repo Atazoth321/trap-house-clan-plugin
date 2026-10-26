@@ -12,6 +12,33 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    @Test public void automaticPetsPayOnceAndDropsUseServerAmountsAndCaps()throws Exception {
+        AutomaticRewards.seed(c);
+        JsonObject pet=event("COLLECTION","pet kraken");
+        assertEquals(750,RankingStore.event(c,member,pet).get("points").getAsInt());
+        assertEquals("DUPLICATE",RankingStore.event(c,member,pet).get("status").getAsString());
+        assertEquals("DUPLICATE",RankingStore.event(c,member,event("COLLECTION","pet kraken")).get("status").getAsString());
+        assertEquals(1,count("ledger"));
+        JsonObject drop=event("LOOT","2215:11832");
+        assertEquals(300,RankingStore.event(c,member,drop).get("points").getAsInt());
+        RankingStore.event(c,member,drop);assertEquals(2,count("ledger"));
+        RankingStore.event(c,member,event("LOOT","2215:11832"));assertEquals(3,count("ledger"));
+        rejected(422,()->RankingStore.event(c,member,event("LOOT","2215:11832")));
+        rejected(422,()->RankingStore.event(c,member,event("LOOT","6632:11832")));
+        assertEquals(1350,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        JsonObject forged=event("LOOT","chest:tombs of amascut:27277");forged.addProperty("points",999999);
+        rejected(400,()->RankingStore.event(c,member,forged));
+        assertEquals(1000,RankingStore.event(c,member,event("LOOT","chest:tombs of amascut:27277")).get("points").getAsInt());
+    }
+    @Test public void automaticCatalogPreservesExistingDisabledRulesAndLaterEdits()throws Exception {
+        RankingStore.execute(c,"INSERT INTO rules(type,event_key,points,daily_limit,enabled,category) VALUES ('COLLECTION','pet kraken',20,1,false,'Pets')");
+        AutomaticRewards.seed(c);
+        rejected(422,()->RankingStore.event(c,member,event("COLLECTION","pet kraken")));
+        RankingStore.execute(c,"UPDATE rules SET points=42,enabled=false WHERE type='LOOT' AND event_key='2215:11832'");
+        AutomaticRewards.seed(c);
+        try(PreparedStatement s=RankingStore.query(c,"SELECT points,enabled FROM rules WHERE type='LOOT' AND event_key='2215:11832'");ResultSet r=s.executeQuery()){assertTrue(r.next());assertEquals(42,r.getInt(1));assertFalse(r.getBoolean(2));}
+        assertEquals(0,count("ledger"));
+    }
     @Test public void efficiencyRewardsBaselineDeduplicateCapAndNeverDeductOrRepayCorrections()throws Exception {
         Instant now=Instant.parse("2026-10-25T12:00:00Z");
         EfficiencyRewards.observe(c,member,new java.math.BigDecimal("100"),new java.math.BigDecimal("50"),now,now);

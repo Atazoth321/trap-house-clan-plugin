@@ -115,6 +115,6 @@ An Administrator or Owner other than the requester must approve, with evidence/r
 
 Starter clan diary goals now pay 100 for the first accepted combat task, 100 for the first accepted collection unlock, and 200 for five accepted configured drops. These bonuses stack with source awards. They are clan goals, not automatic detection of every OSRS achievement diary tier. A tracked completed goal with no prior award pays on the next relevant sync.
 
-No new automatic loot or pet detection was added. Automatic observations still require an enabled exact scoring rule. Pet insurance flag correctness has not been verified, so the two existing pet tracking probes remain without automatic point rewards. New manual claim amounts are not automatic awards for every in-game item or pet.
+The later [automatic drops and pets catalog](automatic-drops-and-pets.md) enables exact rules for supported loot and named pet collection unlocks. Pet insurance flag correctness has not been verified, so the two existing pet tracking probes remain without automatic point rewards. Manual claim amounts do not imply automatic support for every in-game item or pet.
 
 Validation: Gradle build/serverDist and IDE compilation passed. PostgreSQL integration tests cover v3 top-up idempotence, retained Owner deductions, unchanged daily caps and disabled rules, but require a disposable PostgreSQL database and have not been executed locally. Live deployment and awards remain unverified.

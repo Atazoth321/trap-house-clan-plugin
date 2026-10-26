@@ -6,6 +6,8 @@ Original Java 11 REST service, deployed separately from RuneLite. PostgreSQL 16+
 
 The backend now imports public WOM EHP/EHB by default and can award capped points for new gains after a fresh baseline. See [efficiency rewards](../docs/efficiency-rewards.md) for rates, limits, and configuration; older descriptions of this importer as display-only are superseded.
 
+Deployment `init` also seeds [automatic drops and pets](../docs/automatic-drops-and-pets.md): exact NPC/item and raid reward rules plus once-per-member named pet collection unlocks. Existing custom and disabled rules are preserved.
+
 For Render deployment of this existing project, see [the Render checklist](../docs/render-deployment.md) and the root `render.yaml`. It creates a separate API and database, leaving your website in place. That initial Blueprint uses the database owner for runtime too; follow the checklist's database privilege limitation before treating it as a hardened production deployment.
 
 Use JDK 17+ for Gradle. Create a PostgreSQL database and dedicated database user. The schema owner initializes tables; use a separate runtime user with SELECT/INSERT/UPDATE and sequence usage, without schema creation or table deletion privileges. Events, ledger and audit records are append-only in application code: restrict runtime UPDATE/DELETE on those tables too.

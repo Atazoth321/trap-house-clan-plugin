@@ -248,6 +248,12 @@ public class TrapHouseClanPlugin extends Plugin {
         }
     }
 
+    @Subscribe public void onLootReceived(net.runelite.client.plugins.loottracker.LootReceived event) {
+        String player=trackingPlayer();
+        if(player==null)return;
+        for(RankingEvent observation:RankingTracker.containerLoot(player,event))rankings.enqueue(observation);
+    }
+
     @Subscribe public void onChatMessage(net.runelite.api.events.ChatMessage event) {
         String player = trackingPlayer();
         if (player == null || (event.getType() != ChatMessageType.GAMEMESSAGE

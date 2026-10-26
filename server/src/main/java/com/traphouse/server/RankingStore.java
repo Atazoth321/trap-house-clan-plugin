@@ -62,6 +62,13 @@ final class RankingStore {
             }
         }
         int[] rule = rule(c, type, key);
+        // A new request ID cannot repay the same collection unlock, even tomorrow.
+        // Check before the daily cap so an already-paid pet is a clean duplicate.
+        if(type.equals("COLLECTION")||type.equals("COMBAT")) {
+            try(PreparedStatement s=query(c,"SELECT id FROM events WHERE member_id=? AND type=? AND event_key=?",actor.id,type,key);ResultSet r=s.executeQuery()) {
+                if(r.next())return result(r.getString(1),"DUPLICATE",0);
+            }
+        }
         checkCap(c, actor.id, type, key, rule[1]);
         UUID id = UUID.randomUUID();
         int inserted;

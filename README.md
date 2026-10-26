@@ -66,6 +66,8 @@ Members can also use **Sign in with Discord** to obtain that credential automati
 
 The backend deployment seeds [150 tracking goals and the Owner-selected higher rank intervals](docs/milestones.md), preserving existing points, earned ranks, and configured rewards.
 
+[Automatic drop and pet rules](docs/automatic-drops-and-pets.md) cover 50 named drop items and 55 new pet collection unlocks. Raid drops require the updated plugin and RuneLite Loot Tracker; pet unlocks require collection-log chat notifications.
+
 The [WOM efficiency importer](docs/efficiency-rewards.md) displays EHP/EHB and awards 5 points per new EHP and 10 per new EHB after a saved baseline, sharing a 100-point weekly cap.
 
 ## Settings
