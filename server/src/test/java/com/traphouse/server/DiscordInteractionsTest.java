@@ -57,11 +57,12 @@ public class DiscordInteractionsTest {
         try {
             for(RankSecurity.Role role:RankSecurity.Role.values()) {
                 if(role==RankSecurity.Role.OWNER)continue;
-                for(int type:new int[]{2,3,5}) {
+                for(String action:new String[]{"pending","edit-link","revoke-link","join:approve:","join:reject:","join:accept:","join:deny:","linked:edit:","linked:revoke:"}) {
+                    int type=!action.contains(":")?2:(action.equals("join:approve:")||action.equals("join:reject:")?3:5);
                     JsonObject request=DiscordJoining.object("{\"id\":\"333333333333333333\",\"application_id\":\"111111111111111111\",\"guild_id\":\"222222222222222222\",\"member\":{\"user\":{\"id\":\"444444444444444444\"},\"roles\":[\"OWNER\"]},\"permission\":\"OWNER\"}");
                     request.addProperty("type",type);JsonObject data=new JsonObject();
-                    if(type==2)data.addProperty("name","pending");
-                    else data.addProperty("custom_id",(type==3?"join:approve:":"join:accept:")+UUID.randomUUID());
+                    if(type==2)data.addProperty("name",action);
+                    else data.addProperty("custom_id",action+UUID.randomUUID());
                     if(type==5){JsonArray rows=new JsonArray();JsonObject input=new JsonObject();input.addProperty("custom_id","reason");input.addProperty("value","Forged Owner approval");rows.add(DiscordJoining.row(input));data.add("components",rows);}
                     data.addProperty("permission",role.name());request.add("data",data);
                     HttpResponse<String> response=post(server,pair,request.toString(),true);
@@ -83,5 +84,15 @@ public class DiscordInteractionsTest {
         assertEquals("Atazoth",DiscordJoining.characterName("Atazoth"));
         for(String invalid:new String[]{"", "   ","@everyone","name\n","abcdefghijklmn"})try{DiscordJoining.characterName(invalid);fail(invalid);}catch(Policy.Rejected expected){}
         JsonObject message=DiscordJoining.message("Member");assertEquals(64,message.getAsJsonObject("data").get("flags").getAsInt());assertEquals(0,message.getAsJsonObject("data").getAsJsonObject("allowed_mentions").getAsJsonArray("parse").size());
+    }
+    @Test public void managementCommandsRequireADiscordMemberSelection() {
+        for(String name:new String[]{"edit-link","revoke-link"}) {
+            JsonObject definition=DiscordJoinBot.command(name);
+            JsonObject option=definition.getAsJsonArray("options").get(0).getAsJsonObject();
+            assertEquals(6,option.get("type").getAsInt());assertTrue(option.get("required").getAsBoolean());
+            option.addProperty("value","123456789012345678");
+            assertEquals("123456789012345678",DiscordLinkManagement.target(definition));
+        }
+        try {DiscordLinkManagement.target(new JsonObject());fail("Missing target accepted");}catch(Policy.Rejected expected){assertEquals(400,expected.status);}
     }
 }

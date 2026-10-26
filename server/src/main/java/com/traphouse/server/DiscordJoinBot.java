@@ -19,7 +19,24 @@ final class DiscordJoinBot implements Runnable {
             .header("Content-Type","application/json").method(method,HttpRequest.BodyPublishers.ofString(body.toString())).build();
         return http.send(request,HttpResponse.BodyHandlers.discarding()).statusCode();
     }
-    void setup()throws Exception {
+    static JsonObject command(String name) {
+        JsonObject body=new JsonObject();body.addProperty("name",name);body.addProperty("type",1);
+        switch(name) {
+            case "link":body.addProperty("description","Request a verified RuneLite character link");break;
+            case "pending":body.addProperty("description","Owner: review pending RuneLite character links");break;
+            case "edit-link":body.addProperty("description","Owner: correct an accepted RuneLite link's character name");break;
+            case "revoke-link":body.addProperty("description","Owner: revoke an accepted RuneLite link and its credentials");break;
+            default:throw new IllegalArgumentException("Unknown link command");
+        }
+        if(name.equals("edit-link")||name.equals("revoke-link")) {
+            JsonObject member=new JsonObject();member.addProperty("type",6);member.addProperty("name","member");
+            member.addProperty("description","Discord member whose accepted link you want to manage");member.addProperty("required",true);
+            JsonArray options=new JsonArray();options.add(member);body.add("options",options);
+        }
+        return body;
+    }
+    void setup()throws Exception {setup(true);}
+    void setup(boolean postButton)throws Exception {
         String app=DiscordLogin.snowflake(required("TRAP_DISCORD_CLIENT_ID")),guild=DiscordLogin.snowflake(required("TRAP_DISCORD_GUILD_ID"));
         String channel=DiscordLogin.snowflake(required("TRAP_DISCORD_LINK_CHANNEL_ID"));DiscordLogin.snowflake(required("TRAP_DISCORD_REVIEW_CHANNEL_ID"));
         if(!required("TRAP_DISCORD_PUBLIC_KEY").matches("[0-9a-fA-F]{64}"))throw new IllegalArgumentException("Use the Discord application's 64-character Public Key");
@@ -27,12 +44,13 @@ final class DiscordJoinBot implements Runnable {
         try(Connection c=connections.open();PreparedStatement s=RankingStore.query(c,"SELECT 1 FROM discord_member_links l JOIN members m ON m.id=l.member_id JOIN member_permissions p ON p.member_id=m.id WHERE m.active AND p.permission='OWNER' LIMIT 1");ResultSet r=s.executeQuery()) {
             if(!r.next())throw new IllegalStateException("Link and bootstrap the verified clan Owner before setting up Discord approvals. See docs/discord-joining.md.");
         }
-        for(String command:new String[]{"link","pending"}) {
-            JsonObject body=new JsonObject();body.addProperty("name",command);body.addProperty("description",command.equals("link")?"Request a verified RuneLite character link":"Owner: review pending RuneLite character links");body.addProperty("type",1);
+        for(String command:new String[]{"link","pending","edit-link","revoke-link"}) {
+            JsonObject body=command(command);
             // Upsert only our commands; do not replace unrelated application commands.
             int status=send("POST","applications/"+app+"/guilds/"+guild+"/commands",body);
             if(status<200||status>=300)throw new IllegalStateException("Discord command setup failed (HTTP "+status+")");
         }
+        if(!postButton)return;
         JsonObject body=new JsonObject();body.addProperty("content","**TRAP HOUSE RuneLite linking**\nClick Link RuneLite and enter your OSRS name. The Owner must verify your character and clan membership before approval. After approval, use Sign in with Discord in the plugin.");
         body.add("allowed_mentions",DiscordJoining.object("{\"parse\":[]}"));JsonArray rows=new JsonArray();rows.add(DiscordJoining.row(DiscordJoining.button("join:start","Link RuneLite",1)));body.add("components",rows);
         int status=send("POST","channels/"+channel+"/messages",body);if(status<200||status>=300)throw new IllegalStateException("Discord link button failed (HTTP "+status+")");

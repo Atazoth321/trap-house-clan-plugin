@@ -107,7 +107,7 @@ final class DiscordLogin {
                         RankingStore.execute(c,"UPDATE discord_login_sessions SET callback_used=true WHERE id=?",session);c.commit();
                         String discord=snowflake(provider.identify(params.get("code")));
                         UUID member;
-                        try(PreparedStatement s=RankingStore.query(c,"SELECT m.id FROM discord_member_links l JOIN members m ON m.id=l.member_id WHERE l.discord_user_id=? AND m.active",discord);ResultSet r=s.executeQuery()) {
+                        try(PreparedStatement s=RankingStore.query(c,"SELECT m.id FROM discord_member_links l JOIN members m ON m.id=l.member_id WHERE l.discord_user_id=? AND m.active FOR SHARE OF m,l",discord);ResultSet r=s.executeQuery()) {
                             if(!r.next()) {
                                 c.rollback();
                                 reply(exchange,403,"text/html; charset=utf-8",page("Account linking required","In the clan Discord, click Link RuneLite or use /link to request a character link. After the Owner verifies and approves it, start sign-in again in RuneLite. If the button is not configured, ask leadership to link Discord user ID "+discord+". No access has been granted."));return;

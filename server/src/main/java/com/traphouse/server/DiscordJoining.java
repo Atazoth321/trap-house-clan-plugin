@@ -111,14 +111,23 @@ final class DiscordJoining {
         if(type==2) {
             String command=Policy.text(data,"name",32);if(command.equals("pending"))return pending(c,discord);
             if(command.equals("link"))return linkForm(c,discord);
+            if(command.equals("edit-link")||command.equals("revoke-link")) {
+                owner(c,discord);
+                return DiscordLinkManagement.form(c,discord,DiscordLinkManagement.target(data),command.equals("edit-link"));
+            }
         } else {
             String custom=Policy.text(data,"custom_id",100);
+            if(type==5&&custom.startsWith("linked:"))return DiscordLinkManagement.submit(c,discord,data);
             if(type==3&&custom.equals("join:start"))return linkForm(c,discord);
             if(type==5&&custom.equals("join:request")) {
                 UUID request=request(c,discord,field(data,"rsn",12));return message("Request submitted: "+request+". The Owner must verify and approve your character. After approval, click Sign in with Discord in RuneLite. No access is granted yet.");
             }
             if(type==3&&(custom.startsWith("join:approve:")||custom.startsWith("join:reject:"))) {
                 owner(c,discord);boolean approve=custom.startsWith("join:approve:");UUID id=Policy.uuid(custom.substring(custom.lastIndexOf(':')+1));
+                if(!approve) {
+                    JsonObject revoke=DiscordLinkManagement.rejectAccepted(c,discord,id);
+                    if(revoke!=null)return revoke;
+                }
                 return modal((approve?"join:accept:":"join:deny:")+id,approve?"Confirm verified character":"Reject linking request","reason",approve?"How did you verify ownership and membership?":"Reason for rejection",1000);
             }
             if(type==5&&(custom.startsWith("join:accept:")||custom.startsWith("join:deny:"))) {

@@ -12,6 +12,72 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    private static final String LINK_OWNER="111111111111111111";
+    private UUID approvedLink()throws Exception {
+        joiningSchema();
+        RankingStore.execute(c,"INSERT INTO discord_member_links(discord_user_id,member_id) VALUES (?,?)",LINK_OWNER,clanOwner.id);
+        UUID request=DiscordJoining.request(c,DISCORD_ID,member.name);
+        DiscordJoining.review(c,LINK_OWNER,request,true,"Verified character and membership");return request;
+    }
+    private JsonObject linkSubmission(JsonObject form,String name,String reason) {
+        JsonObject data=form.getAsJsonObject("data").deepCopy();
+        for(JsonElement row:data.getAsJsonArray("components"))for(JsonElement element:row.getAsJsonObject().getAsJsonArray("components")) {
+            JsonObject input=element.getAsJsonObject();input.addProperty("value",input.get("custom_id").getAsString().equals("rsn")?name:reason);
+        }
+        return data;
+    }
+    @Test public void discordOwnerCanCorrectAcceptedLinkWithoutLosingHistory()throws Exception {
+        UUID request=approvedLink();RankingStore.event(c,member,event("LOOT","1:2"));
+        JsonObject form=DiscordLinkManagement.form(c,LINK_OWNER,DISCORD_ID,true);
+        assertTrue(form.getAsJsonObject("data").get("custom_id").getAsString().length()<=100);
+        assertEquals(2,form.getAsJsonObject("data").getAsJsonArray("components").size());
+        JsonObject data=linkSubmission(form,"Oakie Pokie","Verified correct name for the same person");
+        DiscordLinkManagement.submit(c,LINK_OWNER,data);
+        try(PreparedStatement s=RankingStore.query(c,"SELECT m.name,l.member_id FROM members m JOIN discord_member_links l ON m.id=l.member_id WHERE l.discord_user_id=?",DISCORD_ID);ResultSet r=s.executeQuery()) {
+            assertTrue(r.next());assertEquals("Oakie Pokie",r.getString(1));assertEquals(member.id,r.getObject(2,UUID.class));
+        }
+        assertEquals(1,count("ledger"));rejected(401,()->RankingStore.authenticate(c,"Bearer member-token"));
+        try(PreparedStatement s=RankingStore.query(c,"SELECT status,character_name FROM discord_join_requests WHERE id=?",request);ResultSet r=s.executeQuery()) {
+            assertTrue(r.next());assertEquals("APPROVED",r.getString(1));assertEquals(member.name,r.getString(2));
+        }
+        try(PreparedStatement s=RankingStore.query(c,"SELECT actor,details->>'newName' FROM audit WHERE action='DISCORD_LINK_NAME_CORRECTED'");ResultSet r=s.executeQuery()) {
+            assertTrue(r.next());assertEquals(clanOwner.id,r.getObject(1,UUID.class));assertEquals("Oakie Pokie",r.getString(2));
+        }
+        rejected(409,()->DiscordLinkManagement.submit(c,LINK_OWNER,data));
+    }
+    @Test public void rejectingAnApprovedLinkRevokesAccessButKeepsScoresAndAllowsNewRequest()throws Exception {
+        UUID request=approvedLink();RankingStore.event(c,member,event("LOOT","1:2"));
+        RankingStore.execute(c,"INSERT INTO discord_login_sessions(id,device_hash,browser_hash,member_id) VALUES (?,?,?,?)",UUID.randomUUID(),Policy.hash("device"),Policy.hash("browser"),member.id);
+        JsonObject interaction=DiscordJoining.object("{\"type\":3,\"data\":{\"custom_id\":\"join:reject:"+request+"\"}}");
+        JsonObject form=DiscordJoining.dispatch(c,interaction,LINK_OWNER);
+        assertEquals(9,form.get("type").getAsInt());assertTrue(form.getAsJsonObject("data").get("title").getAsString().startsWith("Revoke"));
+        DiscordLinkManagement.submit(c,LINK_OWNER,linkSubmission(form,null,"Approval was made for the wrong person"));
+        assertEquals(1,count("discord_member_links"));assertEquals(0,count("discord_login_sessions"));assertEquals(1,count("ledger"));
+        rejected(401,()->RankingStore.authenticate(c,"Bearer member-token"));
+        try(PreparedStatement s=RankingStore.query(c,"SELECT actor,target FROM audit WHERE action='DISCORD_LINK_REVOKED'");ResultSet r=s.executeQuery()) {
+            assertTrue(r.next());assertEquals(clanOwner.id,r.getObject(1,UUID.class));assertEquals(member.id,r.getObject(2,UUID.class));
+        }
+        UUID next=DiscordJoining.request(c,DISCORD_ID,member.name);assertNotEquals(request,next);
+        assertEquals(1,count("discord_member_links"));
+        DiscordJoining.review(c,LINK_OWNER,next,true,"Verified fresh character ownership");
+        assertEquals(2,count("discord_member_links"));assertEquals(1,count("ledger"));
+    }
+    @Test public void linkManagementRejectsConflictsShortReasonsChangedLinksAndLostOwnerPermission()throws Exception {
+        UUID request=approvedLink();
+        JsonObject edit=DiscordLinkManagement.form(c,LINK_OWNER,DISCORD_ID,true);
+        rejected(409,()->DiscordLinkManagement.submit(c,LINK_OWNER,linkSubmission(edit,admin.name,"Verified correct character name")));
+        rejected(400,()->DiscordLinkManagement.submit(c,LINK_OWNER,linkSubmission(edit,"Oakie Pokie","short")));
+        JsonObject revoke=DiscordLinkManagement.form(c,LINK_OWNER,DISCORD_ID,false);
+        RankingStore.execute(c,"UPDATE discord_member_links SET linked_at=linked_at+interval '1 second' WHERE discord_user_id=?",DISCORD_ID);
+        rejected(409,()->DiscordLinkManagement.submit(c,LINK_OWNER,linkSubmission(revoke,null,"An outdated form must fail")));
+        rejected(409,()->DiscordLinkManagement.rejectAccepted(c,LINK_OWNER,request));
+        rejected(403,()->DiscordLinkManagement.form(c,LINK_OWNER,LINK_OWNER,false));
+        JsonObject fresh=DiscordLinkManagement.form(c,LINK_OWNER,DISCORD_ID,false);
+        RankingStore.execute(c,"UPDATE member_permissions SET permission='MEMBER' WHERE member_id=?",clanOwner.id);
+        rejected(403,()->DiscordLinkManagement.submit(c,LINK_OWNER,linkSubmission(fresh,null,"Owner permission was removed")));
+        assertEquals(2,count("discord_member_links"));
+        assertNotNull(RankingStore.authenticate(c,"Bearer member-token"));
+    }
     @Test public void operatorNameCorrectionPreservesHistoryAndRevokesOldAccess()throws Exception {
         RankingStore.execute(c,"INSERT INTO discord_member_links(discord_user_id,member_id) VALUES (?,?)",DISCORD_ID,member.id);
         RankingStore.event(c,member,event("LOOT","1:2"));
