@@ -12,6 +12,23 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    @Test public void rewardBoostTopsUpPaidGoalsOnceWithoutRewritingAwardsOrDeductions()throws Exception {
+        try(InputStream input=RankingServer.class.getResourceAsStream("/starter-goals.sql");Statement s=c.createStatement()){s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));}
+        MilestoneCatalog.seed(c);
+        try(InputStream input=RankingServer.class.getResourceAsStream("/rank-thresholds-v1.sql");Statement s=c.createStatement()){s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));}
+        MilestoneCatalog.applyRewards(c);
+        UUID goal=UUID.fromString("20000000-0000-4000-8000-000000000001");
+        ClanFeatures.sync(c,member,observation(goal,50));assertEquals(1,count("ledger"));
+        RankSecurity.adjust(c,owner(),member.id,adjustment(-2));
+        MilestoneCatalog.applyRewardBoost(c);
+        assertEquals(2,count("ledger"));assertEquals(8,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        MilestoneCatalog.applyRewardBoost(c);ClanFeatures.sync(c,member,observation(goal,50));assertEquals(2,count("ledger"));
+        try(PreparedStatement s=RankingStore.query(c,"SELECT count(*) FROM audit WHERE action='MILESTONE_REWARD_TOPUP' AND target=?",member.id);ResultSet r=s.executeQuery()){r.next();assertEquals(1,r.getInt(1));}
+        try(PreparedStatement s=RankingStore.query(c,"SELECT points FROM ledger WHERE member_id=? ORDER BY points",member.id);ResultSet r=s.executeQuery()) {
+            assertTrue(r.next());assertEquals(5,r.getInt(1));assertTrue(r.next());assertEquals(5,r.getInt(1));assertFalse(r.next());
+        }
+        assertEquals(1,count("point_adjustments"));
+    }
     @Test public void rewardRolloutCreditsTrackedCompletionsOnceAndPreservesStaffEdits()throws Exception {
         try(InputStream input=RankingServer.class.getResourceAsStream("/starter-goals.sql");Statement s=c.createStatement()){s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));}
         MilestoneCatalog.seed(c);

@@ -61,7 +61,7 @@ final class PointsLogPanel extends JPanel {
                 if(SwingUtilities.isEventDispatchThread())apply.run();else SwingUtilities.invokeLater(apply);
             });
             long occurrences=e.has("occurrences")?e.get("occurrences").getAsLong():1;card.add(ProfileStyle.label(category+(occurrences>1?" x"+occurrences:""),10,ProfileStyle.MUTED));
-            card.add(ProfileStyle.label(String.format("%+,d pts",points),13,points<0?ClanStyle.RED:ProfileStyle.TEXT));card.add(ProfileStyle.label(e.get("at").getAsString().replace("T"," ").replace("Z"," UTC"),9,ProfileStyle.MUTED));cards.add(card);
+            card.add(ProfileStyle.label(String.format("%+,d pts",points),13,points<0?ProfileStyle.ACCENT:ProfileStyle.TEXT));card.add(ProfileStyle.label(e.get("at").getAsString().replace("T"," ").replace("Z"," UTC"),9,ProfileStyle.MUTED));cards.add(card);
         }
         if(count==0)cards.add(ProfileStyle.label("No matching awards.",12,ProfileStyle.MUTED));cards.revalidate();cards.repaint();
     }

@@ -228,6 +228,7 @@ public final class RankingServer {
                 }
                 MilestoneCatalog.seed(c);
                 MilestoneCatalog.applyRewards(c);
+                MilestoneCatalog.applyRewardBoost(c);
                 c.commit(); System.out.println("Schema initialized."); return;
             }
             if(args.length==2&&args[0].equals("bootstrap-owner")) {

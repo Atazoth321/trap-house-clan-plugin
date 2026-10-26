@@ -6,6 +6,16 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class MilestoneRewardsTest {
+    @Test public void increasedRewardsRemainModerateAndBelowColonel()throws Exception {
+        long total=0;
+        for(JsonElement entry:MilestoneCatalog.rewards()) {
+            int old=entry.getAsJsonObject().get("points").getAsInt(),higher=MilestoneCatalog.boostedReward(old);
+            assertTrue(higher>old);assertEquals(0,higher%5);total+=higher;
+        }
+        assertTrue(total>=6000);assertTrue(total<10000);
+        assertEquals(60,MilestoneCatalog.boostedReward(40));
+        assertEquals(375,MilestoneCatalog.boostedReward(250));
+    }
     @Test public void rewardCoverageHasNoDuplicateOrUnconfiguredMilestones()throws Exception {
         Map<String,Integer> rewards=new HashMap<>();long total=0;
         for(JsonElement entry:MilestoneCatalog.rewards()) {

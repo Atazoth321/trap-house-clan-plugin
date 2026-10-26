@@ -56,7 +56,7 @@ final class RankingPanel extends JPanel {
         add(profileScroll,BorderLayout.CENTER);
         status.setToolTipText("Rankings are calculated by the clan service. Promotions are manual.");
         add(status,BorderLayout.SOUTH);
-        progress.setForeground(ClanStyle.RED); progress.setStringPainted(true);
+        progress.setForeground(ClanStyle.GOLD); progress.setStringPainted(true);
         request = ClanStyle.button("Request manual reward",()-> {
             String evidence = reason.getText().trim();
             if (manualRules.getSelectedItem()==null || evidence.isEmpty() || evidence.length()>1000) {

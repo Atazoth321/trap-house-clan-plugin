@@ -7,7 +7,7 @@ import javax.swing.border.EmptyBorder;
 /** Compact member layout using the shared clan tab theme. */
 final class ProfileStyle {
     static final Color BACKGROUND=ClanStyle.BACKGROUND,CARD=ClanStyle.CARD;
-    static final Color TEXT=ClanStyle.WHITE,MUTED=ClanStyle.MUTED,ACCENT=ClanStyle.RED,GREEN=ClanStyle.GREEN;
+    static final Color TEXT=ClanStyle.WHITE,MUTED=ClanStyle.MUTED,ACCENT=ClanStyle.GOLD,GREEN=ClanStyle.GREEN;
     static JPanel card(String title) {
         JPanel panel=ClanStyle.card(null);
         panel.setBorder(new EmptyBorder(8,8,8,8));
