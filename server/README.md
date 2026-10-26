@@ -59,7 +59,7 @@ Revocation takes effect on subsequent requests. Keep the member UUID through ver
 
 ## Rank thresholds and scoring
 
-Administrators configure `ranks` and `rules` using restricted database tooling. Default ranks are Recruit 0, Pawn 50, Corporal 100, Novice 250, Sergeant 500, Colonel 1000, Brigadier 1500, Admiral 3000 and Marshal 5000. Thresholds are unique/nonnegative and refresh from the server. Eligibility is advisory; staff perform promotions manually.
+Administrators configure `ranks` and `rules` using restricted database tooling. The `init` deployment now applies the Owner-selected intervals once: Recruit 0, Pawn 500, Corporal 1500, Novice 3000, Sergeant 6000, Colonel 10000, Brigadier 17500, Admiral 27500 and Marshal 45000. Thresholds are unique/nonnegative and refresh from the server. Previously earned ranks are retained; eligibility is advisory and staff perform in-game promotions manually. See [expanded milestones and intervals](../docs/milestones.md) for the 150-goal catalog and migration behavior.
 
 The initial scoring-rule table is **empty**. Explicitly define the clan's policy before observations award points. Keys are lowercase, trimmed and single-spaced. These are examples, not agreed clan rewards:
 

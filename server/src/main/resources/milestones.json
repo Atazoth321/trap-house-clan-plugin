@@ -1,0 +1,1050 @@
+[
+  {
+    "id": "20000000-0000-4000-8000-000000000001",
+    "name": "Attack level 50",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "ATTACK",
+    "target": 50
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000002",
+    "name": "Attack level 75",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "ATTACK",
+    "target": 75
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000003",
+    "name": "Attack level 90",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "ATTACK",
+    "target": 90
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000004",
+    "name": "Attack level 99",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "ATTACK",
+    "target": 99
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000005",
+    "name": "Defence level 50",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "DEFENCE",
+    "target": 50
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000006",
+    "name": "Defence level 75",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "DEFENCE",
+    "target": 75
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000007",
+    "name": "Defence level 90",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "DEFENCE",
+    "target": 90
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000008",
+    "name": "Defence level 99",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "DEFENCE",
+    "target": 99
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000009",
+    "name": "Strength level 50",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "STRENGTH",
+    "target": 50
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000010",
+    "name": "Strength level 75",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "STRENGTH",
+    "target": 75
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000011",
+    "name": "Strength level 90",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "STRENGTH",
+    "target": 90
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000012",
+    "name": "Strength level 99",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "STRENGTH",
+    "target": 99
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000013",
+    "name": "Hitpoints level 50",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "HITPOINTS",
+    "target": 50
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000014",
+    "name": "Hitpoints level 75",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "HITPOINTS",
+    "target": 75
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000015",
+    "name": "Hitpoints level 90",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "HITPOINTS",
+    "target": 90
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000016",
+    "name": "Hitpoints level 99",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "HITPOINTS",
+    "target": 99
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000017",
+    "name": "Ranged level 50",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "RANGED",
+    "target": 50
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000018",
+    "name": "Ranged level 75",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "RANGED",
+    "target": 75
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000019",
+    "name": "Ranged level 90",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "RANGED",
+    "target": 90
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000020",
+    "name": "Ranged level 99",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "RANGED",
+    "target": 99
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000021",
+    "name": "Prayer level 50",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "PRAYER",
+    "target": 50
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000022",
+    "name": "Prayer level 75",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "PRAYER",
+    "target": 75
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000023",
+    "name": "Prayer level 90",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "PRAYER",
+    "target": 90
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000024",
+    "name": "Prayer level 99",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "PRAYER",
+    "target": 99
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000025",
+    "name": "Magic level 50",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "MAGIC",
+    "target": 50
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000026",
+    "name": "Magic level 75",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "MAGIC",
+    "target": 75
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000027",
+    "name": "Magic level 90",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "MAGIC",
+    "target": 90
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000028",
+    "name": "Magic level 99",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "MAGIC",
+    "target": 99
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000029",
+    "name": "Cooking level 50",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "COOKING",
+    "target": 50
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000030",
+    "name": "Cooking level 75",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "COOKING",
+    "target": 75
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000031",
+    "name": "Cooking level 90",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "COOKING",
+    "target": 90
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000032",
+    "name": "Cooking level 99",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "COOKING",
+    "target": 99
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000033",
+    "name": "Woodcutting level 50",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "WOODCUTTING",
+    "target": 50
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000034",
+    "name": "Woodcutting level 75",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "WOODCUTTING",
+    "target": 75
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000035",
+    "name": "Woodcutting level 90",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "WOODCUTTING",
+    "target": 90
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000036",
+    "name": "Woodcutting level 99",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "WOODCUTTING",
+    "target": 99
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000037",
+    "name": "Fletching level 50",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "FLETCHING",
+    "target": 50
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000038",
+    "name": "Fletching level 75",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "FLETCHING",
+    "target": 75
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000039",
+    "name": "Fletching level 90",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "FLETCHING",
+    "target": 90
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000040",
+    "name": "Fletching level 99",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "FLETCHING",
+    "target": 99
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000041",
+    "name": "Fishing level 50",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "FISHING",
+    "target": 50
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000042",
+    "name": "Fishing level 75",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "FISHING",
+    "target": 75
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000043",
+    "name": "Fishing level 90",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "FISHING",
+    "target": 90
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000044",
+    "name": "Fishing level 99",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "FISHING",
+    "target": 99
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000045",
+    "name": "Firemaking level 50",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "FIREMAKING",
+    "target": 50
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000046",
+    "name": "Firemaking level 75",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "FIREMAKING",
+    "target": 75
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000047",
+    "name": "Firemaking level 90",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "FIREMAKING",
+    "target": 90
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000048",
+    "name": "Firemaking level 99",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "FIREMAKING",
+    "target": 99
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000049",
+    "name": "Crafting level 50",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "CRAFTING",
+    "target": 50
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000050",
+    "name": "Crafting level 75",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "CRAFTING",
+    "target": 75
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000051",
+    "name": "Crafting level 90",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "CRAFTING",
+    "target": 90
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000052",
+    "name": "Crafting level 99",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "CRAFTING",
+    "target": 99
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000053",
+    "name": "Smithing level 50",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "SMITHING",
+    "target": 50
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000054",
+    "name": "Smithing level 75",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "SMITHING",
+    "target": 75
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000055",
+    "name": "Smithing level 90",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "SMITHING",
+    "target": 90
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000056",
+    "name": "Smithing level 99",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "SMITHING",
+    "target": 99
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000057",
+    "name": "Mining level 50",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "MINING",
+    "target": 50
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000058",
+    "name": "Mining level 75",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "MINING",
+    "target": 75
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000059",
+    "name": "Mining level 90",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "MINING",
+    "target": 90
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000060",
+    "name": "Mining level 99",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "MINING",
+    "target": 99
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000061",
+    "name": "Herblore level 50",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "HERBLORE",
+    "target": 50
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000062",
+    "name": "Herblore level 75",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "HERBLORE",
+    "target": 75
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000063",
+    "name": "Herblore level 90",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "HERBLORE",
+    "target": 90
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000064",
+    "name": "Herblore level 99",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "HERBLORE",
+    "target": 99
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000065",
+    "name": "Agility level 50",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "AGILITY",
+    "target": 50
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000066",
+    "name": "Agility level 75",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "AGILITY",
+    "target": 75
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000067",
+    "name": "Agility level 90",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "AGILITY",
+    "target": 90
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000068",
+    "name": "Agility level 99",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "AGILITY",
+    "target": 99
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000069",
+    "name": "Thieving level 50",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "THIEVING",
+    "target": 50
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000070",
+    "name": "Thieving level 75",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "THIEVING",
+    "target": 75
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000071",
+    "name": "Thieving level 90",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "THIEVING",
+    "target": 90
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000072",
+    "name": "Thieving level 99",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "THIEVING",
+    "target": 99
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000073",
+    "name": "Slayer level 50",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "SLAYER",
+    "target": 50
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000074",
+    "name": "Slayer level 75",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "SLAYER",
+    "target": 75
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000075",
+    "name": "Slayer level 90",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "SLAYER",
+    "target": 90
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000076",
+    "name": "Slayer level 99",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "SLAYER",
+    "target": 99
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000077",
+    "name": "Farming level 50",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "FARMING",
+    "target": 50
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000078",
+    "name": "Farming level 75",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "FARMING",
+    "target": 75
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000079",
+    "name": "Farming level 90",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "FARMING",
+    "target": 90
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000080",
+    "name": "Farming level 99",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "FARMING",
+    "target": 99
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000081",
+    "name": "Runecraft level 50",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "RUNECRAFT",
+    "target": 50
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000082",
+    "name": "Runecraft level 75",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "RUNECRAFT",
+    "target": 75
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000083",
+    "name": "Runecraft level 90",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "RUNECRAFT",
+    "target": 90
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000084",
+    "name": "Runecraft level 99",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "RUNECRAFT",
+    "target": 99
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000085",
+    "name": "Hunter level 50",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "HUNTER",
+    "target": 50
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000086",
+    "name": "Hunter level 75",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "HUNTER",
+    "target": 75
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000087",
+    "name": "Hunter level 90",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "HUNTER",
+    "target": 90
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000088",
+    "name": "Hunter level 99",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "HUNTER",
+    "target": 99
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000089",
+    "name": "Construction level 50",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "CONSTRUCTION",
+    "target": 50
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000090",
+    "name": "Construction level 75",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "CONSTRUCTION",
+    "target": 75
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000091",
+    "name": "Construction level 90",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "CONSTRUCTION",
+    "target": 90
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000092",
+    "name": "Construction level 99",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "CONSTRUCTION",
+    "target": 99
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000093",
+    "name": "Sailing level 50",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "SAILING",
+    "target": 50
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000094",
+    "name": "Sailing level 75",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "SAILING",
+    "target": 75
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000095",
+    "name": "Sailing level 90",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "SAILING",
+    "target": 90
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000096",
+    "name": "Sailing level 99",
+    "section": "Skill milestones",
+    "source": "SKILL",
+    "sourceKey": "SAILING",
+    "target": 99
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000097",
+    "name": "Total level 500",
+    "section": "Total level milestones",
+    "source": "TOTAL_LEVEL",
+    "sourceKey": "total",
+    "target": 500
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000098",
+    "name": "Total level 750",
+    "section": "Total level milestones",
+    "source": "TOTAL_LEVEL",
+    "sourceKey": "total",
+    "target": 750
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000099",
+    "name": "Total level 1000",
+    "section": "Total level milestones",
+    "source": "TOTAL_LEVEL",
+    "sourceKey": "total",
+    "target": 1000
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000100",
+    "name": "Total level 1250",
+    "section": "Total level milestones",
+    "source": "TOTAL_LEVEL",
+    "sourceKey": "total",
+    "target": 1250
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000101",
+    "name": "Total level 1500",
+    "section": "Total level milestones",
+    "source": "TOTAL_LEVEL",
+    "sourceKey": "total",
+    "target": 1500
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000102",
+    "name": "Total level 1750",
+    "section": "Total level milestones",
+    "source": "TOTAL_LEVEL",
+    "sourceKey": "total",
+    "target": 1750
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000103",
+    "name": "Total level 1900",
+    "section": "Total level milestones",
+    "source": "TOTAL_LEVEL",
+    "sourceKey": "total",
+    "target": 1900
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000104",
+    "name": "Total level 2100",
+    "section": "Total level milestones",
+    "source": "TOTAL_LEVEL",
+    "sourceKey": "total",
+    "target": 2100
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000105",
+    "name": "Total level 2200",
+    "section": "Total level milestones",
+    "source": "TOTAL_LEVEL",
+    "sourceKey": "total",
+    "target": 2200
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000106",
+    "name": "Total level 2300",
+    "section": "Total level milestones",
+    "source": "TOTAL_LEVEL",
+    "sourceKey": "total",
+    "target": 2300
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000107",
+    "name": "Total level 2376",
+    "section": "Total level milestones",
+    "source": "TOTAL_LEVEL",
+    "sourceKey": "total",
+    "target": 2376
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000108",
+    "name": "Animal Magnetism",
+    "section": "Quest milestones",
+    "source": "QUEST",
+    "sourceKey": "ANIMAL_MAGNETISM",
+    "target": 1
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000109",
+    "name": "Bone Voyage",
+    "section": "Quest milestones",
+    "source": "QUEST",
+    "sourceKey": "BONE_VOYAGE",
+    "target": 1
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000110",
+    "name": "Desert Treasure I",
+    "section": "Quest milestones",
+    "source": "QUEST",
+    "sourceKey": "DESERT_TREASURE_I",
+    "target": 1
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000111",
+    "name": "Desert Treasure II - The Fallen Empire",
+    "section": "Quest milestones",
+    "source": "QUEST",
+    "sourceKey": "DESERT_TREASURE_II__THE_FALLEN_EMPIRE",
+    "target": 1
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000112",
+    "name": "Dragon Slayer I",
+    "section": "Quest milestones",
+    "source": "QUEST",
+    "sourceKey": "DRAGON_SLAYER_I",
+    "target": 1
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000113",
+    "name": "Dragon Slayer II",
+    "section": "Quest milestones",
+    "source": "QUEST",
+    "sourceKey": "DRAGON_SLAYER_II",
+    "target": 1
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000114",
+    "name": "Fairytale I - Growing Pains",
+    "section": "Quest milestones",
+    "source": "QUEST",
+    "sourceKey": "FAIRYTALE_I__GROWING_PAINS",
+    "target": 1
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000115",
+    "name": "Fairytale II - Cure a Queen",
+    "section": "Quest milestones",
+    "source": "QUEST",
+    "sourceKey": "FAIRYTALE_II__CURE_A_QUEEN",
+    "target": 1
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000116",
+    "name": "The Fremennik Trials",
+    "section": "Quest milestones",
+    "source": "QUEST",
+    "sourceKey": "THE_FREMENNIK_TRIALS",
+    "target": 1
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000117",
+    "name": "The Fremennik Isles",
+    "section": "Quest milestones",
+    "source": "QUEST",
+    "sourceKey": "THE_FREMENNIK_ISLES",
+    "target": 1
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000118",
+    "name": "The Fremennik Exiles",
+    "section": "Quest milestones",
+    "source": "QUEST",
+    "sourceKey": "THE_FREMENNIK_EXILES",
+    "target": 1
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000119",
+    "name": "The Grand Tree",
+    "section": "Quest milestones",
+    "source": "QUEST",
+    "sourceKey": "THE_GRAND_TREE",
+    "target": 1
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000120",
+    "name": "A Kingdom Divided",
+    "section": "Quest milestones",
+    "source": "QUEST",
+    "sourceKey": "A_KINGDOM_DIVIDED",
+    "target": 1
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000121",
+    "name": "Lunar Diplomacy",
+    "section": "Quest milestones",
+    "source": "QUEST",
+    "sourceKey": "LUNAR_DIPLOMACY",
+    "target": 1
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000122",
+    "name": "Monkey Madness I",
+    "section": "Quest milestones",
+    "source": "QUEST",
+    "sourceKey": "MONKEY_MADNESS_I",
+    "target": 1
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000123",
+    "name": "Monkey Madness II",
+    "section": "Quest milestones",
+    "source": "QUEST",
+    "sourceKey": "MONKEY_MADNESS_II",
+    "target": 1
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000124",
+    "name": "Recipe for Disaster",
+    "section": "Quest milestones",
+    "source": "QUEST",
+    "sourceKey": "RECIPE_FOR_DISASTER",
+    "target": 1
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000125",
+    "name": "Regicide",
+    "section": "Quest milestones",
+    "source": "QUEST",
+    "sourceKey": "REGICIDE",
+    "target": 1
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000126",
+    "name": "Sins of the Father",
+    "section": "Quest milestones",
+    "source": "QUEST",
+    "sourceKey": "SINS_OF_THE_FATHER",
+    "target": 1
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000127",
+    "name": "Song of the Elves",
+    "section": "Quest milestones",
+    "source": "QUEST",
+    "sourceKey": "SONG_OF_THE_ELVES",
+    "target": 1
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000128",
+    "name": "Tree Gnome Village",
+    "section": "Quest milestones",
+    "source": "QUEST",
+    "sourceKey": "TREE_GNOME_VILLAGE",
+    "target": 1
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000129",
+    "name": "Underground Pass",
+    "section": "Quest milestones",
+    "source": "QUEST",
+    "sourceKey": "UNDERGROUND_PASS",
+    "target": 1
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000130",
+    "name": "Beneath Cursed Sands",
+    "section": "Quest milestones",
+    "source": "QUEST",
+    "sourceKey": "BENEATH_CURSED_SANDS",
+    "target": 1
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000131",
+    "name": "While Guthix Sleeps",
+    "section": "Quest milestones",
+    "source": "QUEST",
+    "sourceKey": "WHILE_GUTHIX_SLEEPS",
+    "target": 1
+  }
+]

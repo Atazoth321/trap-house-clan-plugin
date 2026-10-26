@@ -223,6 +223,10 @@ public final class RankingServer {
                 try(InputStream input=RankingServer.class.getResourceAsStream("/starter-goals.sql");Statement s=c.createStatement()) {
                     if(input==null)throw new IllegalStateException("Starter goals missing");s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));
                 }
+                try(InputStream input=RankingServer.class.getResourceAsStream("/rank-thresholds-v1.sql");Statement s=c.createStatement()) {
+                    if(input==null)throw new IllegalStateException("Rank threshold migration missing");s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));
+                }
+                MilestoneCatalog.seed(c);
                 c.commit(); System.out.println("Schema initialized."); return;
             }
             if(args.length==2&&args[0].equals("bootstrap-owner")) {

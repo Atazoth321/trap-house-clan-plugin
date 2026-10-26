@@ -12,6 +12,29 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    @Test public void expandedMilestonesSeedIdempotentlyAndPreserveStaffRewards()throws Exception {
+        MilestoneCatalog.seed(c);
+        assertEquals(131,count("goals"));
+        UUID id=UUID.fromString(MilestoneCatalog.read().get(0).getAsJsonObject().get("id").getAsString());
+        RankingStore.execute(c,"UPDATE goals SET points=25,enabled=false WHERE id=?",id);
+        MilestoneCatalog.seed(c);assertEquals(131,count("goals"));
+        try(PreparedStatement s=RankingStore.query(c,"SELECT points,enabled FROM goals WHERE id=?",id);ResultSet r=s.executeQuery()) {
+            assertTrue(r.next());assertEquals(25,r.getInt(1));assertFalse(r.getBoolean(2));
+        }
+    }
+    @Test public void higherRankIntervalsPreserveEarnedRanksAndApplyOnlyOnce()throws Exception {
+        RankSecurity.adjust(c,owner(),member.id,adjustment(100));
+        assertEquals("Corporal",RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("automaticRank").getAsString());
+        String sql;
+        try(InputStream input=RankingServer.class.getResourceAsStream("/rank-thresholds-v1.sql")) {sql=new String(input.readAllBytes(),StandardCharsets.UTF_8);}
+        try(Statement s=c.createStatement()){s.execute(sql);}
+        try(PreparedStatement s=RankingStore.query(c,"SELECT threshold FROM ranks WHERE name='Sergeant'");ResultSet r=s.executeQuery()){r.next();assertEquals(6000,r.getLong(1));}
+        assertEquals("Corporal",RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("automaticRank").getAsString());
+        RankingStore.execute(c,"UPDATE ranks SET threshold=6500 WHERE name='Sergeant'");
+        try(Statement s=c.createStatement()){s.execute(sql);}
+        try(PreparedStatement s=RankingStore.query(c,"SELECT threshold FROM ranks WHERE name='Sergeant'");ResultSet r=s.executeQuery()){r.next();assertEquals(6500,r.getLong(1));}
+        assertEquals(1,count("point_adjustments"));
+    }
     @Test public void operatorOnboardingAndLinkingCommitWithRequiredAuditActor()throws Exception {
         c.commit();
         RankingServer.command(new String[]{"add-member","Atazoth"},this::connection);

@@ -64,6 +64,8 @@ The ranking API setting defaults to `https://trap-house-ranking-api.onrender.com
 
 Members can also use **Sign in with Discord** to obtain that credential automatically after leadership verifies and links their character once. See [Discord sign-in setup](docs/discord-sign-in.md). Discord authentication does not replace Jagex login and never grants clan permissions.
 
+The backend deployment seeds [150 tracking goals and the Owner-selected higher rank intervals](docs/milestones.md), preserving existing points, earned ranks, and configured rewards.
+
 ## Settings
 
 | Setting | Purpose |
