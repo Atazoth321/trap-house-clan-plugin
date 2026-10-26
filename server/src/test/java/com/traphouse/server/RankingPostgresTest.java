@@ -12,6 +12,39 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    @Test public void operatorNameCorrectionPreservesHistoryAndRevokesOldAccess()throws Exception {
+        RankingStore.execute(c,"INSERT INTO discord_member_links(discord_user_id,member_id) VALUES (?,?)",DISCORD_ID,member.id);
+        RankingStore.event(c,member,event("LOOT","1:2"));
+        RankingStore.execute(c,"INSERT INTO discord_login_sessions(id,device_hash,browser_hash,member_id) VALUES (?,?,?,?)",UUID.randomUUID(),Policy.hash("device"),Policy.hash("browser"),member.id);
+        c.commit();long history=count("ledger");
+        RankingServer.command(new String[]{"correct-member-name",member.name,"Oakie Pokie","Verified mistaken linking name"},this::connection);
+        try(PreparedStatement s=RankingStore.query(c,"SELECT name,normalized_name FROM members WHERE id=?",member.id);ResultSet r=s.executeQuery()) {
+            assertTrue(r.next());assertEquals("Oakie Pokie",r.getString(1));assertEquals("oakie pokie",r.getString(2));
+        }
+        try(PreparedStatement s=RankingStore.query(c,"SELECT member_id FROM discord_member_links WHERE discord_user_id=?",DISCORD_ID);ResultSet r=s.executeQuery()) {
+            assertTrue(r.next());assertEquals(member.id,r.getObject(1,UUID.class));
+        }
+        try(PreparedStatement s=RankingStore.query(c,"SELECT count(*) FROM credentials WHERE member_id=? AND NOT revoked",member.id);ResultSet r=s.executeQuery()) {
+            r.next();assertEquals(0,r.getInt(1));
+        }
+        assertEquals(0,count("discord_login_sessions"));assertEquals(history,count("ledger"));
+        try(PreparedStatement s=RankingStore.query(c,"SELECT details->>'oldName',details->>'newName' FROM audit WHERE target=? AND action='MEMBER_NAME_CORRECTED'",member.id);ResultSet r=s.executeQuery()) {
+            assertTrue(r.next());assertEquals(member.name,r.getString(1));assertEquals("Oakie Pokie",r.getString(2));
+        }
+    }
+    @Test public void operatorNameCorrectionRejectsExistingTargetWithoutChangingSource()throws Exception {
+        RankingStore.execute(c,"INSERT INTO discord_member_links(discord_user_id,member_id) VALUES (?,?)",DISCORD_ID,member.id);c.commit();
+        try {
+            RankingServer.command(new String[]{"correct-member-name",member.name,admin.name,"Verified mistaken linking name"},this::connection);
+            fail("Existing member must not be replaced");
+        }catch(IllegalArgumentException expected) {assertTrue(expected.getMessage().contains("already has a member record"));}
+        try(PreparedStatement s=RankingStore.query(c,"SELECT name FROM members WHERE id=?",member.id);ResultSet r=s.executeQuery()) {
+            assertTrue(r.next());assertEquals(member.name,r.getString(1));
+        }
+        try(PreparedStatement s=RankingStore.query(c,"SELECT count(*) FROM credentials WHERE member_id=? AND revoked",member.id);ResultSet r=s.executeQuery()) {
+            r.next();assertEquals(0,r.getInt(1));
+        }
+    }
     @Test public void productionInitRunsTwiceWithoutChangingHistoricalPetAwards()throws Exception {
         // Match the previous production release: activity migration precedes catalog seeding.
         try(InputStream input=RankingServer.class.getResourceAsStream("/activity-rewards-v3.sql");Statement s=c.createStatement()) {

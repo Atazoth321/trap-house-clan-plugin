@@ -2,6 +2,7 @@ package com.traphouse;
 
 import com.google.gson.*;
 import net.runelite.api.*;
+import net.runelite.client.game.ItemVariationMapping;
 
 /** Reads only explicitly configured progress probes, on the game thread. Never runs scripts or opens interfaces. */
 final class ProgressTracker {
@@ -35,7 +36,11 @@ final class ProgressTracker {
                 int item=id(key);long quantity=0;
                 for(InventoryID inventory:new InventoryID[]{InventoryID.INVENTORY,InventoryID.EQUIPMENT,InventoryID.BANK}) {
                     ItemContainer container=client.getItemContainer(inventory);
-                    if(container!=null)for(Item entry:container.getItems())if(entry.getId()==item)quantity+=entry.getQuantity();
+                    if(container!=null)for(Item entry:container.getItems()) {
+                        // Fire cape and Dragon defender ownership includes broken, cosmetic and locked variants.
+                        int observed=(item==6570||item==12954)?ItemVariationMapping.map(entry.getId()):entry.getId();
+                        if(observed==item)quantity+=entry.getQuantity();
+                    }
                 }
                 return Math.min(Integer.MAX_VALUE,quantity);
             default:return null;
