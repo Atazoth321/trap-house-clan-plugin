@@ -1,6 +1,6 @@
 # Plugin Hub submission
 
-This submits the existing TRAP HOUSE plugin, not a replacement project. Status: prepared locally; not yet submitted, approved, or listed. RuneLite controls review and publication.
+This updates the existing TRAP HOUSE listing at `plugins/trap-house-clan-plugin`, not a replacement project or second listing. The previous approved manifest points to commit `6b47575a9e41f648be8debb397d075c9e7520557`. The expanded update is submitted in [PR #19437](https://github.com/runelite/plugin-hub/pull/19437); RuneLite controls its review and distribution.
 
 ## Local checks
 
@@ -20,9 +20,9 @@ Networking uses the injected OkHttp client and background executor. The plugin r
 
 1. Commit the tested plugin and push it to the existing public repository. Confirm the exact commit is available on GitHub. A push can trigger the existing Render auto-deploy; confirm the production database backup first.
 2. Run `powershell -File tools/prepare-plugin-hub-submission.ps1`. This writes an exact-commit manifest and reviewer text under `build/plugin-hub-submission`; it does not publish anything.
-3. Fork `https://github.com/runelite/plugin-hub`, create a branch, and add the generated `trap-house-clan` file under `plugins/trap-house-clan`. Do not copy the entire plugin project into the Hub repository.
+3. In your fork of `https://github.com/runelite/plugin-hub`, create a branch and update the existing `plugins/trap-house-clan-plugin` file with the generated `trap-house-clan-plugin` manifest. Do not create a second listing or copy the entire plugin project into the Hub repository.
 4. Open a pull request to `runelite/plugin-hub` with the generated description. Address CI/reviewer requests in that same pull request and update its manifest commit after any plugin changes.
-5. Wait for RuneLite review and listing before telling members it is available. Verify installation in normal RuneLite and the live Discord/point flow after listing. Later releases require another manifest commit update in Plugin Hub.
+5. Wait for RuneLite review and distribution before telling members the update is available. Verify the updated plugin in normal RuneLite and the live Discord/point flow after release. Later releases update this same manifest.
 
 Official instructions: https://github.com/runelite/plugin-hub#submitting-a-plugin
 

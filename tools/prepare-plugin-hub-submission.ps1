@@ -10,11 +10,11 @@ try {
     $outputDirectory = Join-Path $projectRoot 'build/plugin-hub-submission'
     New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
     $utf8 = New-Object System.Text.UTF8Encoding($false)
-    [System.IO.File]::WriteAllText((Join-Path $outputDirectory 'trap-house-clan'), "repository=https://github.com/Atazoth321/trap-house-clan-plugin.git`ncommit=$pluginCommit`n", $utf8)
+    [System.IO.File]::WriteAllText((Join-Path $outputDirectory 'trap-house-clan-plugin'), "repository=https://github.com/Atazoth321/trap-house-clan-plugin.git`ncommit=$pluginCommit`n", $utf8)
     $review = @'
-Add Trap House Clan Plugin
+Update Trap House Clan Plugin
 
-Adds the existing TRAP HOUSE clan sidebar: Wise Old Man boss/skill standings, profiles, clan points, progression, and supported milestone/drop/pet observations.
+Updates the existing plugins/trap-house-clan-plugin listing: Wise Old Man boss/skill standings, profiles, clan points, progression, and supported milestone/drop/pet observations. No second plugin listing is requested.
 
 Uses the standard build and RuneLite-provided runtime libraries, with Java 11 output and a BSD 2-Clause license. The separately deployed backend and PostgreSQL dependencies are excluded from the plugin JAR.
 
