@@ -178,6 +178,7 @@ public final class RankingServer {
 
     static void command(String[] args, DiscordWorker.Connections connections) throws Exception {
         if(args.length==1&&args[0].equals("discord-setup")){new DiscordJoinBot(connections,System.getenv()).setup();System.out.println("Discord commands registered and Link RuneLite button posted.");return;}
+        if(args.length==1&&args[0].equals("discord-commands")){new DiscordJoinBot(connections,System.getenv()).setup(false);System.out.println("Discord link commands registered. No new button message posted.");return;}
         if (args.length == 2 && args[0].equals("add-member")) verifiedName(args[1]);
         if(args.length==4&&args[0].equals("correct-member-name")) {
             verifiedName(args[1]);verifiedName(args[2]);
@@ -295,7 +296,7 @@ public final class RankingServer {
                 c.commit();
                 System.out.println("Credential (shown once; expires in 90 days): " + token); return;
             }
-            throw new IllegalArgumentException("Commands: init | discord-setup | add-member <verified-character-name> | correct-member-name <old-name> <verified-correct-name> <reason> | link-discord <verified-character-name> <discord-user-id> | bootstrap-owner <verified-member-uuid> | issue-token <verified-character-name> member|admin");
+            throw new IllegalArgumentException("Commands: init | discord-setup | discord-commands | add-member <verified-character-name> | correct-member-name <old-name> <verified-correct-name> <reason> | link-discord <verified-character-name> <discord-user-id> | bootstrap-owner <verified-member-uuid> | issue-token <verified-character-name> member|admin");
         }
     }
 

@@ -47,12 +47,24 @@ Use the **same Discord application** already configured for RuneLite sign-in.
    /app/bin/trap-house-server discord-setup
    ```
 
-   It checks for a linked active Owner, upserts only this application's `/link` and `/pending` guild commands, and posts the public **Link RuneLite** button. Running it again posts another button message; do not add it to the automatic pre-deploy command. Unrelated application commands are preserved.
+   It checks for a linked active Owner, upserts this application's `/link`, `/pending`, `/edit-link` and `/revoke-link` guild commands, and posts the public **Link RuneLite** button. Running it again posts another button message; do not add it to the automatic pre-deploy command. Use `discord-commands` to update commands without posting another message. Unrelated application commands are preserved.
 8. Test with a separate ordinary clan member. Before approval, check that their request is pending and sign-in grants no access. A non-Owner clicking review buttons must receive a private rejection. Verify the character, approve it as Owner, then test their normal plugin sign-in and member points. The live application and database have not been tested from this workspace.
 
 ## Enforcement and records
 
 ### Correcting a name after approval
+
+Owners can manage accepted links directly in the clan Discord. After deploying this update, run the following once in the Render API Shell to register the commands without posting another public linking message:
+
+```sh
+/app/bin/trap-house-server discord-commands
+```
+
+- `/edit-link member:@Person` opens a private form for the correct OSRS name and a verification reason. Verify the new name belongs to the same person. The member's Discord link, UUID, points, ranks and achievement history stay intact; their existing credentials and sign-in sessions are revoked, so they must sign in with Discord again.
+- `/revoke-link member:@Person` opens a private confirmation form requiring a reason. Submitting removes the Discord link and revokes the member's existing credentials and sign-in sessions. It preserves the roster record, points and history. The person may submit a fresh `/link` request, which needs a new Owner approval. This revokes a link; it does not ban future requests.
+- The original **Reject** button also opens the revoke form after approval, provided that approval still matches the current link. Pending requests retain their existing rejection flow. Original approval records remain unchanged as history; a separate audit entry records each correction or revocation.
+
+All forms recheck the active backend Owner permission on submission. Stale forms fail if the name or link has changed. Names belonging to another member cannot be merged or overwritten. Owner links require operator management to avoid removing the Owner's own access. Discord roles do not bypass these checks. Replies are private and do not send mentions.
 
 After independently verifying the correct character belongs to the same linked person, a trusted operator can run this in the Render API service Shell after deploying the updated server:
 
@@ -69,10 +81,10 @@ This transaction preserves the member UUID, Discord link, points, progress and h
 - Approval and rejection produce permanent audit entries with the authenticated Owner UUID, target/request identity, requested character, Discord ID, required reason, and timestamp. No points are awarded or deducted by linking. Owner-only deductions and protected rank restrictions remain unchanged.
 - Requests and review records remain in PostgreSQL. Review notifications use a durable bot outbox with retries and disabled mentions. Notification failure does not approve a request, and `/pending` remains available even when channel delivery fails. At-least-once delivery can repeat a notification; stale buttons cannot review a request twice.
 - Response caches older than a day are removed by the bot worker. Identity requests, audit records, points, and rank history are not deleted by that cleanup. The service uses Java 21 in its existing Docker deployment; Ed25519 requires a runtime with that algorithm available.
-- Unlinking/reassigning an established identity remains an operator task with explicit revocation and audit; this workflow does not expose self-service identity transfers. Discord membership is rechecked by the existing OAuth flow at sign-in, not continuously.
+- Established links can be corrected or revoked by the linked backend Owner using the commands above, with credential revocation and audit. Transferring identities between existing records and changing Owner links remain operator tasks. Discord membership is rechecked by the existing OAuth flow at sign-in, not continuously.
 
 The runtime database connection in the current project remains an owner connection. This change enforces authorization in the backend; it does not complete the separately documented least-privilege database hardening. When configuring a restricted runtime role, include access to the new request/cache/outbox tables and the existing member/link/audit tables required by approvals, with no ability to modify audit history.
 
 ## Validation
 
-Gradle build/serverDist, available plugin/server tests, and IDE compilation passed. New tests verify real signed HTTP requests, rejection of unsigned/tampered/stale signatures and wrong applications, bounded RSNs, and Member/Event Manager/Administrator denial even with spoofed Owner fields before target access. PostgreSQL tests cover duplicate requests, approval/rejection, conflict protection, retained member UUID/points, non-escalation, and revoked Owner permission; those tests require a disposable database and have not been run locally. Discord bot installation, public endpoint validation, message delivery, and live approval/sign-in still require the setup and real-member test above.
+The server unit tests, serverDist packaging and all 54 PostgreSQL integration tests passed using a disposable local PostgreSQL 16.4 instance. Tests cover signed HTTP requests, forged roles and non-Owner management attempts, approval/rejection, name corrections, credential and session revocation, retained member identity/history, stale forms, conflicting names, protected Owner links and lost Owner permission. The integration fixture creates the migration registry that production init provides before reward migrations. Registering the commands and testing the live Discord forms still require the deployment steps above.
