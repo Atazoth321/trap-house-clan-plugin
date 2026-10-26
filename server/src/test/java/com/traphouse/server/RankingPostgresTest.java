@@ -12,6 +12,21 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    @Test public void productionInitRunsTwiceWithoutChangingHistoricalPetAwards()throws Exception {
+        // Match the previous production release: activity migration precedes catalog seeding.
+        try(InputStream input=RankingServer.class.getResourceAsStream("/activity-rewards-v3.sql");Statement s=c.createStatement()) {
+            s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));
+        }
+        AutomaticRewards.seed(c);
+        RankingStore.event(c,member,event("COLLECTION","pet kraken"));
+        c.commit();
+        RankingServer.command(new String[]{"init"},this::connection);
+        RankingServer.command(new String[]{"init"},this::connection);
+        assertEquals(750,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        assertArrayEquals(new int[]{500,1},RankingStore.rule(c,"COLLECTION","pet kraken"));
+        assertArrayEquals(new int[]{50,2},RankingStore.rule(c,"LOOT","chest:barrows:4708"));
+        assertEquals(1,count("ledger"));assertEquals(0,count("point_adjustments"));
+    }
     @Test public void balancePolicyPreservesHistoryCustomRulesAndEfficiencyState()throws Exception {
         AutomaticRewards.seed(c);
         RankingStore.execute(c,"UPDATE rules SET points=333 WHERE type='LOOT' AND event_key='chest:chambers of xeric:21034'");
@@ -547,6 +562,9 @@ public class RankingPostgresTest {
         try (InputStream input = RankingServer.class.getResourceAsStream("/schema.sql"); Statement s = c.createStatement()) {
             s.execute(new String(input.readAllBytes(), StandardCharsets.UTF_8));
         }
+        // Production init creates this in rank-thresholds-v1.sql before reward migrations.
+        // Keep legacy rank fixtures here while providing the same migration registry.
+        RankingStore.execute(c,"CREATE TABLE configuration_migrations (name varchar(100) PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())");
         for (RankingStore.Actor actor : new RankingStore.Actor[] {member, admin, clanOwner}) {
             RankingStore.execute(c, "INSERT INTO members VALUES (?,?,?,true)", actor.id, actor.name, Policy.normalize(actor.name));
         }
