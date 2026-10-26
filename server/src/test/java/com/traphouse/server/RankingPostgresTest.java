@@ -12,6 +12,24 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    @Test public void rewardRolloutCreditsTrackedCompletionsOnceAndPreservesStaffEdits()throws Exception {
+        try(InputStream input=RankingServer.class.getResourceAsStream("/starter-goals.sql");Statement s=c.createStatement()){s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));}
+        MilestoneCatalog.seed(c);
+        try(InputStream input=RankingServer.class.getResourceAsStream("/rank-thresholds-v1.sql");Statement s=c.createStatement()){s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));}
+        UUID attack=UUID.fromString("20000000-0000-4000-8000-000000000001");
+        UUID fire=UUID.fromString("10000000-0000-4000-8000-000000000002");
+        ClanFeatures.sync(c,member,observation(attack,50));assertEquals(0,count("ledger"));
+        RankingStore.execute(c,"UPDATE goals SET points=99,enabled=false WHERE id=?",fire);
+        MilestoneCatalog.applyRewards(c);
+        ClanFeatures.sync(c,member,observation(attack,50));ClanFeatures.sync(c,member,observation(attack,50));
+        assertEquals(1,count("ledger"));
+        RankingStore.execute(c,"UPDATE goals SET points=42 WHERE id=?",attack);
+        MilestoneCatalog.applyRewards(c);
+        try(PreparedStatement s=RankingStore.query(c,"SELECT points,enabled FROM goals WHERE id=?",fire);ResultSet r=s.executeQuery()){assertTrue(r.next());assertEquals(99,r.getInt(1));assertFalse(r.getBoolean(2));}
+        try(PreparedStatement s=RankingStore.query(c,"SELECT points FROM goals WHERE id=?",attack);ResultSet r=s.executeQuery()){assertTrue(r.next());assertEquals(42,r.getInt(1));}
+        ClanFeatures.sync(c,member,observation(attack,50));assertEquals(1,count("ledger"));
+        assertEquals(5,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+    }
     @Test public void expandedMilestonesSeedIdempotentlyAndPreserveStaffRewards()throws Exception {
         MilestoneCatalog.seed(c);
         assertEquals(131,count("goals"));
