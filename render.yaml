@@ -10,6 +10,8 @@ services:
     preDeployCommand: /app/bin/trap-house-server init
     healthCheckPath: /ready
     envVars:
+      - key: TRAP_WOM_STATS_ENABLED
+        value: 'true'
       - key: TRAP_PUBLIC_URL
         value: https://trap-house-ranking-api.onrender.com
       - key: TRAP_BIND_ADDRESS

@@ -156,7 +156,7 @@ public final class RankingServer {
         notifications.scheduleWithFixedDelay(() -> RankSecurity.promotions(RankingServer::connect),10,30,TimeUnit.SECONDS);
         String webhook = System.getenv("TRAP_DISCORD_WEBHOOK");
         if (webhook != null && !webhook.isBlank()) notifications.scheduleWithFixedDelay(new DiscordWorker(RankingServer::connect, webhook), 5, 5, TimeUnit.SECONDS);
-        if("true".equalsIgnoreCase(System.getenv("TRAP_WOM_STATS_ENABLED")))notifications.scheduleWithFixedDelay(new WiseOldManStats(RankingServer::connect),15,30,TimeUnit.SECONDS);
+        if(!"false".equalsIgnoreCase(System.getenv("TRAP_WOM_STATS_ENABLED")))notifications.scheduleWithFixedDelay(new WiseOldManStats(RankingServer::connect),15,30,TimeUnit.SECONDS);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> { server.stop(2); pool.shutdownNow(); notifications.shutdownNow(); }));
         server.start();
         System.out.println("TRAP HOUSE ranking API listening on port " + port);

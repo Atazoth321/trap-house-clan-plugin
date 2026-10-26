@@ -93,6 +93,12 @@ final class ClanFeatures {
         try(PreparedStatement s=query(c,"SELECT ehp,ehb,fetched_at FROM member_metrics WHERE member_id=?",actor.id);ResultSet r=s.executeQuery()){
             if(r.next()){metrics.addProperty("ehp",r.getBigDecimal(1));metrics.addProperty("ehb",r.getBigDecimal(2));metrics.addProperty("fetchedAt",r.getTimestamp(3).toInstant().toString());}
         }
+        try(PreparedStatement s=query(c,"SELECT baseline_at,week_start,weekly_points FROM efficiency_reward_state WHERE member_id=?",actor.id);ResultSet r=s.executeQuery()) {
+            if(r.next()) {
+                metrics.addProperty("baselineAt",r.getTimestamp(1).toInstant().toString());
+                metrics.addProperty("weeklyPoints",EfficiencyRewards.week(java.time.Instant.now()).equals(r.getTimestamp(2).toInstant())?r.getInt(3):0);
+            }
+        }
         data.getAsJsonObject("profile").add("metrics",metrics);
         JsonArray goals=new JsonArray();
         try(PreparedStatement s=query(c,"SELECT g.id,g.name,g.description,g.category,g.section,g.source,g.source_key,g.target,CASE WHEN g.source='MANUAL' THEN coalesce(r.points,0) ELSE g.points END,coalesce(p.value,0),p.completed_at IS NOT NULL FROM goals g LEFT JOIN goal_progress p ON p.goal_id=g.id AND p.member_id=? LEFT JOIN rules r ON r.type='MANUAL' AND r.event_key=g.source_key AND r.enabled WHERE g.enabled ORDER BY g.sort_order,g.id LIMIT 200",actor.id);ResultSet r=s.executeQuery()) {

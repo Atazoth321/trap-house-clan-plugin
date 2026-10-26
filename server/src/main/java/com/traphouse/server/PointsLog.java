@@ -9,7 +9,7 @@ import static com.traphouse.server.RankingStore.query;
 
 /** Read-only, bounded member ledger browser. All user values are bound parameters. */
 final class PointsLog {
-    static final List<String> CATEGORIES=Arrays.asList("All","Drops","Pets","Milestones","Diaries","Challenges","Events","Combat","Collection","Misc");
+    static final List<String> CATEGORIES=Arrays.asList("All","Drops","Pets","Milestones","Diaries","Challenges","Events","Combat","Collection","Efficiency","Misc");
     static Map<String,String> parameters(String raw) {
         if(raw==null||raw.length()>2000)throw new Policy.Rejected(400,"Invalid log query");
         Map<String,String> p=new HashMap<>();

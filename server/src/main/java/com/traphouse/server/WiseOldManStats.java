@@ -8,7 +8,7 @@ import java.sql.*;
 import java.time.Duration;
 import java.util.UUID;
 
-/** Optional server-side import of public EHP/EHB. Never submits player updates or awards points. */
+/** Server-side public WOM import. Does not submit player updates or accept client efficiency values. */
 final class WiseOldManStats implements Runnable {
     private final DiscordWorker.Connections connections;
     private final HttpClient http=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).followRedirects(HttpClient.Redirect.NEVER).build();
@@ -21,11 +21,12 @@ final class WiseOldManStats implements Runnable {
             if(value.signum()<0||value.compareTo(new java.math.BigDecimal("1000000000"))>0)throw new IllegalArgumentException("Efficiency value outside range");
             result.addProperty(metric,value);
         }
+        if(data.has("updatedAt")&&!data.get("updatedAt").isJsonNull())result.addProperty("snapshotAt",java.time.Instant.parse(data.get("updatedAt").getAsString()).toString());
         return result;
     }
     @Override public void run() {
         UUID id;String name;
-        try(Connection c=connections.open();PreparedStatement s=RankingStore.query(c,"SELECT m.id,m.name FROM members m LEFT JOIN member_metrics v ON v.member_id=m.id LEFT JOIN metric_attempts a ON a.member_id=m.id WHERE m.active AND (v.fetched_at IS NULL OR v.fetched_at<now()-interval '1 hour') AND (a.last_attempt IS NULL OR a.last_attempt<now()-interval '1 hour') ORDER BY a.last_attempt NULLS FIRST,m.id LIMIT 1");ResultSet r=s.executeQuery()) {
+        try(Connection c=connections.open();PreparedStatement s=RankingStore.query(c,"SELECT m.id,m.name FROM members m LEFT JOIN member_metrics v ON v.member_id=m.id LEFT JOIN efficiency_reward_state e ON e.member_id=m.id LEFT JOIN metric_attempts a ON a.member_id=m.id WHERE m.active AND (v.fetched_at IS NULL OR v.fetched_at<now()-interval '1 hour' OR e.member_id IS NULL) AND (a.last_attempt IS NULL OR a.last_attempt<now()-interval '5 minutes') ORDER BY a.last_attempt NULLS FIRST,m.id LIMIT 1");ResultSet r=s.executeQuery()) {
             if(!r.next())return;id=r.getObject(1,UUID.class);name=r.getString(2);
             RankingStore.execute(c,"INSERT INTO metric_attempts(member_id) VALUES (?) ON CONFLICT(member_id) DO UPDATE SET last_attempt=now()",id);
         }catch(SQLException unavailable){return;}
@@ -40,7 +41,14 @@ final class WiseOldManStats implements Runnable {
                 values=parse(new String(bytes,StandardCharsets.UTF_8));
             }
             try(Connection c=connections.open()) {
-                RankingStore.execute(c,"INSERT INTO member_metrics(member_id,ehp,ehb) VALUES (?,?,?) ON CONFLICT(member_id) DO UPDATE SET ehp=excluded.ehp,ehb=excluded.ehb,fetched_at=now()",id,values.get("ehp").getAsBigDecimal(),values.get("ehb").getAsBigDecimal());
+                c.setAutoCommit(false);
+                try {
+                    RankingStore.lockMember(c,id);
+                    RankingStore.execute(c,"INSERT INTO member_metrics(member_id,ehp,ehb) VALUES (?,?,?) ON CONFLICT(member_id) DO UPDATE SET ehp=excluded.ehp,ehb=excluded.ehb,fetched_at=now()",id,values.get("ehp").getAsBigDecimal(),values.get("ehb").getAsBigDecimal());
+                    EfficiencyRewards.observe(c,new RankingStore.Actor(id,name,false),values.get("ehp").getAsBigDecimal(),values.get("ehb").getAsBigDecimal(),
+                        values.has("snapshotAt")?java.time.Instant.parse(values.get("snapshotAt").getAsString()):null,java.time.Instant.now());
+                    c.commit();
+                } catch(Exception failure){c.rollback();throw failure;}
             }
         }catch(InterruptedException stop){Thread.currentThread().interrupt();}
         catch(Exception failure){System.err.println("Public efficiency import unavailable; will retry.");}

@@ -9,7 +9,7 @@ import javax.swing.*;
 final class PointsLogPanel extends JPanel {
     interface ItemArt {void load(JsonObject entry,BiConsumer<String,Icon> done);}
     private final ItemArt itemArt;
-    static final String[] CATEGORIES={"All","Drops","Pets","Milestones","Diaries","Challenges","Events","Combat","Collection","Misc"};
+    static final String[] CATEGORIES={"All","Drops","Pets","Milestones","Diaries","Challenges","Events","Combat","Collection","Efficiency","Misc"};
     private final JComboBox<String> source=new JComboBox<>(CATEGORIES),sort=new JComboBox<>(new String[]{"Newest first","Oldest first","Highest points"});
     private final JTextField search=new JTextField(16);
     private final JCheckBox group=new JCheckBox("Group");

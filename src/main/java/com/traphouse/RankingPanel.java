@@ -153,8 +153,8 @@ final class RankingPanel extends JPanel {
         ClanStyle.add(profile,ProfileStyle.label("Points from:",12,ProfileStyle.ACCENT));
         JsonObject breakdown=player.has("breakdown")?player.getAsJsonObject("breakdown"):new JsonObject();
         JPanel tiles=new JPanel(new GridLayout(0,3,3,3));tiles.setOpaque(false);
-        for(String category:new String[]{"Drops","Pets","Milestones","Diaries","Challenges","Events","Combat","Collection"}) {
-            if((category.equals("Combat")||category.equals("Collection"))&&!breakdown.has(category))continue;
+        for(String category:new String[]{"Drops","Pets","Milestones","Diaries","Challenges","Events","Combat","Collection","Efficiency"}) {
+            if((category.equals("Combat")||category.equals("Collection")||category.equals("Efficiency"))&&!breakdown.has(category))continue;
             JButton tile=pointsTile(name,category,number(breakdown,category));
             tile.setToolTipText(category+": "+formatted(number(breakdown,category))+" points");tiles.add(tile);
         }
@@ -162,7 +162,9 @@ final class RankingPanel extends JPanel {
         JsonObject metrics=player.has("metrics")?player.getAsJsonObject("metrics"):new JsonObject();
         JPanel efficiency=new JPanel(new GridLayout(1,2,4,0));efficiency.setOpaque(false);
         efficiency.add(ProfileStyle.tile(metric(metrics,"ehp"),"EHP",ProfileStyle.GREEN));efficiency.add(ProfileStyle.tile(metric(metrics,"ehb"),"EHB",ProfileStyle.GREEN));
-        efficiency.setToolTipText("Wise Old Man snapshot; not used to award points.");ClanStyle.add(profile,efficiency);
+        efficiency.setToolTipText("Wise Old Man: 5 pts/EHP gained, 10 pts/EHB gained; 100 pts/week maximum. "
+            +(metrics.has("baselineAt")?"This week: "+number(metrics,"weeklyPoints")+" / 100. ":"Waiting for a fresh starting baseline. ")
+            +(metrics.has("fetchedAt")?"Last fetched: "+string(metrics,"fetchedAt",""):"Not imported yet."));ClanStyle.add(profile,efficiency);
         compactProfileGoals(data);
         profileRankDetails(player,automatic);
         JPanel history=ProfileStyle.card("RECENT AWARDS");

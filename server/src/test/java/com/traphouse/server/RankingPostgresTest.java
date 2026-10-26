@@ -12,6 +12,30 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    @Test public void efficiencyRewardsBaselineDeduplicateCapAndNeverDeductOrRepayCorrections()throws Exception {
+        Instant now=Instant.parse("2026-10-25T12:00:00Z");
+        EfficiencyRewards.observe(c,member,new java.math.BigDecimal("100"),new java.math.BigDecimal("50"),now,now);
+        assertEquals(0,count("ledger"));
+        EfficiencyRewards.observe(c,member,new java.math.BigDecimal("101"),new java.math.BigDecimal("51"),now.plusSeconds(60),now.plusSeconds(60));assertEquals(1,count("ledger"));
+        EfficiencyRewards.observe(c,member,new java.math.BigDecimal("999"),new java.math.BigDecimal("999"),now.plusSeconds(60),now.plusSeconds(61));assertEquals(1,count("ledger"));
+        EfficiencyRewards.observe(c,member,new java.math.BigDecimal("99"),new java.math.BigDecimal("49"),now.plusSeconds(120),now.plusSeconds(120));assertEquals(1,count("ledger"));
+        EfficiencyRewards.observe(c,member,new java.math.BigDecimal("101"),new java.math.BigDecimal("51"),now.plusSeconds(180),now.plusSeconds(180));assertEquals(1,count("ledger"));
+        EfficiencyRewards.observe(c,member,new java.math.BigDecimal("200"),new java.math.BigDecimal("100"),now.plusSeconds(240),now.plusSeconds(240));assertEquals(2,count("ledger"));
+        assertEquals(100,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        Instant monday=Instant.parse("2026-10-26T12:00:00Z");
+        EfficiencyRewards.observe(c,member,new java.math.BigDecimal("200"),new java.math.BigDecimal("100"),monday,monday);assertEquals(2,count("ledger"));
+        EfficiencyRewards.observe(c,member,new java.math.BigDecimal("201"),new java.math.BigDecimal("101"),monday.plusSeconds(60),monday.plusSeconds(60));assertEquals(3,count("ledger"));
+        assertEquals(115,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        assertEquals(0,count("point_adjustments"));
+        assertEquals(115,PointsLog.read(c,"player=Member&category=Efficiency&sort=newest").get("total").getAsInt());
+    }
+    @Test public void efficiencyFractionalGainsAccumulateButStaleDataCannotStartBaseline()throws Exception {
+        Instant now=Instant.parse("2026-10-25T12:00:00Z");
+        EfficiencyRewards.observe(c,member,java.math.BigDecimal.TEN,java.math.BigDecimal.ZERO,now.minusSeconds(90000),now);assertEquals(0,count("efficiency_reward_state"));
+        EfficiencyRewards.observe(c,member,java.math.BigDecimal.TEN,java.math.BigDecimal.ZERO,now,now);
+        EfficiencyRewards.observe(c,member,new java.math.BigDecimal("10.1"),java.math.BigDecimal.ZERO,now.plusSeconds(10),now.plusSeconds(10));assertEquals(0,count("ledger"));
+        EfficiencyRewards.observe(c,member,new java.math.BigDecimal("10.2"),java.math.BigDecimal.ZERO,now.plusSeconds(20),now.plusSeconds(20));assertEquals(1,count("ledger"));
+    }
     @Test public void rewardBoostTopsUpPaidGoalsOnceWithoutRewritingAwardsOrDeductions()throws Exception {
         try(InputStream input=RankingServer.class.getResourceAsStream("/starter-goals.sql");Statement s=c.createStatement()){s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));}
         MilestoneCatalog.seed(c);

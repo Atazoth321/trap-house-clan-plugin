@@ -307,3 +307,14 @@ CREATE TABLE IF NOT EXISTS discord_login_sessions (
  expires_at timestamptz NOT NULL DEFAULT now()+interval '10 minutes'
 );
 CREATE INDEX IF NOT EXISTS discord_login_expiry ON discord_login_sessions(expires_at);
+
+CREATE TABLE IF NOT EXISTS efficiency_reward_state (
+ member_id uuid PRIMARY KEY REFERENCES members(id),
+ ehp_high numeric(20,8) NOT NULL CHECK(ehp_high>=0),
+ ehb_high numeric(20,8) NOT NULL CHECK(ehb_high>=0),
+ last_snapshot timestamptz NOT NULL,
+ baseline_at timestamptz NOT NULL,
+ week_start timestamptz NOT NULL,
+ weekly_points integer NOT NULL DEFAULT 0 CHECK(weekly_points BETWEEN 0 AND 100),
+ carry numeric(20,8) NOT NULL DEFAULT 0 CHECK(carry>=0 AND carry<1)
+);
