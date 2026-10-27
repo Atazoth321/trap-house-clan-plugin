@@ -111,6 +111,7 @@ public final class RankingServer {
             }
             return RankSecurity.auditLog(c,actor,after);
         }
+        if(method.equals("GET")&&path.equals("/v1/point-notifications"))return PointNotifications.read(c,actor,query);
         if(method.equals("GET")&&path.equals("/v1/points-log"))return PointsLog.read(c,query);
         if(method.equals("GET")&&path.equals("/v1/members"))return ClanFeatures.member(c,playerQuery(query));
         if(method.equals("POST")&&path.equals("/v1/progress"))return ClanFeatures.sync(c,actor,body);

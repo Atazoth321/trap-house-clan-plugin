@@ -177,6 +177,10 @@ public class TrapHouseClanPlugin extends Plugin {
             rankings.progress(ProgressTracker.collect(client,localName,rankings.probes()));
         }
         updatePlayer(client.getLocalPlayer() == null ? null : client.getLocalPlayer().getName());
+        if(rankingMember)for(String message:rankings.pointMessages()) {
+            if(config.rankingEnabled()&&config.rankingPointMessages())
+                client.addChatMessage(ChatMessageType.GAMEMESSAGE,"",message,null);
+        }
         if (!loginSession) {
             loginSession = true;
             bossAnnounced = !config.announceOnLogin();
