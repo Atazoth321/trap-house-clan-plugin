@@ -130,6 +130,7 @@ public class TrapHouseClanPlugin extends Plugin {
     @Subscribe public void onConfigChanged(ConfigChanged event) {
         if (!"traphouse".equals(event.getGroup())) return;
         if (event.getKey().startsWith("ranking")) {
+            if(!java.util.Set.of("rankingEnabled","rankingUrl","rankingToken").contains(event.getKey()))return;
             if(event.getKey().equals("rankingUrl"))discordSignIn.cancel();
             rankings.reset();
             SwingUtilities.invokeLater(() -> {
@@ -181,7 +182,7 @@ public class TrapHouseClanPlugin extends Plugin {
             rankings.progress(ProgressTracker.collect(client,localName,rankings.probes()));
         }
         updatePlayer(client.getLocalPlayer() == null ? null : client.getLocalPlayer().getName());
-        if(rankingMember)for(String message:rankings.pointMessages()) {
+        if(rankingMember)for(String message:rankings.pointMessages(config)) {
             if(config.rankingEnabled()&&config.rankingPointMessages())
                 client.addChatMessage(ChatMessageType.GAMEMESSAGE,"",message,null);
         }

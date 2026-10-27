@@ -144,7 +144,7 @@ public class RankingPostgresTest {
         RankingStore.event(c,member,drop);RankingStore.event(c,member,drop);
         JsonObject page=PointNotifications.read(c,member,"after="+cursor);
         assertEquals(member.name,page.get("player").getAsString());assertEquals(1,page.getAsJsonArray("awards").size());
-        JsonObject award=page.getAsJsonArray("awards").get(0).getAsJsonObject();assertEquals(25,award.get("points").getAsInt());assertEquals("Test drop",award.get("title").getAsString());
+        JsonObject award=page.getAsJsonArray("awards").get(0).getAsJsonObject();assertEquals(25,award.get("points").getAsInt());assertEquals("Test drop",award.get("title").getAsString());assertEquals("Drops",award.get("category").getAsString());
         assertEquals(page,PointNotifications.read(c,member,"after="+cursor));
         assertEquals(0,PointNotifications.read(c,member,"after="+page.get("cursor").getAsString()).getAsJsonArray("awards").size());
         assertEquals(0,PointNotifications.read(c,admin,"after=0").getAsJsonArray("awards").size());
@@ -160,7 +160,9 @@ public class RankingPostgresTest {
         RankingStore.review(c,admin,request,true);RankingStore.review(c,admin,request,true);
         JsonArray awards=PointNotifications.read(c,member,"after=0").getAsJsonArray("awards");assertEquals(2,awards.size());
         assertEquals("Test goal",awards.get(0).getAsJsonObject().get("title").getAsString());
+        assertEquals("Milestones",awards.get(0).getAsJsonObject().get("category").getAsString());
         assertEquals("Approved reward: clan event",awards.get(1).getAsJsonObject().get("title").getAsString());
+        assertEquals("Misc",awards.get(1).getAsJsonObject().get("category").getAsString());
         c.rollback();assertEquals(0,count("point_notifications"));assertEquals(0,count("ledger"));
     }
     @Test public void pointNotificationPagesDoNotLoseLargeAwardBursts()throws Exception {

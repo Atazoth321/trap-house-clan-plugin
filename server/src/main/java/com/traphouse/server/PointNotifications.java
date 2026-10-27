@@ -22,10 +22,10 @@ final class PointNotifications {
                 r.next();cursor=r.getLong(1);
             }
         } else {
-            try(PreparedStatement s=RankingStore.query(c,"SELECT id,points,title FROM point_notifications WHERE member_id=? AND id>? ORDER BY id LIMIT 100",actor.id,after);ResultSet r=s.executeQuery()) {
+            try(PreparedStatement s=RankingStore.query(c,"SELECT n.id,n.points,n.title,l.category FROM point_notifications n JOIN ledger l ON l.id=n.ledger_id WHERE n.member_id=? AND n.id>? ORDER BY n.id LIMIT 100",actor.id,after);ResultSet r=s.executeQuery()) {
                 while(r.next()) {
                     JsonObject award=new JsonObject();cursor=r.getLong(1);
-                    award.addProperty("id",Long.toString(cursor));award.addProperty("points",r.getInt(2));award.addProperty("title",r.getString(3));awards.add(award);
+                    award.addProperty("id",Long.toString(cursor));award.addProperty("points",r.getInt(2));award.addProperty("title",r.getString(3));award.addProperty("category",r.getString(4));awards.add(award);
                 }
             }
         }

@@ -28,6 +28,7 @@ final class RankingClient {
     private final PointAlerts pointAlerts=new PointAlerts();
 
     synchronized java.util.List<String> pointMessages(){return pointAlerts.drain();}
+    synchronized java.util.List<String> pointMessages(TrapHouseConfig config){return pointAlerts.drain(config);}
 
     com.google.gson.JsonArray probes() { return probes; }
     synchronized void progress(JsonObject values) { progressRequest=values; }

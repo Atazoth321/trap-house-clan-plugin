@@ -14,6 +14,21 @@ public interface TrapHouseConfig extends Config {
     default String rankingToken() { return ""; }
     @ConfigItem(keyName="rankingPointMessages", name="Points in chat", description="Show confirmed clan point awards and what earned them in your local game chat.", position=23)
     default boolean rankingPointMessages() { return true; }
+
+    @ConfigItem(keyName="rankingPointMessageColors", name="Color point messages", description="Use category colors for confirmed point awards in your local game chat.", position=24)
+    default boolean rankingPointMessageColors() { return true; }
+
+    @ConfigItem(keyName="rankingDropMessageColor", name="Drop message color", description="Color for points earned from drops.", position=25)
+    default java.awt.Color rankingDropMessageColor() { return new java.awt.Color(255,192,72); }
+
+    @ConfigItem(keyName="rankingPetMessageColor", name="Pet message color", description="Color for points earned from pets.", position=26)
+    default java.awt.Color rankingPetMessageColor() { return new java.awt.Color(192,128,255); }
+
+    @ConfigItem(keyName="rankingMilestoneMessageColor", name="Milestone message color", description="Color for points earned from milestones.", position=27)
+    default java.awt.Color rankingMilestoneMessageColor() { return new java.awt.Color(100,210,130); }
+
+    @ConfigItem(keyName="rankingOtherMessageColor", name="Other point message color", description="Color for combat achievements, diaries, events, efficiency and other point awards.", position=28)
+    default java.awt.Color rankingOtherMessageColor() { return new java.awt.Color(120,200,255); }
     @ConfigItem(keyName="competitionId", name="Wise Old Man competition ID", description="0 automatically selects the current Trap House boss competition. Enter a competition ID to view a specific event, including ended events.", position=1)
     @Range(min=0)
     default int competitionId() { return 0; }
