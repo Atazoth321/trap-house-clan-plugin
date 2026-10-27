@@ -22,6 +22,10 @@ The root `render.yaml` adds a separate Docker API service and a dedicated Postgr
 
 Render's generated HTTPS address is sufficient. To use `api.traphouseosrs.net`, add that custom domain to the **API service**, create the DNS record Render requests, and wait for HTTPS verification. Keep the website's existing DNS records. No website rebuild is required just to run this plugin API.
 
+## Pre-deploy lock contention
+
+If PostgreSQL detects a deadlock while `init` runs alongside the currently live service, initialization rolls back and retries the entire transaction on a new connection. Deadlocks, lock timeouts and serialization conflicts receive up to five attempts with short backoff; each attempt limits lock waits to five seconds. Logs identify the SQLSTATE and retry number without printing credentials. Other errors fail immediately. Keep the normal pre-deploy `init` command in place so schema updates are applied atomically. A failed attempt does not partially apply its migrations.
+
 ## Verification limits
 
 Local Gradle tests cover configuration parsing, readiness failure, and the existing application tests. Running the Docker image, applying PostgreSQL migrations, database integration tests, and live Render/Discord checks require their respective environments. Do not treat a successful build or readiness response as proof those checks passed. PostgreSQL tests require a disposable database and `TRAP_TEST_DATABASE_URL`, `TRAP_TEST_DATABASE_USER`, and `TRAP_TEST_DATABASE_PASSWORD`; run `gradlew.bat serverIntegrationTest` only against that test database.

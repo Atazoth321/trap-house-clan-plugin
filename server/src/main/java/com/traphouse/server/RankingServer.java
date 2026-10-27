@@ -178,6 +178,7 @@ public final class RankingServer {
     }
 
     static void command(String[] args, DiscordWorker.Connections connections) throws Exception {
+        if(args.length==1&&args[0].equals("init")){DatabaseInitialization.run(connections);System.out.println("Schema initialized.");return;}
         if(args.length==1&&args[0].equals("discord-setup")){new DiscordJoinBot(connections,System.getenv()).setup();System.out.println("Discord commands registered and Link RuneLite button posted.");return;}
         if(args.length==1&&args[0].equals("discord-commands")){new DiscordJoinBot(connections,System.getenv()).setup(false);System.out.println("Discord link commands registered. No new button message posted.");return;}
         if(args.length==1&&args[0].equals("discord-clean-reviews")){int queued=new DiscordJoinBot(connections,System.getenv()).cleanReviewedMessages();System.out.println("Queued "+queued+" reviewed link messages. The worker will copy each decision to the staff log before removing its review message.");return;}
@@ -250,33 +251,6 @@ public final class RankingServer {
                 c.commit();
                 System.out.println("Verified member UUID: " + member);
                 return;
-            }
-            if (args.length == 1 && args[0].equals("init")) {
-                try (InputStream input = RankingServer.class.getResourceAsStream("/schema.sql"); Statement s = c.createStatement()) {
-                    if (input == null) throw new IllegalStateException("Schema resource missing");
-                    s.execute(new String(input.readAllBytes(), StandardCharsets.UTF_8));
-                }
-                try(InputStream input=RankingServer.class.getResourceAsStream("/starter-goals.sql");Statement s=c.createStatement()) {
-                    if(input==null)throw new IllegalStateException("Starter goals missing");s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));
-                }
-                try(InputStream input=RankingServer.class.getResourceAsStream("/rank-thresholds-v1.sql");Statement s=c.createStatement()) {
-                    if(input==null)throw new IllegalStateException("Rank threshold migration missing");s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));
-                }
-                MilestoneCatalog.seed(c);
-                MilestoneCatalog.applyRewards(c);
-                MilestoneCatalog.applyRewardBoost(c);
-                MilestoneCatalog.applyCurrentRewards(c);
-                try(InputStream input=RankingServer.class.getResourceAsStream("/activity-rewards-v3.sql");Statement s=c.createStatement()) {
-                    if(input==null)throw new IllegalStateException("Activity rewards missing");
-                    s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));
-                }
-                AutomaticRewards.seed(c);
-                BalancedRewards.apply(c);
-                RankManagement.initializeOwnerRanks(c);
-                try(InputStream input=RankingServer.class.getResourceAsStream("/discord-joining.sql");Statement s=c.createStatement()) {
-                    if(input==null)throw new IllegalStateException("Discord joining schema missing");s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));
-                }
-                c.commit(); System.out.println("Schema initialized."); return;
             }
             if(args.length==2&&args[0].equals("bootstrap-owner")) {
                 UUID member=Policy.uuid(args[1]);RankingStore.lockMember(c,member);

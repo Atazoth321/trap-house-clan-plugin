@@ -12,6 +12,33 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    @Test public void initializationRecoversFromARealDeadlockWithoutCommittingPartialWork()throws Exception {
+        RankingStore.execute(c,"CREATE TABLE init_lock_a(id integer)");RankingStore.execute(c,"CREATE TABLE init_lock_b(id integer)");RankingStore.execute(c,"CREATE TABLE init_marker(id integer PRIMARY KEY)");c.commit();
+        ExecutorService pool=Executors.newSingleThreadExecutor();CountDownLatch initializerHasA=new CountDownLatch(1);
+        java.util.concurrent.atomic.AtomicInteger attempts=new java.util.concurrent.atomic.AtomicInteger();
+        try(Connection traffic=connection()) {
+            traffic.setAutoCommit(false);RankingStore.execute(traffic,"SET LOCAL deadlock_timeout='10s'");RankingStore.execute(traffic,"LOCK TABLE init_lock_b IN ACCESS EXCLUSIVE MODE");
+            int trafficPid;try(Statement s=traffic.createStatement();ResultSet r=s.executeQuery("SELECT pg_backend_pid()")){r.next();trafficPid=r.getInt(1);}
+            Future<?> concurrent=pool.submit(()->{
+                try{assertTrue(initializerHasA.await(10,TimeUnit.SECONDS));RankingStore.execute(traffic,"LOCK TABLE init_lock_a IN ACCESS EXCLUSIVE MODE");traffic.commit();}
+                catch(Exception failure){throw new RuntimeException(failure);}
+            });
+            DatabaseInitialization.run(this::connection,db->{
+                int attempt=attempts.incrementAndGet();RankingStore.execute(db,"SET LOCAL deadlock_timeout='100ms'");RankingStore.execute(db,"INSERT INTO init_marker VALUES (1)");RankingStore.execute(db,"LOCK TABLE init_lock_a IN ACCESS EXCLUSIVE MODE");
+                if(attempt==1) {
+                    initializerHasA.countDown();boolean waiting=false;long deadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(5);
+                    while(System.nanoTime()<deadline) {
+                        try(PreparedStatement s=RankingStore.query(db,"SELECT EXISTS(SELECT 1 FROM pg_locks WHERE pid=? AND NOT granted)",trafficPid);ResultSet r=s.executeQuery()){r.next();waiting=r.getBoolean(1);}
+                        if(waiting)break;Thread.sleep(10);
+                    }
+                    assertTrue("Concurrent traffic must be waiting on initialization before creating the cycle",waiting);
+                }
+                RankingStore.execute(db,"LOCK TABLE init_lock_b IN ACCESS EXCLUSIVE MODE");DatabaseInitialization.apply(db);
+            });
+            concurrent.get(10,TimeUnit.SECONDS);assertEquals(2,attempts.get());assertEquals(1,count("init_marker"));c.commit();
+            RankingServer.command(new String[]{"init"},this::connection); // A later deployment remains idempotent.
+        }finally{pool.shutdownNow();}
+    }
     private Map<String,String> archiveEnv() {
         Map<String,String> env=new HashMap<>();env.put("TRAP_DISCORD_CLIENT_ID","900000000000000001");env.put("TRAP_DISCORD_REVIEW_CHANNEL_ID","900000000000000002");env.put("TRAP_DISCORD_STAFF_LOG_CHANNEL_ID","900000000000000003");return env;
     }
