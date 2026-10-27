@@ -8,6 +8,8 @@ Members no longer need an operator to run a Render command for each new characte
 4. The Owner independently verifies character ownership and current TRAP HOUSE membership, clicks Approve, and enters a required verification reason. Rejections also require a reason.
 5. The member uses **Sign in with Discord** in RuneLite. The existing sign-in flow supplies the member credential automatically. `/link` or the Link RuneLite button shows whether their request is pending or their account is linked.
 
+Completed requests are copied to the configured private staff log, including the character, Discord ID, decision, reviewer, reason, review time and request ID. After Discord confirms the staff-log message and the server saves that receipt, the bot removes its original review-channel message. Both approvals and rejections follow this flow. If logging fails or the staff-log channel is not configured, the review message stays in place and the worker retries. Cleanup failures retry without posting the saved log entry again. Full request and audit history remains in the database.
+
 Discord proves the Discord identity and guild context; it does not prove OSRS character ownership. Approval remains a human verification step. Discord roles do not grant Owner permissions, and no part of this flow changes in-game ranks.
 
 ## One-time setup for this deployment
@@ -16,7 +18,7 @@ Use the **same Discord application** already configured for RuneLite sign-in.
 
 1. Deploy this commit to `trap-house-ranking-api` on Render. Its existing pre-deploy `init` command adds the join-request, interaction-response cache, and bot notification outbox tables. It preserves points, ranks, identity links, and permissions.
 2. Open [Discord Developer Portal](https://discord.com/developers/applications). Select your application. From **General Information**, copy its **Public Key**. Under **Bot**, create a bot if needed and obtain/reset its bot token. Enter the token directly in Render; do not paste it into chat, Git, screenshots, or RuneLite.
-3. In Render's API service **Environment**, add these four settings:
+3. In Render's API service **Environment**, add these settings:
 
    | Variable | Value |
    | --- | --- |
@@ -24,6 +26,7 @@ Use the **same Discord application** already configured for RuneLite sign-in.
    | `TRAP_DISCORD_BOT_TOKEN` | The bot token from the application's Bot page |
    | `TRAP_DISCORD_LINK_CHANNEL_ID` | Channel ID where members should see the Link RuneLite button |
    | `TRAP_DISCORD_REVIEW_CHANNEL_ID` | A private review channel accessible to you and the bot |
+   | `TRAP_DISCORD_STAFF_LOG_CHANNEL_ID` | A separate private staff-log channel for completed approvals and rejections |
 
    Keep the existing `TRAP_DISCORD_CLIENT_ID`, `TRAP_DISCORD_GUILD_ID`, `TRAP_DISCORD_CLIENT_SECRET`, and `TRAP_PUBLIC_URL`. Save and redeploy. This bot token is different from the existing OAuth client secret and optional promotion webhook.
 4. In the Discord application **General Information → Interactions Endpoint URL**, enter:
@@ -51,6 +54,20 @@ Use the **same Discord application** already configured for RuneLite sign-in.
 8. Test with a separate ordinary clan member. Before approval, check that their request is pending and sign-in grants no access. A non-Owner clicking review buttons must receive a private rejection. Verify the character, approve it as Owner, then test their normal plugin sign-in and member points. The live application and database have not been tested from this workspace.
 
 ## Enforcement and records
+
+### Keep the review channel pending-only
+
+Set `TRAP_DISCORD_STAFF_LOG_CHANNEL_ID` on the Render API service and deploy this backend update with the normal pre-deploy `init`. The additive schema keeps existing requests, links and audit history. The bot needs View Channel and Send Messages in the staff log. The staff-log channel must differ from the review channel. The bot deletes only its own review messages; it does not need Manage Messages for that.
+
+Future requests are tracked automatically. To archive completed messages posted by an older server, also allow Read Message History in the review channel, then run once in Render Shell:
+
+```sh
+/app/bin/trap-house-server discord-clean-reviews
+```
+
+This scans up to 1,000 recent review-channel messages, queues only this bot's recognized request buttons whose requests have already been reviewed, and leaves unrelated and pending messages alone. The background worker logs each decision before deleting its review message. It does not approve or reject anything. If the channel contains more than 1,000 old messages, rerun after the queued messages have cleared. Existing accepted links remain manageable with `/edit-link` and `/revoke-link` after their original buttons are removed.
+
+This is a backend-only update; no Plugin Hub update is needed.
 
 ### Correcting a name after approval
 

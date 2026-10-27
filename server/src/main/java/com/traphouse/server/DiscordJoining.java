@@ -96,6 +96,7 @@ final class DiscordJoining {
             JsonObject details=new JsonObject();details.addProperty("request",request.toString());details.addProperty("discordUserId",applicant);details.addProperty("character",name);details.addProperty("reason",reason.trim());
             if(member!=null)details.addProperty("member",member.toString());
             RankingStore.execute(c,"INSERT INTO audit(actor,action,target,details) VALUES (?,?,?,?::jsonb)",actor.id,approve?"DISCORD_LINK_APPROVED":"DISCORD_LINK_REJECTED",member==null?request:member,details.toString());
+            DiscordJoinArchive.enqueue(c,request);
         }
     }
     static JsonObject pending(Connection c,String discord)throws SQLException {
@@ -124,6 +125,7 @@ final class DiscordJoining {
             }
             if(type==3&&(custom.startsWith("join:approve:")||custom.startsWith("join:reject:"))) {
                 owner(c,discord);boolean approve=custom.startsWith("join:approve:");UUID id=Policy.uuid(custom.substring(custom.lastIndexOf(':')+1));
+                DiscordJoinArchive.remember(c,interaction,id);
                 if(!approve) {
                     JsonObject revoke=DiscordLinkManagement.rejectAccepted(c,discord,id);
                     if(revoke!=null)return revoke;
