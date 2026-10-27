@@ -1,5 +1,7 @@
 # Confirmed points in game chat
 
+**Color in-game drop notices** also colors the game's existing valuable/untradeable drop notices gold, pet notices purple, and collection-log unlocks green. It is enabled by default and works independently of ranking sync and point messages. It shares the drop, pet and milestone color settings below. It recolors existing lines without adding duplicates; the game's loot notification settings still control which drop notices appear. Changes apply to new messages.
+
 **Color point messages** is enabled by default. Drops use gold, pets use purple, milestones use green, and combat/diary/event/efficiency/other rewards use light blue. Each color can be customized in the plugin settings, or colors can be disabled to use ordinary game-chat text. **Points in chat** separately controls whether any point messages appear. These settings affect only the receiving player's private messages.
 
 The notification feed supplies the category recorded on each award's ledger entry. Older clients ignore this additional field; a new client connected to an older backend uses the Other color when the field is absent. Deploy the backend and update the Plugin Hub client for category-specific colors. No new schema migration is needed. Changing message colors or visibility does not reset ranking sync or the notification cursor; connection/account changes still do. Reward names are sanitized before the client adds its own color tags.

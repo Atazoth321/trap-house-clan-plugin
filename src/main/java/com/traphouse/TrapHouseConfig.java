@@ -4,6 +4,9 @@ import net.runelite.client.config.*;
 
 @ConfigGroup("traphouse")
 public interface TrapHouseConfig extends Config {
+    @ConfigItem(keyName="dropChatColors", name="Color in-game drop notices", description="Color your game's drop notices gold, pet notices purple and collection-log unlocks green. Uses the drop, pet and milestone color settings below.", position=29)
+    default boolean dropChatColors() { return true; }
+
     @ConfigItem(keyName="rankingEnabled", name="Enable ranking sync", description="Opt in to sending your character name, supported events and configured achievement/progress observations to your clan ranking server.", position=20)
     default boolean rankingEnabled() { return false; }
 

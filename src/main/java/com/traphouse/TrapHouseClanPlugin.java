@@ -264,6 +264,13 @@ public class TrapHouseClanPlugin extends Plugin {
     }
 
     @Subscribe public void onChatMessage(net.runelite.api.events.ChatMessage event) {
+        if (event.getType() != ChatMessageType.GAMEMESSAGE && event.getType() != ChatMessageType.SPAM) return;
+        String colored = DropChatColors.recolor(event.getMessage(), config);
+        if (colored != null) {
+            event.getMessageNode().setValue(colored);
+            event.getMessageNode().setRuneLiteFormatMessage(colored);
+            client.refreshChat();
+        }
         String player = trackingPlayer();
         if (player == null || (event.getType() != ChatMessageType.GAMEMESSAGE
             && event.getType() != ChatMessageType.SPAM)) return;
