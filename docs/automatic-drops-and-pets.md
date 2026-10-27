@@ -22,6 +22,14 @@ Supported automatic drop items allow **two awards per member per UTC day per ite
 
 ## Drop rewards
 
+### Visual reward browser
+
+The points log now extends the drop-card layout to **All**, **Pets**, **Milestones**, **Combat**, **Diaries**, **Challenges**, **Events**, **Collection**, and **Misc**. The **Available rewards** tab lists enabled point-paying rules and automatic goals in the selected category; **Award history** keeps the existing ledger view. Categories without a configured reward have an empty catalog. Efficiency awards remain visible in award history; their gain-based rates are shown on the profile rather than represented as collectible rewards.
+
+Cards show the current point value, item/pet sprite when available (or a category icon), one-time versus daily limits, and **Received / Not received yet** status. Received cards have a green outline, award count, and historical points earned. Use the status filter to show rewards already received or still missing. Status comes from the selected member's positive ledger awards, not merely owning an item or completing an unrewarded activity. Disabled and zero-point goals are omitted; staff-reviewed rewards show their review requirement.
+
+This requires both a backend deployment and an updated Plugin Hub client. The backend adds `availableRewards` to points-log responses while retaining `availableDrops` for older clients; no schema migration is needed for this browser update. Generate an offline, illustrative preview with `gradlew.bat previewRewards` (saved under `build/reward-catalog-preview.png`).
+
 Open **Profile → Points from: Drops → Available drops** to browse the current enabled reward rules before earning a drop. Cards show actual item icons where RuneLite can resolve them, points per drop, automatic versus staff-reviewed rewards, and daily caps. Search filters item names; Highest points sorts the catalog by reward. Matching NPC phase rules are combined into one item card. Award history remains in its own tab. The catalog uses the live database rule amounts, so disabled rewards are omitted and staff edits appear on the next reload. Deploy the updated backend and restart the updated plugin to use this view.
 
 Choose **All drops**, **Not received yet**, or **Received** to filter the catalog. Received cards show the member's recorded award count and total points actually earned, independent of the current reward price or Owner deductions. NPC phase awards for matching item cards are combined. Duplicate observation retries do not increase the count. These statuses reflect recorded scoring history, not a historical import of the player's collection log; untracked past drops cannot be inferred. Staff-reviewed generic reward claims are labeled separately and reflect their own recorded approvals.

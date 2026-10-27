@@ -9,6 +9,22 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class PointsLogPanelTest {
+    @Test public void rewardCatalogWorksAcrossCategoriesAndKeepsMilestoneNamesWhenArtLoads()throws Exception {
+        SwingUtilities.invokeAndWait(()->{
+            JsonObject log=data("Member",1,0);JsonArray catalog=new JsonArray();
+            catalog.add(new Gson().fromJson("{category:'Milestones',title:'First Fire cape',points:150,sourceType:'GOAL',sourceKey:'goal-id',itemId:6570,dailyLimit:1,onceOnly:true,received:true,receivedCount:1,earnedPoints:150}",JsonObject.class));
+            catalog.add(new Gson().fromJson("{category:'Milestones',title:'Attack level 99',points:50,sourceType:'GOAL',sourceKey:'other-id',dailyLimit:1,onceOnly:true,received:false,receivedCount:0,earnedPoints:0}",JsonObject.class));
+            log.add("availableRewards",catalog);
+            PointsLogPanel panel=new PointsLogPanel("Member","Milestones",(q,done)->done.accept(log),(e,done)->done.accept("Fire cape",new ImageIcon(new java.awt.image.BufferedImage(36,32,2))));
+            JTabbedPane tabs=find(panel,JTabbedPane.class);assertEquals("Available rewards",tabs.getTitleAt(tabs.getSelectedIndex()));
+            assertTrue(text(panel,"First Fire cape"));assertFalse(text(panel,"Fire cape"));assertTrue(text(panel,"One-time reward"));
+            assertTrue(text(panel,"Received x1"));assertTrue(text(panel,"150 pts earned"));
+            JComboBox<?> status=find((Container)tabs.getComponentAt(0),JComboBox.class);
+            status.setSelectedItem("Received");assertTrue(text(panel,"First Fire cape"));assertFalse(text(panel,"Attack level 99"));
+            status.setSelectedItem("Not received yet");assertFalse(text(panel,"First Fire cape"));assertTrue(text(panel,"Attack level 99"));
+            panel.close();
+        });
+    }
     @Test public void barrowsCatalogExplainsSharedItemAndFamilyCaps()throws Exception {
         SwingUtilities.invokeAndWait(()->{
             JsonObject log=data("Member",1,0);JsonArray catalog=new JsonArray();

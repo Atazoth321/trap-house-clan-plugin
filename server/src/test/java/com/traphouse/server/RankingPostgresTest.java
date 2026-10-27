@@ -12,6 +12,28 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    @Test public void rewardCatalogIncludesEnabledPetsCombatMilestonesAndMiscWithMemberSpecificReceipts()throws Exception {
+        RankingStore.execute(c,"INSERT INTO rules(type,event_key,points,daily_limit,enabled,category,display_name) VALUES ('COLLECTION','baby mole',500,1,true,'Pets','Baby mole'),('COMBAT','flawless kill',20,1,true,'Combat','Flawless kill'),('MANUAL','helpful member',30,2,true,'Misc','Helpful member'),('MANUAL','disabled reward',50,1,false,'Misc','Disabled reward')");
+        UUID milestone=goal("ITEM","6570","Milestones",1,150);
+        goal("TOTAL_LEVEL","total","Milestones",100,0);
+        RankingStore.execute(c,"UPDATE goals SET name='First Fire cape' WHERE id=?",milestone);
+        RankingStore.event(c,member,event("COLLECTION","baby mole"));
+        ClanFeatures.sync(c,member,observation(milestone,1));
+        JsonArray pets=RewardCatalog.read(c,member.id,"Pets","","newest");assertEquals(1,pets.size());
+        assertTrue(pets.get(0).getAsJsonObject().get("received").getAsBoolean());
+        assertEquals(500,pets.get(0).getAsJsonObject().get("earnedPoints").getAsInt());
+        assertFalse(RewardCatalog.read(c,admin.id,"Pets","","newest").get(0).getAsJsonObject().get("received").getAsBoolean());
+        JsonObject cape=RewardCatalog.read(c,member.id,"Milestones","Fire cape","newest").get(0).getAsJsonObject();
+        assertTrue(cape.get("received").getAsBoolean());assertTrue(cape.get("onceOnly").getAsBoolean());assertEquals(6570,cape.get("itemId").getAsInt());
+        assertEquals(1,RewardCatalog.read(c,member.id,"Milestones","","newest").size());
+        assertEquals(1,RewardCatalog.read(c,member.id,"Combat","Flawless","newest").size());
+        assertEquals(1,RewardCatalog.read(c,member.id,"Misc","Helpful","newest").size());
+        assertEquals(0,RewardCatalog.read(c,member.id,"Misc","Disabled","newest").size());
+        assertEquals(0,RewardCatalog.read(c,member.id,"All","' OR 1=1 --","newest").size());
+        JsonArray all=RewardCatalog.read(c,member.id,"All","","highest");
+        for(int i=1;i<all.size();i++)assertTrue(all.get(i-1).getAsJsonObject().get("points").getAsInt()>=all.get(i).getAsJsonObject().get("points").getAsInt());
+        assertTrue(PointsLog.read(c,"player=Member&category=Pets").has("availableRewards"));
+    }
     @Test public void pointNotificationsStartSilentlyAndReportConfirmedNamedAwardsOnlyToTheirMember()throws Exception {
         RankingStore.execute(c,"UPDATE rules SET display_name='Test drop' WHERE type='LOOT' AND event_key='1:2'");
         RankingStore.event(c,member,event("LOOT","1:2"));
