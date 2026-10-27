@@ -26,3 +26,16 @@ CREATE TABLE IF NOT EXISTS discord_join_outbox (
  attempts integer NOT NULL DEFAULT 0,
  delivered_at timestamptz
 );
+ALTER TABLE discord_join_outbox ADD COLUMN IF NOT EXISTS review_channel_id varchar(20);
+ALTER TABLE discord_join_outbox ADD COLUMN IF NOT EXISTS review_message_id varchar(20);
+CREATE TABLE IF NOT EXISTS discord_join_archive_outbox (
+ request_id uuid PRIMARY KEY REFERENCES discord_join_requests(id),
+ payload jsonb NOT NULL,
+ staff_channel_id varchar(20),
+ staff_message_id varchar(20),
+ logged_at timestamptz,
+ cleaned_at timestamptz,
+ attempts integer NOT NULL DEFAULT 0,
+ next_attempt timestamptz NOT NULL DEFAULT now(),
+ created_at timestamptz NOT NULL DEFAULT now()
+);

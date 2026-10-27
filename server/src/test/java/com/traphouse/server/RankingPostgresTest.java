@@ -12,6 +12,65 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    private Map<String,String> archiveEnv() {
+        Map<String,String> env=new HashMap<>();env.put("TRAP_DISCORD_CLIENT_ID","900000000000000001");env.put("TRAP_DISCORD_REVIEW_CHANNEL_ID","900000000000000002");env.put("TRAP_DISCORD_STAFF_LOG_CHANNEL_ID","900000000000000003");return env;
+    }
+    @Test public void remembersOnlyTheBotsPublicReviewMessageNotEphemeralPendingReplies()throws Exception {
+        joiningSchema();UUID request=DiscordJoining.request(c,DISCORD_ID,"ArchiveTest");
+        JsonObject interaction=DiscordJoining.object("{application_id:'900000000000000001',channel_id:'900000000000000002',message:{id:'900000000000000004',flags:64,author:{id:'900000000000000001'}}}");
+        DiscordJoinArchive.remember(c,interaction,request);
+        interaction.getAsJsonObject("message").addProperty("flags",0);interaction.getAsJsonObject("message").getAsJsonObject("author").addProperty("id","800000000000000001");
+        DiscordJoinArchive.remember(c,interaction,request);
+        try(PreparedStatement s=RankingStore.query(c,"SELECT review_message_id FROM discord_join_outbox WHERE id=?",request);ResultSet r=s.executeQuery()){assertTrue(r.next());assertNull(r.getString(1));}
+        interaction.getAsJsonObject("message").getAsJsonObject("author").addProperty("id","900000000000000001");DiscordJoinArchive.remember(c,interaction,request);
+        try(PreparedStatement s=RankingStore.query(c,"SELECT review_channel_id,review_message_id FROM discord_join_outbox WHERE id=?",request);ResultSet r=s.executeQuery()){assertTrue(r.next());assertEquals("900000000000000002",r.getString(1));assertEquals("900000000000000004",r.getString(2));}
+    }
+    @Test public void reviewedDiscordRequestsAreLoggedBeforeCleanupAndDeletionRetriesDoNotRepost()throws Exception {
+        joiningSchema();RankingStore.execute(c,"INSERT INTO discord_member_links(discord_user_id,member_id) VALUES (?,?)",LINK_OWNER,clanOwner.id);
+        UUID request=DiscordJoining.request(c,DISCORD_ID,"ArchiveTest");c.commit();
+        List<String> calls=new ArrayList<>();java.util.concurrent.atomic.AtomicBoolean failDelete=new java.util.concurrent.atomic.AtomicBoolean(true);
+        DiscordJoinBot bot=new DiscordJoinBot(this::connection,archiveEnv(),(method,path,body)->{
+            calls.add(method+" "+path);
+            if(method.equals("DELETE"))return new DiscordJoinBot.Reply(failDelete.getAndSet(false)?503:404,"");
+            assertEquals(0,body.getAsJsonObject("allowed_mentions").getAsJsonArray("parse").size());
+            return new DiscordJoinBot.Reply(200,"{\"id\":\"900000000000000004\"}");
+        });
+        bot.run();assertEquals(Collections.singletonList("POST channels/900000000000000002/messages"),calls);
+        DiscordJoining.review(c,LINK_OWNER,request,true,"Verified character ownership @everyone");c.commit();
+        bot.run();assertEquals("POST channels/900000000000000003/messages",calls.get(1));
+        try(PreparedStatement s=RankingStore.query(c,"SELECT logged_at,cleaned_at FROM discord_join_archive_outbox WHERE request_id=?",request);ResultSet r=s.executeQuery()){assertTrue(r.next());assertNotNull(r.getTimestamp(1));assertNull(r.getTimestamp(2));}c.commit();
+        bot.run();assertEquals("DELETE channels/900000000000000002/messages/900000000000000004",calls.get(2));
+        RankingStore.execute(c,"UPDATE discord_join_archive_outbox SET next_attempt=now() WHERE request_id=?",request);c.commit();bot.run();bot.run();
+        assertEquals(4,calls.size());assertEquals(calls.get(2),calls.get(3));
+        try(PreparedStatement s=RankingStore.query(c,"SELECT cleaned_at FROM discord_join_archive_outbox WHERE request_id=?",request);ResultSet r=s.executeQuery()){assertTrue(r.next());assertNotNull(r.getTimestamp(1));}
+        assertEquals(1,count("audit"));assertEquals(1,count("discord_join_archive_outbox"));
+    }
+    @Test public void missingOrFailingStaffLogNeverDeletesRequestsAndAlreadyReviewedRequestsAreNotPosted()throws Exception {
+        joiningSchema();RankingStore.execute(c,"INSERT INTO discord_member_links(discord_user_id,member_id) VALUES (?,?)",LINK_OWNER,clanOwner.id);
+        UUID request=DiscordJoining.request(c,DISCORD_ID,"ArchiveTest");DiscordJoining.review(c,LINK_OWNER,request,false,"Rejected unverified ownership");c.commit();
+        List<String> calls=new ArrayList<>();Map<String,String> env=archiveEnv();env.remove("TRAP_DISCORD_STAFF_LOG_CHANNEL_ID");
+        DiscordJoinBot bot=new DiscordJoinBot(this::connection,env,(method,path,body)->{calls.add(method+" "+path);return new DiscordJoinBot.Reply(403,"");});
+        bot.run();assertTrue(calls.isEmpty());
+        env.put("TRAP_DISCORD_STAFF_LOG_CHANNEL_ID","900000000000000003");RankingStore.execute(c,"UPDATE discord_join_archive_outbox SET next_attempt=now()");c.commit();bot.run();
+        assertEquals(Collections.singletonList("POST channels/900000000000000003/messages"),calls);
+        try(PreparedStatement s=RankingStore.query(c,"SELECT logged_at,cleaned_at,payload::text FROM discord_join_archive_outbox WHERE request_id=?",request);ResultSet r=s.executeQuery()){assertTrue(r.next());assertNull(r.getTimestamp(1));assertNull(r.getTimestamp(2));assertTrue(r.getString(3).contains("rejected"));}
+        assertEquals(1,count("discord_member_links")); // Only the preexisting Owner link remains.
+    }
+    @Test public void oldReviewMessagesCanBeQueuedWithoutTouchingPendingOrUnrelatedMessages()throws Exception {
+        joiningSchema();RankingStore.execute(c,"INSERT INTO discord_member_links(discord_user_id,member_id) VALUES (?,?)",LINK_OWNER,clanOwner.id);
+        UUID reviewed=DiscordJoining.request(c,DISCORD_ID,"ArchiveTest");DiscordJoining.review(c,LINK_OWNER,reviewed,false,"Rejected unverified ownership");
+        UUID pending=DiscordJoining.request(c,"800000000000000001","StillPending");
+        RankingStore.execute(c,"DELETE FROM discord_join_archive_outbox");RankingStore.execute(c,"UPDATE discord_join_outbox SET delivered_at=now()");c.commit();
+        JsonArray messages=new JsonArray();
+        for(UUID id:new UUID[]{reviewed,pending}) {
+            JsonObject message=DiscordJoining.object("{id:'900000000000000004',author:{id:'900000000000000001'}}");JsonArray components=new JsonArray();components.add(DiscordJoining.decisions(id));message.add("components",components);messages.add(message);
+        }
+        JsonObject unrelated=messages.get(0).deepCopy().getAsJsonObject();unrelated.getAsJsonObject("author").addProperty("id","800000000000000002");messages.add(unrelated);
+        DiscordJoinBot bot=new DiscordJoinBot(this::connection,archiveEnv(),(method,path,body)->{assertEquals("GET",method);return new DiscordJoinBot.Reply(200,messages.toString());});
+        assertEquals(1,bot.cleanReviewedMessages());assertEquals(1,count("discord_join_archive_outbox"));
+        try(PreparedStatement s=RankingStore.query(c,"SELECT review_message_id FROM discord_join_outbox WHERE id=?",pending);ResultSet r=s.executeQuery()){assertTrue(r.next());assertNull(r.getString(1));}
+    }
+
     @Test public void pointNotificationsStartSilentlyAndReportConfirmedNamedAwardsOnlyToTheirMember()throws Exception {
         RankingStore.execute(c,"UPDATE rules SET display_name='Test drop' WHERE type='LOOT' AND event_key='1:2'");
         RankingStore.event(c,member,event("LOOT","1:2"));

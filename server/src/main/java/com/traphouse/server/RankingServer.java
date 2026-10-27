@@ -180,6 +180,7 @@ public final class RankingServer {
     static void command(String[] args, DiscordWorker.Connections connections) throws Exception {
         if(args.length==1&&args[0].equals("discord-setup")){new DiscordJoinBot(connections,System.getenv()).setup();System.out.println("Discord commands registered and Link RuneLite button posted.");return;}
         if(args.length==1&&args[0].equals("discord-commands")){new DiscordJoinBot(connections,System.getenv()).setup(false);System.out.println("Discord link commands registered. No new button message posted.");return;}
+        if(args.length==1&&args[0].equals("discord-clean-reviews")){int queued=new DiscordJoinBot(connections,System.getenv()).cleanReviewedMessages();System.out.println("Queued "+queued+" reviewed link messages. The worker will copy each decision to the staff log before removing its review message.");return;}
         if (args.length == 2 && args[0].equals("add-member")) verifiedName(args[1]);
         if(args.length==4&&args[0].equals("correct-member-name")) {
             verifiedName(args[1]);verifiedName(args[2]);
