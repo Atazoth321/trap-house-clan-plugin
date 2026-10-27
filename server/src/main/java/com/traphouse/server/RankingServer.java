@@ -271,6 +271,7 @@ public final class RankingServer {
                 }
                 AutomaticRewards.seed(c);
                 BalancedRewards.apply(c);
+                RankManagement.initializeOwnerRanks(c);
                 try(InputStream input=RankingServer.class.getResourceAsStream("/discord-joining.sql");Statement s=c.createStatement()) {
                     if(input==null)throw new IllegalStateException("Discord joining schema missing");s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));
                 }
@@ -279,9 +280,10 @@ public final class RankingServer {
             if(args.length==2&&args[0].equals("bootstrap-owner")) {
                 UUID member=Policy.uuid(args[1]);RankingStore.lockMember(c,member);
                 RankingStore.execute(c,"INSERT INTO member_permissions VALUES (?,'OWNER') ON CONFLICT(member_id) DO UPDATE SET permission='OWNER'",member);
+                RankManagement.assignOwner(c,member);
                 JsonObject details=new JsonObject();details.addProperty("source","server operator CLI");
                 RankSecurity.audit(c,new RankingStore.Actor(member,"",RankSecurity.Role.OWNER),"OWNER_BOOTSTRAPPED",member,details);
-                c.commit();System.out.println("Owner permission provisioned. Existing member credentials now use Owner permission.");return;
+                c.commit();System.out.println("Owner permission and locked Owner display rank provisioned. Existing member credentials now use Owner permission.");return;
             }
             if (args.length == 3 && args[0].equals("issue-token") && (args[2].equals("member") || args[2].equals("admin"))) {
                 String name = verifiedName(args[1]);

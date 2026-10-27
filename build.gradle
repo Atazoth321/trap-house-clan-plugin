@@ -50,6 +50,12 @@ tasks.register('previewRewards', JavaExec) {
     jvmArgs '-Djava.awt.headless=true'
 }
 
+tasks.register('previewRankManagement', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.traphouse.RankManagementPreview'
+    jvmArgs '-Djava.awt.headless=true'
+}
+
 // The ranking service is a separate process; JDBC and server classes never ship in the plugin JAR.
 sourceSets {
     server { java.srcDir 'server/src/main/java'; resources.srcDir 'server/src/main/resources' }

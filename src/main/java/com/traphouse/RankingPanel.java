@@ -35,6 +35,21 @@ final class RankingPanel extends JPanel {
     private PointsLogPanel.ItemArt itemArt=(entry,done)->{};
     void itemArt(PointsLogPanel.ItemArt itemArt){this.itemArt=itemArt;}
     private final java.util.List<JDialog> logWindows=new java.util.ArrayList<>();
+    private RankManagementPanel.Save rankEditor=(member,body,done)->done.accept("Rank editor is not connected.");
+    private JDialog rankWindow;
+    private RankManagementPanel rankForm;
+    void rankEditor(RankManagementPanel.Save editor){rankEditor=editor;}
+    private void openRankEditor() {
+        if(snapshot==null||!snapshot.has("rankManagement")||!"OWNER".equals(string(snapshot.getAsJsonObject("profile"),"permission","")))return;
+        if(rankWindow!=null){rankWindow.toFront();return;}
+        rankForm=new RankManagementPanel(snapshot.getAsJsonObject("rankManagement"),array(snapshot,"ranks"),array(snapshot,"protectedRanks"),rankEditor);
+        rankWindow=new JDialog(SwingUtilities.getWindowAncestor(this),"TRAP HOUSE - Owner rank management",Dialog.ModalityType.MODELESS);
+        rankWindow.setContentPane(rankForm);rankWindow.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        final JDialog dialog=rankWindow;final RankManagementPanel form=rankForm;
+        rankWindow.addWindowListener(new java.awt.event.WindowAdapter(){public void windowClosed(java.awt.event.WindowEvent e){form.close();if(rankWindow==dialog){rankForm=null;rankWindow=null;}}});
+        rankWindow.pack();rankWindow.setLocationRelativeTo(this);rankWindow.setVisible(true);
+    }
+    private void closeRankEditor(){if(rankForm!=null)rankForm.close();if(rankWindow!=null)rankWindow.dispose();rankForm=null;rankWindow=null;}
     void pointsLogLoader(BiConsumer<JsonObject,Consumer<JsonObject>> loader){logLoader=loader;}
     private JButton pointsTile(String member,String category,long points) {
         JButton button=new JButton();button.setLayout(new BorderLayout());button.add(ProfileStyle.tile(abbreviated(points),category,ProfileStyle.ACCENT));
@@ -102,6 +117,7 @@ final class RankingPanel extends JPanel {
     }
 
     void showData(JsonObject data) {
+        if(!"OWNER".equals(string(data.getAsJsonObject("profile"),"permission","")))closeRankEditor();
         snapshot=data;
         if(!viewingOther)renderProfile(data,false); renderRanks(data);
         leaderboard=array(data,"leaderboard"); renderLeaderboardPage();
@@ -135,6 +151,8 @@ final class RankingPanel extends JPanel {
         JLabel amount=ProfileStyle.label(formatted(points),14,ProfileStyle.ACCENT),caption=ProfileStyle.label("TRAP points",9,ProfileStyle.MUTED);
         amount.setHorizontalAlignment(SwingConstants.RIGHT);caption.setHorizontalAlignment(SwingConstants.RIGHT);
         total.add(amount);total.add(caption);identity.add(total,BorderLayout.EAST);hero.add(identity);
+        String displayed=string(player,"rank",automatic);
+        hero.add(ProfileStyle.rank("Rank: "+displayed,displayed,ProfileStyle.ACCENT));
         long lower=0,upper=points;boolean next=false;String nextRank="";
         long earnedThreshold=player.has("automaticRankThreshold")?number(player,"automaticRankThreshold"):-1;
         for(JsonElement element:array(data,"ranks")) {
@@ -177,6 +195,8 @@ final class RankingPanel extends JPanel {
         }
         ClanStyle.add(profile,history);
         if(!other) {
+            if("OWNER".equals(string(player,"permission",""))&&data.has("rankManagement"))
+                ClanStyle.add(profile,ClanStyle.button("Manage player ranks",this::openRankEditor));
             JPanel manual=ProfileStyle.card("MANUAL REWARDS"); manual.add(ClanStyle.text("Staff approval is required. Select a reward and provide evidence."));
             Object selected=manualRules.getSelectedItem(); manualRules.removeAllItems();
             for(JsonElement element:array(data,"sources")) {
@@ -373,6 +393,7 @@ final class RankingPanel extends JPanel {
         if(array(data,"races").size()==0)ClanStyle.add(races,ClanStyle.text("No race competitions configured. Boss and Skill competitions use Wise Old Man."));ClanStyle.finish(races);
     }
     void clear(String message) {
+        closeRankEditor();
         for(JDialog dialog:new java.util.ArrayList<>(logWindows)){((PointsLogPanel)dialog.getContentPane()).close();dialog.dispose();}logWindows.clear();
         snapshot=null; viewingOther=false;leaderboard=new JsonArray();
         message(profile,"YOUR PROFILE",message);message(ranks,"RANKS & POINTS","Connect to load clan rank requirements and point sources.");

@@ -12,6 +12,23 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    @Test public void ownerEditorIsPrivateAndOwnerEmblemMigrationPreservesPointsAndManualRanks()throws Exception {
+        RankingStore.execute(c,"DELETE FROM member_rank_state WHERE member_id=?",clanOwner.id);
+        RankingStore.event(c,member,event("LOOT","1:2"));
+        RankManagement.initializeOwnerRanks(c);
+        JsonObject own=RankingStore.dashboard(c,owner(),clanOwner.name);
+        assertEquals("Owner",own.getAsJsonObject("profile").get("rank").getAsString());assertTrue(own.getAsJsonObject("profile").get("rankLocked").getAsBoolean());
+        assertEquals(3,own.getAsJsonObject("rankManagement").getAsJsonArray("members").size());
+        assertFalse(RankingStore.dashboard(c,member,member.name).has("rankManagement"));assertFalse(RankingStore.dashboard(c,admin,admin.name).has("rankManagement"));
+        assertFalse(ClanFeatures.member(c,clanOwner.name).has("rankManagement"));
+        rejected(403,()->RankManagement.read(c,member));rejected(403,()->RankManagement.read(c,admin));
+        assertEquals(25,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        long audited=count("audit");RankManagement.initializeOwnerRanks(c);assertEquals(audited,count("audit"));
+        RankSecurity.changeRank(c,owner(),member.id,rankAction("ASSIGN","Deputy Owner"));
+        assertEquals("Deputy Owner",ClanFeatures.member(c,member.name).getAsJsonObject("profile").get("rank").getAsString());
+        assertEquals("MEMBER",RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("permission").getAsString());
+        rejected(403,()->RankSecurity.changeRank(c,admin,member.id,rankAction("ASSIGN","Master")));
+    }
     @Test public void rewardCatalogIncludesEnabledPetsCombatMilestonesAndMiscWithMemberSpecificReceipts()throws Exception {
         RankingStore.execute(c,"INSERT INTO rules(type,event_key,points,daily_limit,enabled,category,display_name) VALUES ('COLLECTION','baby mole',500,1,true,'Pets','Baby mole'),('COMBAT','flawless kill',20,1,true,'Combat','Flawless kill'),('MANUAL','helpful member',30,2,true,'Misc','Helpful member'),('MANUAL','disabled reward',50,1,false,'Misc','Disabled reward')");
         UUID milestone=goal("ITEM","6570","Milestones",1,150);

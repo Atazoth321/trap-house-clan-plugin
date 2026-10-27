@@ -65,6 +65,8 @@ Revocation takes effect on subsequent requests. Keep the member UUID through ver
 
 ## Rank thresholds and scoring
 
+Verified Owners can edit plugin display ranks through **Profile → Manage player ranks** after the backend and client updates. See [Owner rank management](../docs/owner-rank-management.md) for management emblems, Owner display-rank initialization and permission boundaries.
+
 Administrators configure `ranks` and `rules` using restricted database tooling. The `init` deployment now applies the Owner-selected intervals once: Recruit 0, Pawn 500, Corporal 1500, Novice 3000, Sergeant 6000, Colonel 10000, Brigadier 17500, Admiral 27500 and Marshal 45000. Thresholds are unique/nonnegative and refresh from the server. Previously earned ranks are retained; eligibility is advisory and staff perform in-game promotions manually. See [expanded milestones and intervals](../docs/milestones.md) for the 150-goal catalog and migration behavior.
 
 The initial scoring-rule table is **empty**. Explicitly define the clan's policy before observations award points. Keys are lowercase, trimmed and single-spaced. These are examples, not agreed clan rewards:

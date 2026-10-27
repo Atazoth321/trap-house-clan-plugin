@@ -88,6 +88,10 @@ public class TrapHouseClanPlugin extends Plugin {
         });
         dashboard = new TrapHouseDashboard(bossPanel, skillPanel, selectedTab, rankingPanel);
         rankingPanel.pointsLogLoader((query,done)->executor.execute(()->rankings.pointsLog(config,query,done)));
+        rankingPanel.rankEditor((member,body,done)->executor.execute(rankings.rankChange(config,member,body,error->{
+            done.accept(error);
+            if(error==null)executor.execute(this::syncRankings);
+        })));
         rankingPanel.itemArt(awardItemImages);
         rankingPanel.discordLogin(()->discordSignIn.start(config,message->{if(rankingPanel!=null)rankingPanel.loginStatus(message);}));
         rankingPanel.actions(name->{rankings.browse(name);executor.execute(this::syncRankings);},

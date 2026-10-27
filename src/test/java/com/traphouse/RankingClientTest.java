@@ -12,6 +12,20 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class RankingClientTest {
+    @Test public void ownerRankChangesUseAuthenticatedRequestsAndDiscardQueuedWorkAfterReset()throws Exception {
+        AtomicInteger posts=new AtomicInteger(),callbacks=new AtomicInteger();
+        RankingClient client=new RankingClient(new OkHttpClient.Builder().addInterceptor(chain->{
+            assertEquals("Bearer member-only-token",chain.request().header("Authorization"));assertEquals("POST",chain.request().method());
+            assertEquals("/v1/admin/members/11111111-1111-4111-8111-111111111111/rank",chain.request().url().encodedPath());
+            Buffer buffer=new Buffer();chain.request().body().writeTo(buffer);JsonObject body=JSON.fromJson(buffer.readUtf8(),JsonObject.class);
+            assertEquals("Deputy Owner",body.get("rank").getAsString());posts.incrementAndGet();return response(chain,200,"{}");
+        }).build(),JSON);
+        JsonObject body=JSON.fromJson("{action:'ASSIGN',rank:'Deputy Owner',reason:'Appoint verified deputy'}",JsonObject.class);
+        client.rankChange(config,"11111111-1111-4111-8111-111111111111",body,error->{assertNull(error);callbacks.incrementAndGet();}).run();SwingUtilities.invokeAndWait(()->{});
+        assertEquals(1,posts.get());assertEquals(1,callbacks.get());
+        Runnable stale=client.rankChange(config,"11111111-1111-4111-8111-111111111111",body,error->callbacks.incrementAndGet());client.reset();stale.run();SwingUtilities.invokeAndWait(()->{});
+        assertEquals(1,posts.get());assertEquals(1,callbacks.get());
+    }
     @Test public void pointChatUsesOnlyConfirmedFeedAndDropsResponsesFromPreviousSessions()throws Exception {
         AtomicInteger earned=new AtomicInteger();AtomicBoolean failFeed=new AtomicBoolean(),reset=new AtomicBoolean();RankingClient[] client=new RankingClient[1];
         client[0]=new RankingClient(new OkHttpClient.Builder().addInterceptor(chain->{

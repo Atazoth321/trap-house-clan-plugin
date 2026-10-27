@@ -8,6 +8,16 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class RankingPanelTest {
+    @Test public void rankManagementButtonRequiresAuthenticatedOwnerAndServerEditorData()throws Exception {
+        SwingUtilities.invokeAndWait(()->{
+            RankingPanel panel=new RankingPanel(()->{});JsonObject data=snapshot();
+            data.add("rankManagement",RankManagementPanelTest.data());panel.showData(data);assertNull(button(panel,"Manage player ranks"));
+            data.getAsJsonObject("profile").addProperty("permission","OWNER");data.getAsJsonObject("profile").addProperty("rank","Owner");panel.showData(data);
+            assertNotNull(button(panel,"Manage player ranks"));assertNotNull(findLabel(panel,"Rank: Owner"));assertNotNull(findLabel(panel,"Rank: Owner").getIcon());
+            JsonObject other=snapshot();other.getAsJsonObject("profile").addProperty("name","Raider");panel.showMember(other);assertNull(button(panel,"Manage player ranks"));
+            panel.clear("Signed out");assertNull(button(panel,"Manage player ranks"));
+        });
+    }
     @Test public void profileFitsNarrowSidebarWithoutClippingRightHandTotals()throws Exception {
         SwingUtilities.invokeAndWait(()-> {
             RankingPanel panel=new RankingPanel(()->{});
