@@ -12,6 +12,42 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    @Test public void pointNotificationsStartSilentlyAndReportConfirmedNamedAwardsOnlyToTheirMember()throws Exception {
+        RankingStore.execute(c,"UPDATE rules SET display_name='Test drop' WHERE type='LOOT' AND event_key='1:2'");
+        RankingStore.event(c,member,event("LOOT","1:2"));
+        JsonObject baseline=PointNotifications.read(c,member,null);assertEquals(0,baseline.getAsJsonArray("awards").size());
+        String cursor=baseline.get("cursor").getAsString();JsonObject drop=event("LOOT","1:2");
+        RankingStore.event(c,member,drop);RankingStore.event(c,member,drop);
+        JsonObject page=PointNotifications.read(c,member,"after="+cursor);
+        assertEquals(member.name,page.get("player").getAsString());assertEquals(1,page.getAsJsonArray("awards").size());
+        JsonObject award=page.getAsJsonArray("awards").get(0).getAsJsonObject();assertEquals(25,award.get("points").getAsInt());assertEquals("Test drop",award.get("title").getAsString());
+        assertEquals(page,PointNotifications.read(c,member,"after="+cursor));
+        assertEquals(0,PointNotifications.read(c,member,"after="+page.get("cursor").getAsString()).getAsJsonArray("awards").size());
+        assertEquals(0,PointNotifications.read(c,admin,"after=0").getAsJsonArray("awards").size());
+        rejected(400,()->PointNotifications.read(c,member,"after=0&player=Admin"));
+        rejected(400,()->PointNotifications.read(c,member,"after=-1"));
+        rejected(400,()->PointNotifications.read(c,member,"after=9999999999999999999"));
+    }
+    @Test public void pointNotificationsCoverMilestonesAndApprovedRewardsAndRollbackWithAwards()throws Exception {
+        UUID goal=goal("TOTAL_LEVEL","total","Milestones",2000,75);
+        ClanFeatures.sync(c,member,observation(goal,2000));
+        UUID request=UUID.fromString(RankingStore.requestReward(c,member,reward()).get("id").getAsString());
+        assertEquals(1,count("point_notifications"));
+        RankingStore.review(c,admin,request,true);RankingStore.review(c,admin,request,true);
+        JsonArray awards=PointNotifications.read(c,member,"after=0").getAsJsonArray("awards");assertEquals(2,awards.size());
+        assertEquals("Test goal",awards.get(0).getAsJsonObject().get("title").getAsString());
+        assertEquals("Approved reward: clan event",awards.get(1).getAsJsonObject().get("title").getAsString());
+        c.rollback();assertEquals(0,count("point_notifications"));assertEquals(0,count("ledger"));
+    }
+    @Test public void pointNotificationPagesDoNotLoseLargeAwardBursts()throws Exception {
+        RankingStore.execute(c,"UPDATE rules SET daily_limit=100 WHERE type='LOOT' AND event_key='1:2'");
+        RankingStore.execute(c,"INSERT INTO rules(type,event_key,points,daily_limit,enabled) VALUES ('LOOT','1:3',25,5,true)");
+        for(int i=0;i<100;i++)RankingStore.event(c,member,event("LOOT","1:2"));
+        for(int i=0;i<5;i++)RankingStore.event(c,member,event("LOOT","1:3"));
+        JsonObject first=PointNotifications.read(c,member,"after=0");assertEquals(100,first.getAsJsonArray("awards").size());
+        JsonObject second=PointNotifications.read(c,member,"after="+first.get("cursor").getAsString());assertEquals(5,second.getAsJsonArray("awards").size());
+        assertTrue(Long.parseLong(second.get("cursor").getAsString())>Long.parseLong(first.get("cursor").getAsString()));
+    }
     @Test public void easyCowhideTestDropSeedsExistingInstallsAndEnforcesCapsWithoutDuplicateAwards()throws Exception {
         RankingStore.execute(c,"INSERT INTO configuration_migrations(name) VALUES ('automatic-rewards-v1'),('automatic-rewards-v2')");
         AutomaticRewards.seed(c);AutomaticRewards.seed(c);

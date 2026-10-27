@@ -25,6 +25,9 @@ final class RankingClient {
     private String memberRequest;
     private long memberRevision;
     private String registrationPath;
+    private final PointAlerts pointAlerts=new PointAlerts();
+
+    synchronized java.util.List<String> pointMessages(){return pointAlerts.drain();}
 
     com.google.gson.JsonArray probes() { return probes; }
     synchronized void progress(JsonObject values) { progressRequest=values; }
@@ -51,7 +54,7 @@ final class RankingClient {
         if (queue.size() < 200) queue.addLast(event);
     }
 
-    synchronized void reset() { generation++; queue.clear(); manualRequest = null; manualPlayer = null;progressRequest=null;memberRequest=null;registrationPath=null;probes=new com.google.gson.JsonArray(); }
+    synchronized void reset() { generation++; queue.clear(); pointAlerts.reset(); manualRequest = null; manualPlayer = null;progressRequest=null;memberRequest=null;registrationPath=null;probes=new com.google.gson.JsonArray(); }
 
     synchronized void requestReward(String player, String key, String reason) {
         if (player == null || manualRequest != null) return;
@@ -74,6 +77,9 @@ final class RankingClient {
         try {
             String origin = endpoint(config.rankingUrl().trim());
             String token = config.rankingToken().trim();
+            boolean baseline;
+            synchronized(this){if(epoch!=generation)return;baseline=pointAlerts.cursor()==null;}
+            if(baseline)pollPointAlerts(origin,token,player,epoch);
             String actionError=null;
             JsonObject progressBody;String registerPath;
             synchronized(this){if(epoch!=generation)return;progressBody=progressRequest;registerPath=registrationPath;}
@@ -134,6 +140,7 @@ final class RankingClient {
                 }});
             }
             String member;final long revision;
+            pollPointAlerts(origin,token,player,epoch);
             synchronized(this){if(epoch!=generation)return;member=memberRequest;revision=memberRevision;}
             if(member!=null) {
                 HttpUrl memberUrl=HttpUrl.parse(origin+"/v1/members").newBuilder().addQueryParameter("player",member).build();
@@ -154,6 +161,20 @@ final class RankingClient {
     private Request.Builder request(String url, String token) {
         return new Request.Builder().url(url).header("Authorization", "Bearer " + token)
             .header("User-Agent", "TrapHouseRankings/1.0");
+    }
+
+    private void pollPointAlerts(String origin,String token,String player,long epoch) {
+        final Long cursor;
+        synchronized(this){if(epoch!=generation)return;cursor=pointAlerts.cursor();}
+        String url=origin+"/v1/point-notifications"+(cursor==null?"":"?after="+cursor);
+        try(Response response=http.newCall(request(url,token).get().build()).execute()) {
+            if(!response.isSuccessful()||response.body()==null)return;
+            byte[] bytes=response.body().byteStream().readNBytes(262145);
+            if(bytes.length>262144)return;
+            JsonObject data=gson.fromJson(new String(bytes,java.nio.charset.StandardCharsets.UTF_8),JsonObject.class);
+            if(!RankingTracker.normalize(player).equals(RankingTracker.normalize(data.get("player").getAsString())))return;
+            synchronized(this){if(epoch==generation)pointAlerts.accept(data);}
+        }catch(IOException|RuntimeException unavailable){ /* Retry the same cursor later; older servers can still sync rankings. */ }
     }
 
     void pointsLog(TrapHouseConfig config,JsonObject query,java.util.function.Consumer<JsonObject> done) {

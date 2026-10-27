@@ -70,6 +70,14 @@ CREATE TABLE IF NOT EXISTS ledger (
     created_at timestamptz NOT NULL DEFAULT now(),
     CHECK ((event_id IS NULL) <> (reward_id IS NULL))
 );
+CREATE TABLE IF NOT EXISTS point_notifications (
+    id bigserial PRIMARY KEY,
+    ledger_id uuid NOT NULL UNIQUE REFERENCES ledger(id),
+    member_id uuid NOT NULL REFERENCES members(id),
+    points integer NOT NULL CHECK (points > 0),
+    title text NOT NULL
+);
+CREATE INDEX IF NOT EXISTS point_notifications_member ON point_notifications(member_id,id);
 CREATE TABLE IF NOT EXISTS audit (
     id bigserial PRIMARY KEY,
     actor uuid NOT NULL REFERENCES members(id),

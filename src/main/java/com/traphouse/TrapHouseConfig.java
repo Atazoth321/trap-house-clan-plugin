@@ -12,6 +12,8 @@ public interface TrapHouseConfig extends Config {
 
     @ConfigItem(keyName="rankingToken", name="Ranking member token", description="Member-specific credential issued by clan staff. Stored in local RuneLite configuration; never share it.", secret=true, position=22)
     default String rankingToken() { return ""; }
+    @ConfigItem(keyName="rankingPointMessages", name="Points in chat", description="Show confirmed clan point awards and what earned them in your local game chat.", position=23)
+    default boolean rankingPointMessages() { return true; }
     @ConfigItem(keyName="competitionId", name="Wise Old Man competition ID", description="0 automatically selects the current Trap House boss competition. Enter a competition ID to view a specific event, including ended events.", position=1)
     @Range(min=0)
     default int competitionId() { return 0; }

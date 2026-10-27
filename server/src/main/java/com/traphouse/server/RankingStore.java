@@ -173,7 +173,9 @@ final class RankingStore {
     }
 
     static void award(Connection c, Actor actor, UUID event, UUID reward, int points, String description,String category) throws SQLException {
-        execute(c, "INSERT INTO ledger(id,member_id,points,event_id,reward_id,category) VALUES (?,?,?,?,?,?)", UUID.randomUUID(), actor.id, points, event, reward,category);
+        UUID ledger=UUID.randomUUID();
+        execute(c, "INSERT INTO ledger(id,member_id,points,event_id,reward_id,category) VALUES (?,?,?,?,?,?)", ledger, actor.id, points, event, reward,category);
+        execute(c,"INSERT INTO point_notifications(ledger_id,member_id,points,title) SELECT l.id,l.member_id,l.points,coalesce(nullif(rule.display_name,''),?) FROM ledger l LEFT JOIN events e ON e.id=l.event_id LEFT JOIN manual_rewards r ON r.id=l.reward_id LEFT JOIN rules rule ON rule.type=coalesce(e.type,'MANUAL') AND rule.event_key=coalesce(e.event_key,r.event_key) WHERE l.id=?",description,ledger);
         execute(c, "INSERT INTO discord_outbox(id,content) VALUES (?,?)", UUID.randomUUID(), actor.name + " earned " + points + " TRAP HOUSE points. " + description);
     }
 

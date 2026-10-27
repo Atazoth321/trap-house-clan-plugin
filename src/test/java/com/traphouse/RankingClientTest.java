@@ -12,6 +12,28 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class RankingClientTest {
+    @Test public void pointChatUsesOnlyConfirmedFeedAndDropsResponsesFromPreviousSessions()throws Exception {
+        AtomicInteger earned=new AtomicInteger();AtomicBoolean failFeed=new AtomicBoolean(),reset=new AtomicBoolean();RankingClient[] client=new RankingClient[1];
+        client[0]=new RankingClient(new OkHttpClient.Builder().addInterceptor(chain->{
+            String path=chain.request().url().encodedPath();
+            if(path.equals("/v1/point-notifications")) {
+                assertEquals("Bearer member-only-token",chain.request().header("Authorization"));
+                String after=chain.request().url().queryParameter("after");
+                if(after==null)return response(chain,200,"{\"player\":\"Member\",\"cursor\":\"0\",\"awards\":[]}");
+                if(failFeed.getAndSet(false))throw new IOException("Missed notification response");
+                if(reset.get())client[0].reset();
+                return response(chain,200,earned.get()==0?"{\"player\":\"Member\",\"cursor\":\"0\",\"awards\":[]}":"{\"player\":\"Member\",\"cursor\":\"1\",\"awards\":[{\"id\":\"1\",\"points\":1,\"title\":\"Cowhide\"}]}");
+            }
+            if(path.equals("/v1/events")){earned.incrementAndGet();return response(chain,200,"{\"status\":\"AWARDED\",\"points\":1}");}
+            return response(chain,200,"{\"profile\":{\"name\":\"Member\"}}");
+        }).build(),JSON);
+        RankingPanel panel=panel();client[0].enqueue(new RankingEvent("Member","LOOT","2790:1739"));failFeed.set(true);
+        client[0].sync(config,"Member",panel);assertTrue(client[0].pointMessages().isEmpty());
+        client[0].sync(config,"Member",panel);assertEquals(1,client[0].pointMessages().size());
+        client[0].sync(config,"Member",panel);assertTrue(client[0].pointMessages().isEmpty());
+        client[0].reset();reset.set(true);client[0].sync(config,"Member",panel);assertTrue(client[0].pointMessages().isEmpty());
+        assertEquals(1,earned.get());SwingUtilities.invokeAndWait(()->{});
+    }
     @Test public void pointsLogUsesAuthenticatedReadOnlyRequestAndDropsResetResponse()throws Exception {
         JsonObject query=JSON.fromJson("{\"player\":\"Raider\",\"category\":\"Pets\",\"page\":1}",JsonObject.class);
         RankingClient[] client=new RankingClient[1];AtomicInteger delivered=new AtomicInteger();AtomicBoolean reset=new AtomicBoolean();
