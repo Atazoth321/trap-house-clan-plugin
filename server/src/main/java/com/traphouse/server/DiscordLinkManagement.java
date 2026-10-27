@@ -48,12 +48,12 @@ final class DiscordLinkManagement {
     }
 
     static JsonObject rejectAccepted(Connection c,String owner,UUID request)throws SQLException {
-        DiscordJoining.owner(c,owner);
         String target;UUID member;Timestamp reviewed;
         try(PreparedStatement s=RankingStore.query(c,"SELECT discord_user_id,member_id,status,reviewed_at FROM discord_join_requests WHERE id=?",request);ResultSet r=s.executeQuery()) {
             if(!r.next()||!"APPROVED".equals(r.getString(3)))return null;
             target=r.getString(1);member=r.getObject(2,UUID.class);reviewed=r.getTimestamp(4);
         }
+        DiscordJoining.owner(c,owner);
         Link link=linked(c,target);
         if(!link.member.equals(member)||!link.linkedAt.equals(reviewed))throw new Policy.Rejected(409,"This approval no longer matches the current link. Use /revoke-link instead.");
         protectOwner(c,link);return form(link,false);

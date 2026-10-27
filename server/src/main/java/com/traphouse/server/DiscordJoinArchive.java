@@ -8,7 +8,7 @@ import static com.traphouse.server.RankingStore.*;
 /** Log a resolved request durably before deleting its public review message. */
 final class DiscordJoinArchive {
     static void enqueue(Connection c,UUID request)throws SQLException {
-        try(PreparedStatement s=query(c,"SELECT r.character_name,r.discord_user_id,r.status,r.reason,m.name,r.reviewed_at FROM discord_join_requests r JOIN members m ON m.id=r.reviewer WHERE r.id=? AND r.status<>'PENDING'",request);ResultSet r=s.executeQuery()) {
+        try(PreparedStatement s=query(c,"SELECT r.character_name,r.discord_user_id,r.status,r.reason,coalesce(r.reviewer_discord_id,m.name),r.reviewed_at FROM discord_join_requests r LEFT JOIN members m ON m.id=r.reviewer WHERE r.id=? AND r.status<>'PENDING'",request);ResultSet r=s.executeQuery()) {
             if(!r.next())return;
             JsonObject payload=new JsonObject();
             payload.addProperty("content","**RuneLite link "+r.getString(3).toLowerCase(Locale.ROOT)+"**\nCharacter: **"+r.getString(1)+"**\nDiscord ID: `"+r.getString(2)+"`\nReviewed by: **"+r.getString(5)+"**\nReason: "+plain(r.getString(4))+"\nReviewed: "+r.getTimestamp(6).toInstant()+"\nRequest: `"+request+"`");

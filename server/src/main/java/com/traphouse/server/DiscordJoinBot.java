@@ -28,7 +28,7 @@ final class DiscordJoinBot implements Runnable {
         JsonObject body=new JsonObject();body.addProperty("name",name);body.addProperty("type",1);
         switch(name) {
             case "link":body.addProperty("description","Request a verified RuneLite character link");break;
-            case "pending":body.addProperty("description","Owner: review pending RuneLite character links");break;
+            case "pending":body.addProperty("description","Staff: review pending RuneLite character links");break;
             case "edit-link":body.addProperty("description","Owner: correct an accepted RuneLite link's character name");break;
             case "revoke-link":body.addProperty("description","Owner: revoke an accepted RuneLite link and its credentials");break;
             default:throw new IllegalArgumentException("Unknown link command");
@@ -98,7 +98,7 @@ final class DiscordJoinBot implements Runnable {
             if(status<200||status>=300)throw new IllegalStateException("Discord command setup failed (HTTP "+status+")");
         }
         if(!postButton)return;
-        JsonObject body=new JsonObject();body.addProperty("content","**TRAP HOUSE RuneLite linking**\nClick Link RuneLite and enter your OSRS name. The Owner must verify your character and clan membership before approval. After approval, use Sign in with Discord in the plugin.");
+        JsonObject body=new JsonObject();body.addProperty("content","**TRAP HOUSE RuneLite linking**\nClick Link RuneLite and enter your OSRS name. Staff must verify your character and clan membership before approval. After approval, use Sign in with Discord in the plugin.");
         body.add("allowed_mentions",DiscordJoining.object("{\"parse\":[]}"));JsonArray rows=new JsonArray();rows.add(DiscordJoining.row(DiscordJoining.button("join:start","Link RuneLite",1)));body.add("components",rows);
         int status=send("POST","channels/"+channel+"/messages",body);if(status<200||status>=300)throw new IllegalStateException("Discord link button failed (HTTP "+status+")");
     }
