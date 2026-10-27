@@ -11,6 +11,16 @@ CREATE TABLE IF NOT EXISTS discord_join_requests (
  member_id uuid REFERENCES members(id)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS discord_join_pending_user ON discord_join_requests(discord_user_id) WHERE status='PENDING';
+ALTER TABLE discord_join_requests ADD COLUMN IF NOT EXISTS reviewer_discord_id varchar(20);
+-- Unlinked Discord staff are identified in audit details rather than by a member UUID.
+ALTER TABLE audit ALTER COLUMN actor DROP NOT NULL;
+DO $$ BEGIN
+ IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='audit_discord_reviewer_required' AND conrelid='audit'::regclass) THEN
+  ALTER TABLE audit ADD CONSTRAINT audit_discord_reviewer_required CHECK (
+   actor IS NOT NULL OR (action IN ('DISCORD_LINK_APPROVED','DISCORD_LINK_REJECTED')
+    AND coalesce(details->>'reviewerDiscordId','') ~ '^[0-9]{17,20}$'));
+ END IF;
+END $$;
 CREATE UNIQUE INDEX IF NOT EXISTS discord_join_pending_name ON discord_join_requests(normalized_name) WHERE status='PENDING';
 CREATE TABLE IF NOT EXISTS discord_interactions (
  id varchar(20) PRIMARY KEY,

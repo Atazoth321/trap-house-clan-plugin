@@ -54,7 +54,7 @@ final class DiscordInteractions {
                             try(PreparedStatement s=RankingStore.query(c,"SELECT response::text FROM discord_interactions WHERE id=?",id);ResultSet r=s.executeQuery()){r.next();response=DiscordJoining.object(r.getString(1));}
                         } else {
                             Savepoint operation=c.setSavepoint();
-                            try {response=DiscordJoining.dispatch(c,interaction,discord);}
+                            try {response=DiscordJoining.dispatch(c,interaction,discord,env.get("TRAP_DISCORD_STAFF_ROLE_ID"));}
                             catch(Policy.Rejected rejected){c.rollback(operation);response=DiscordJoining.message(rejected.getMessage());}
                             RankingStore.execute(c,"UPDATE discord_interactions SET response=?::jsonb WHERE id=?",response.toString(),id);
                         }

@@ -40,7 +40,8 @@ public class DiscordInteractionsTest {
                     String sql=(String)args[0];
                     boolean cache=sql.startsWith("INSERT INTO discord_interactions")||sql.startsWith("UPDATE discord_interactions");
                     boolean owner=sql.startsWith("SELECT m.id,m.name FROM discord_member_links")&&sql.contains("p.permission='OWNER'")&&sql.contains("m.active");
-                    if(!cache&&!owner&&!sql.startsWith("SET LOCAL "))throw new AssertionError("Unauthorized target access: "+sql);
+                    boolean staff=sql.equals("SELECT member_id FROM discord_member_links WHERE discord_user_id=?");
+                    if(!cache&&!owner&&!staff&&!sql.startsWith("SET LOCAL "))throw new AssertionError("Unauthorized target access: "+sql);
                     return proxy(PreparedStatement.class,(op,values)->{
                         switch(op){case "setObject":case "close":return null;case "executeUpdate":return 1;
                             case "executeQuery":return proxy(ResultSet.class,(read,cols)->{if(read.equals("next"))return false;if(read.equals("close"))return null;throw new AssertionError(read);});
@@ -80,6 +81,27 @@ public class DiscordInteractionsTest {
         if(signed)request.header("X-Signature-Timestamp",time).header("X-Signature-Ed25519",sign(pair,time,body));
         return HttpClient.newHttpClient().send(request.POST(HttpRequest.BodyPublishers.ofString(body)).build(),HttpResponse.BodyHandlers.ofString());
     }
+    @Test public void signedStaffCanOpenApprovalButLoseAccessWhenRoleIsRemoved()throws Exception {
+        KeyPair pair=KeyPairGenerator.getInstance("Ed25519").generateKeyPair();Map<String,String> env=new HashMap<>();
+        env.put("TRAP_DISCORD_PUBLIC_KEY",publicKey(pair));env.put("TRAP_DISCORD_CLIENT_ID","111111111111111111");env.put("TRAP_DISCORD_GUILD_ID","222222222222222222");
+        env.put("TRAP_DISCORD_STAFF_ROLE_ID","555555555555555555");
+        HttpServer server=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);server.createContext("/",new DiscordInteractions(DiscordInteractionsTest::nonOwnerOnly,env)::handle);server.start();
+        try {
+            JsonObject request=DiscordJoining.object("{id:'333333333333333333',application_id:'111111111111111111',guild_id:'222222222222222222',type:3,member:{user:{id:'444444444444444444'},roles:['555555555555555555']}}");
+            JsonObject data=new JsonObject();data.addProperty("custom_id","join:approve:"+UUID.randomUUID());request.add("data",data);
+            JsonObject response=DiscordJoining.object(post(server,pair,request.toString(),true).body());
+            assertEquals(9,response.get("type").getAsInt());
+            String modal=response.getAsJsonObject("data").get("custom_id").getAsString();
+            request.addProperty("type",2);request.add("data",DiscordJoining.object("{name:'edit-link'}"));
+            assertTrue(post(server,pair,request.toString(),true).body().contains("Only the linked clan Owner"));
+            request.addProperty("type",5);data.addProperty("custom_id",modal);
+            JsonObject input=DiscordJoining.object("{custom_id:'reason',value:'Verified character ownership and clan membership'}");
+            JsonArray rows=new JsonArray();rows.add(DiscordJoining.row(input));data.add("components",rows);request.add("data",data);
+            request.getAsJsonObject("member").add("roles",new JsonArray());
+            assertTrue(post(server,pair,request.toString(),true).body().contains("Only the linked clan Owner"));
+            assertEquals(401,post(server,pair,request.toString(),false).statusCode());
+        }finally{server.stop(0);}
+    }
     @Test public void requestFormsRequireValidNamesAndNeverMentionUsers() {
         assertEquals("Atazoth",DiscordJoining.characterName("Atazoth"));
         for(String invalid:new String[]{"", "   ","@everyone","name\n","abcdefghijklmn"})try{DiscordJoining.characterName(invalid);fail(invalid);}catch(Policy.Rejected expected){}
@@ -94,5 +116,15 @@ public class DiscordInteractionsTest {
             assertEquals("123456789012345678",DiscordLinkManagement.target(definition));
         }
         try {DiscordLinkManagement.target(new JsonObject());fail("Missing target accepted");}catch(Policy.Rejected expected){assertEquals(400,expected.status);}
+    }
+    @Test public void staffRequiresTheConfiguredRoleIdInDiscordMemberRoles() {
+        String role="555555555555555555";
+        JsonObject interaction=DiscordJoining.object("{member:{roles:['555555555555555555']}}");
+        assertTrue(DiscordJoining.staff(interaction,role));
+        assertFalse(DiscordJoining.staff(interaction,null));
+        assertFalse(DiscordJoining.staff(interaction,"staff"));
+        assertFalse(DiscordJoining.staff(interaction,"666666666666666666"));
+        assertFalse(DiscordJoining.staff(DiscordJoining.object("{member:{roles:['staff','OWNER']},roles:['555555555555555555']}"),role));
+        assertFalse(DiscordJoining.staff(DiscordJoining.object("{member:{}}"),role));
     }
 }
