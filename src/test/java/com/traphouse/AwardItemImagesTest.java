@@ -5,6 +5,24 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class AwardItemImagesTest {
+    @Test public void expandedRewardsUseCasketSpritesOnlyForMilestonesAndItemSpritesForUniques() {
+        assertEquals(2577,AwardItemImages.itemId(entry("{sourceType:'LOOT',sourceKey:'clue:medium:2577'}")));
+        assertEquals(20014,AwardItemImages.itemId(entry("{sourceType:'LOOT',sourceKey:'clue:master:20014'}")));
+        assertEquals(3481,AwardItemImages.itemId(entry("{sourceType:'LOOT',sourceKey:'clue:hard:3481'}")));
+        assertEquals(20544,AwardItemImages.itemId(entry("{sourceType:'COLLECTION',sourceKey:'clue milestone:hard:50'}")));
+        assertEquals(19836,AwardItemImages.itemId(entry("{sourceType:'COLLECTION',sourceKey:'clue milestone:master:100'}")));
+        assertEquals(30626,AwardItemImages.itemId(entry("{sourceType:'LOOT',sourceKey:'12596:30626'}")));
+        assertEquals(30070,AwardItemImages.itemId(entry("{sourceType:'LOOT',sourceKey:'14012:30070'}")));
+        assertEquals(24511,AwardItemImages.itemId(entry("{sourceType:'LOOT',sourceKey:'9433:24511'}")));
+    }
+    @Test public void newRewardsResolveRealItemSpritesIncludingEachClueCasket() {
+        assertEquals(29004,AwardItemImages.itemId(entry("{sourceType:'LOOT',sourceKey:'chest:lunar chest:29004'}")));
+        assertEquals(23956,AwardItemImages.itemId(entry("{sourceType:'LOOT',sourceKey:'9021:23956'}")));
+        assertEquals(29580,AwardItemImages.itemId(entry("{sourceType:'LOOT',sourceKey:'13599:29580'}")));
+        assertEquals(29799,AwardItemImages.itemId(entry("{sourceType:'LOOT',sourceKey:'13668:29799'}")));
+        String[] tiers={"beginner","easy","medium","hard","elite","master"};int[] ids={23245,20546,20545,20544,20543,19836};
+        for(int i=0;i<tiers.length;i++)assertEquals(ids[i],AwardItemImages.itemId(entry("{sourceType:'COLLECTION',sourceKey:'clue completion:"+tiers[i]+"'}")));
+    }
     private JsonObject entry(String text){return new Gson().fromJson(text,JsonObject.class);}
     @Test public void lootIdentityUsesActualItemIdAndCollectionUsesExactRecordedName(){
         assertEquals(4151,AwardItemImages.itemId(entry("{sourceType:'LOOT',sourceKey:'415:4151'}")));

@@ -171,7 +171,7 @@ final class RankingPanel extends JPanel {
         ClanStyle.add(profile,ProfileStyle.label("Points from:",12,ProfileStyle.ACCENT));
         JsonObject breakdown=player.has("breakdown")?player.getAsJsonObject("breakdown"):new JsonObject();
         JPanel tiles=new JPanel(new GridLayout(0,3,3,3));tiles.setOpaque(false);
-        for(String category:new String[]{"Drops","Pets","Milestones","Diaries","Challenges","Events","Combat","Collection","Efficiency"}) {
+        for(String category:new String[]{"Drops","Clues","Pets","Milestones","Diaries","Challenges","Events","Combat","Collection","Efficiency"}) {
             if((category.equals("Combat")||category.equals("Collection")||category.equals("Efficiency"))&&!breakdown.has(category))continue;
             JButton tile=pointsTile(name,category,number(breakdown,category));
             tile.setToolTipText(category+": "+formatted(number(breakdown,category))+" points");tiles.add(tile);
@@ -303,13 +303,26 @@ final class RankingPanel extends JPanel {
             JsonObject row=element.getAsJsonObject(); position++; String name=string(row,"name","");
             if(!name.toLowerCase(Locale.ROOT).contains(filter))continue;
             final String member=name;
-            JButton button=ClanStyle.button("#"+position+"  "+name+"   "+formatted(number(row,"points")),()->browseMember(member));
+            JButton button=leaderboardButton(position,name,string(row,"rank","Unranked"),formatted(number(row,"points")),()->browseMember(member));
             button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             button.setToolTipText("View "+name+" / "+string(row,"rank","Unranked"));
             button.setForeground(position<=3?ClanStyle.GOLD:ClanStyle.WHITE); ClanStyle.add(leaderRows,button);
-            ClanStyle.add(leaderRows,RankEmblems.label(string(row,"rank","Unranked"),string(row,"rank","Unranked"),10,ClanStyle.MUTED)); visible++;
+            visible++;
         }
         if(visible==0)leaderRows.add(ClanStyle.text("No matching clan members.")); ClanStyle.finish(leaderRows); ClanStyle.finish(leaders);
+    }
+    static JButton leaderboardButton(int position,String name,String rank,String points,Runnable action) {
+        JButton row=ClanStyle.button("",action);
+        row.setLayout(new BorderLayout(6,0));
+        row.setMargin(new Insets(2,8,2,8));
+        Color color=position<=3?ClanStyle.GOLD:ClanStyle.WHITE;
+        row.add(ClanStyle.label("#"+position,10,ClanStyle.MUTED),BorderLayout.WEST);
+        row.add(RankEmblems.label(name,rank,11,color),BorderLayout.CENTER);
+        row.add(ClanStyle.label(points,10,color),BorderLayout.EAST);
+        row.setToolTipText("View "+name+" / "+rank);
+        row.getAccessibleContext().setAccessibleName("#"+position+"  "+name+"   "+points);
+        row.getAccessibleContext().setAccessibleDescription(rank);
+        return row;
     }
     private void openFullBoard() {
         if(GraphicsEnvironment.isHeadless())return;

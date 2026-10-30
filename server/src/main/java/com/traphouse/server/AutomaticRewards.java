@@ -147,6 +147,8 @@ final class AutomaticRewards {
         seed(c,"automatic-rewards-v2",expandedRules());
         lowerBarrowsRewards(c);
         seed(c,"easy-test-cowhide-v1",testDropRules());
+        seed(c,"encounter-and-clue-rewards-v1",EncounterRewards.rules());
+        seed(c,"expanded-encounter-and-clue-rewards-v1",ExpandedEncounterRewards.rules());
     }
     private static void lowerBarrowsRewards(Connection c)throws SQLException {
         try(Statement s=c.createStatement()){s.execute("SELECT pg_advisory_xact_lock(72419051001)");}

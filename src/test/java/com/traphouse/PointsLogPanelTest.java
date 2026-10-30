@@ -9,6 +9,41 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class PointsLogPanelTest {
+    @Test public void clueUniquesAndMilestonesShareCluesAreaWithTheirOwnGameItemArtwork()throws Exception {
+        SwingUtilities.invokeAndWait(()->{
+            JsonObject log=data("Member",1,0);
+            JsonArray rewards=new JsonArray();
+            rewards.add(new Gson().fromJson("{category:'Clues',title:'Ranger boots',points:300,sourceType:'LOOT',sourceKey:'clue:medium:2577',itemId:2577,dailyLimit:2,capScope:'item',onceOnly:false,received:false,receivedCount:0,earnedPoints:0}",JsonObject.class));
+            rewards.add(new Gson().fromJson("{category:'Clues',title:'100 master clue completions',points:600,sourceType:'COLLECTION',sourceKey:'clue milestone:master:100',itemId:19836,dailyLimit:1,onceOnly:true,received:true,receivedCount:1,earnedPoints:600}",JsonObject.class));
+            log.add("availableRewards",rewards);java.util.Set<Integer> sprites=new HashSet<>();
+            Icon sprite=new ImageIcon(new java.awt.image.BufferedImage(36,32,java.awt.image.BufferedImage.TYPE_INT_ARGB));
+            PointsLogPanel panel=new PointsLogPanel("Member","Clues",(query,done)->done.accept(log),(entry,done)->{
+                sprites.add(AwardItemImages.itemId(entry));done.accept("Game item",sprite);
+            });
+            assertEquals(new HashSet<>(Arrays.asList(2577,19836)),sprites);
+            assertTrue(text(panel,"Ranger boots"));assertTrue(text(panel,"+300 pts per drop"));
+            assertTrue(text(panel,"100 master clue completions"));assertTrue(text(panel,"One-time reward"));
+            assertTrue(text(panel,"Daily cap: 2 per item"));assertTrue(text(panel,"Received x1"));
+            assertEquals("Clues",find(panel,JComboBox.class).getSelectedItem());panel.close();
+        });
+    }
+    @Test public void cluesHaveTheirOwnBrowserWithCasketSpritesAndCompletionTitles()throws Exception {
+        SwingUtilities.invokeAndWait(()->{
+            JsonObject log=data("Member",1,1);
+            JsonObject clue=new Gson().fromJson("{category:'Clues',title:'First master clue completion',points:200,sourceType:'COLLECTION',sourceKey:'clue completion:master',itemId:19836,dailyLimit:1,onceOnly:true,received:true,receivedCount:1,earnedPoints:200,at:'2026-10-29T12:00:00Z',occurrences:1}",JsonObject.class);
+            JsonArray catalog=new JsonArray();catalog.add(clue);log.add("availableRewards",catalog);log.getAsJsonArray("entries").add(clue);
+            java.util.List<JsonObject> queries=new ArrayList<>();java.util.List<JsonObject> art=new ArrayList<>();
+            Icon sprite=new ImageIcon(new java.awt.image.BufferedImage(36,32,java.awt.image.BufferedImage.TYPE_INT_ARGB));
+            PointsLogPanel panel=new PointsLogPanel("Member","Clues",(query,done)->{queries.add(query);done.accept(log);},
+                (entry,done)->{art.add(entry);done.accept("Reward casket (master)",sprite);});
+            assertEquals("Clues",queries.get(0).get("category").getAsString());
+            assertEquals("Clues",find(panel,JComboBox.class).getSelectedItem());
+            assertTrue(text(panel,"First master clue completion"));assertFalse(text(panel,"Reward casket (master)"));
+            assertTrue(text(panel,"One-time reward"));assertTrue(text(panel,"Received x1"));
+            assertEquals(2,art.size());for(JsonObject entry:art)assertEquals(19836,entry.get("itemId").getAsInt());
+            panel.close();
+        });
+    }
     @Test public void rewardCatalogWorksAcrossCategoriesAndKeepsMilestoneNamesWhenArtLoads()throws Exception {
         SwingUtilities.invokeAndWait(()->{
             JsonObject log=data("Member",1,0);JsonArray catalog=new JsonArray();

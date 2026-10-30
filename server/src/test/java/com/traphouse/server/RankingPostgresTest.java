@@ -12,6 +12,98 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    @Test public void expandedBossAndClueRewardsHaveIndependentHistoryCapsAndIdempotentMilestones()throws Exception {
+        AutomaticRewards.seed(c);
+        assertEquals(100,RankingStore.event(c,member,event("LOOT","12596:30626")).get("points").getAsInt());
+        assertEquals(500,RankingStore.event(c,member,event("LOOT","14012:30070")).get("points").getAsInt());
+        assertEquals(750,RankingStore.event(c,member,event("LOOT","9433:24511")).get("points").getAsInt());
+        assertEquals(750,RankingStore.event(c,member,event("LOOT","9424:24511")).get("points").getAsInt());
+        rejected(422,()->RankingStore.event(c,member,event("LOOT","9430:24511")));
+        rejected(422,()->RankingStore.event(c,member,event("LOOT","12593:30626")));
+        assertEquals(300,RankingStore.event(c,member,event("LOOT","clue:medium:2577")).get("points").getAsInt());
+        JsonObject third=event("LOOT","clue:hard:10330");
+        assertEquals(1000,RankingStore.event(c,member,third).get("points").getAsInt());
+        assertEquals("DUPLICATE",RankingStore.event(c,member,third).get("status").getAsString());
+        assertEquals(1000,RankingStore.event(c,member,event("LOOT","clue:elite:10330")).get("points").getAsInt());
+        rejected(422,()->RankingStore.event(c,member,event("LOOT","clue:master:10330")));
+        rejected(422,()->RankingStore.event(c,member,event("LOOT","clue:beginner:2577")));
+        rejected(422,()->RankingStore.event(c,member,event("COLLECTION","ranger boots")));
+        assertEquals(250,RankingStore.event(c,member,event("LOOT","clue:hard:3481")).get("points").getAsInt());
+        int total=0;
+        for(AutomaticRewards.Rule rule:ExpandedEncounterRewards.rules())if(rule.type.equals("COLLECTION")) {
+            total+=RankingStore.event(c,member,event("COLLECTION",rule.key)).get("points").getAsInt();
+            assertEquals("DUPLICATE",RankingStore.event(c,member,event("COLLECTION",rule.key)).get("status").getAsString());
+        }
+        assertEquals(3600,total);
+        JsonArray catalog=PointsLog.read(c,"player=Member&category=Clues").getAsJsonArray("availableRewards");
+        assertEquals(68,catalog.size());int uniques=0,milestones=0;
+        for(JsonElement entry:catalog) {
+            JsonObject card=entry.getAsJsonObject();assertEquals("Clues",card.get("category").getAsString());assertTrue(card.get("itemId").getAsInt()>0);
+            if(card.get("sourceType").getAsString().equals("LOOT")) {
+                uniques++;assertFalse(card.get("onceOnly").getAsBoolean());assertEquals("item",card.get("capScope").getAsString());
+            } else if(card.get("sourceKey").getAsString().startsWith("clue milestone:")) {
+                milestones++;assertTrue(card.get("onceOnly").getAsBoolean());assertTrue(card.get("received").getAsBoolean());
+            }
+        }
+        assertEquals(44,uniques);assertEquals(18,milestones);
+        JsonArray history=PointsLog.read(c,"player=Member&category=Clues").getAsJsonArray("entries");
+        for(JsonElement entry:history)assertEquals("Clues",entry.getAsJsonObject().get("category").getAsString());
+        RankingStore.execute(c,"UPDATE rules SET points=123 WHERE event_key='clue:medium:2577'");
+        RankingStore.execute(c,"UPDATE rules SET enabled=false WHERE event_key='clue:hard:3481'");
+        AutomaticRewards.seed(c);assertEquals(123,RankingStore.rule(c,"LOOT","clue:medium:2577")[0]);
+        rejected(422,()->RankingStore.rule(c,"LOOT","clue:hard:3481"));
+    }
+    @Test public void newEncounterRewardsPreserveEditsShareCapsAndPayCluesOnlyOnce()throws Exception {
+        AutomaticRewards.seed(c);AutomaticRewards.seed(c);
+        assertEquals(100,RankingStore.event(c,member,event("LOOT","9021:23956")).get("points").getAsInt());
+        assertEquals(100,RankingStore.event(c,member,event("LOOT","9035:23956")).get("points").getAsInt());
+        rejected(422,()->RankingStore.event(c,member,event("LOOT","9038:23956")));
+        rejected(422,()->RankingStore.event(c,member,event("LOOT","12123:23956")));
+        assertEquals(75,RankingStore.event(c,member,event("LOOT","chest:lunar chest:28988")).get("points").getAsInt());
+        assertEquals(350,RankingStore.event(c,member,event("LOOT","13599:29580")).get("points").getAsInt());
+        assertEquals(500,RankingStore.event(c,member,event("LOOT","13668:29799")).get("points").getAsInt());
+        int halberd=0;for(int item:new int[]{29790,29792,29794})halberd+=RankingStore.event(c,member,event("LOOT","13668:"+item)).get("points").getAsInt();
+        assertEquals(300,halberd);
+        JsonArray clues=PointsLog.read(c,"player=Member&category=Clues&search=First").getAsJsonArray("availableRewards");
+        assertEquals(6,clues.size());int total=0;
+        for(JsonElement entry:clues) {
+            JsonObject card=entry.getAsJsonObject();String key=card.get("sourceKey").getAsString();
+            assertTrue(card.get("onceOnly").getAsBoolean());assertFalse(card.get("received").getAsBoolean());assertTrue(card.get("itemId").getAsInt()>0);
+            total+=RankingStore.event(c,member,event("COLLECTION",key)).get("points").getAsInt();
+            assertEquals("DUPLICATE",RankingStore.event(c,member,event("COLLECTION",key)).get("status").getAsString());
+        }
+        assertEquals(600,total);
+        for(JsonElement entry:PointsLog.read(c,"player=Member&category=Clues&search=First").getAsJsonArray("availableRewards"))assertTrue(entry.getAsJsonObject().get("received").getAsBoolean());
+        RankingStore.execute(c,"UPDATE rules SET points=123 WHERE event_key='13599:29580'");
+        RankingStore.execute(c,"UPDATE rules SET enabled=false WHERE event_key='13668:29799'");
+        AutomaticRewards.seed(c);assertEquals(123,RankingStore.rule(c,"LOOT","13599:29580")[0]);
+        rejected(422,()->RankingStore.rule(c,"LOOT","13668:29799"));
+    }
+    @Test public void achievementDiariesAwardEachTierOnceAndPreserveStaffEdits()throws Exception {
+        String sql;
+        try(InputStream input=RankingServer.class.getResourceAsStream("/achievement-diaries.sql")) {
+            sql=new String(input.readAllBytes(),StandardCharsets.UTF_8);
+        }
+        try(Statement s=c.createStatement()){s.execute(sql);s.execute(sql);}
+        JsonObject body=new JsonObject(),values=new JsonObject();body.addProperty("player",member.name);body.add("values",values);
+        int tiers=0,total=0;Set<String> flags=new HashSet<>();
+        try(PreparedStatement s=RankingStore.query(c,"SELECT id,source,source_key,target,points FROM goals WHERE section LIKE '% achievement diary'");ResultSet r=s.executeQuery()) {
+            while(r.next()) {
+                tiers++;assertEquals("VARBIT",r.getString(2));assertTrue(flags.add(r.getString(3)));assertEquals(1,r.getInt(4));
+                total+=r.getInt(5);values.addProperty(r.getString(1),0);
+            }
+        }
+        assertEquals(48,tiers);assertEquals(4500,total);
+        long ledgerBefore=count("ledger");ClanFeatures.sync(c,member,body);assertEquals(ledgerBefore,count("ledger"));
+        for(String id:new ArrayList<>(values.keySet()))values.addProperty(id,1);
+        ClanFeatures.sync(c,member,body);assertEquals(ledgerBefore+48,count("ledger"));
+        ClanFeatures.sync(c,member,body);assertEquals(ledgerBefore+48,count("ledger"));
+        RankingStore.execute(c,"UPDATE goals SET points=123,enabled=false WHERE id='30000000-0000-4000-8000-000000000001'");
+        try(Statement s=c.createStatement()){s.execute(sql);}
+        try(PreparedStatement s=RankingStore.query(c,"SELECT points,enabled FROM goals WHERE id='30000000-0000-4000-8000-000000000001'");ResultSet r=s.executeQuery()) {
+            assertTrue(r.next());assertEquals(123,r.getInt(1));assertFalse(r.getBoolean(2));
+        }
+    }
     @Test public void initializationRecoversFromARealDeadlockWithoutCommittingPartialWork()throws Exception {
         RankingStore.execute(c,"CREATE TABLE init_lock_a(id integer)");RankingStore.execute(c,"CREATE TABLE init_lock_b(id integer)");RankingStore.execute(c,"CREATE TABLE init_marker(id integer PRIMARY KEY)");c.commit();
         ExecutorService pool=Executors.newSingleThreadExecutor();CountDownLatch initializerHasA=new CountDownLatch(1);

@@ -6,6 +6,10 @@ The next client update recognizes RuneLite's mapped Fire cape and Dragon defende
 
 ## Local checks
 
+The pending client also adds personal-loot tracking for Gauntlet seeds, Perilous Moons equipment, Tormented demon uniques and Araxxor uniques/halberd components. First tracked clue completions have a separate Clues points area, one reward per difficulty and matching reward-casket sprites. New drop cards use the actual game item sprites. The separately deployed backend selects points, applies shared item caps and prevents repeated clue rewards. See [encounter and clue rewards](encounter-and-clue-rewards.md) for the catalog, values and rollout requirements. This accompanies the pending leaderboard layout change that places rank emblems beside player names.
+
+Further pending additions cover Royal Titans prayer scrolls, Hueycoatl hide/wand, Nightmare Inquisitor equipment/orbs, and personal-casket ranger boots, 3rd age and gilded uniques. All clue drops appear in Clues, with their game item sprites. Once-only 10/50/100 clue milestones use game completion counters and difficulty-specific casket sprites. The client declares its dependency on RuneLite's built-in Loot Tracker for personal loot callbacks. The backend seeds these rewards through a separate additive migration; these client observations require that backend rollout before release.
+
 Run `gradlew.bat build verifyPluginHub` (or `./gradlew` on Unix). The local check verifies metadata, entry point, license presence, icon dimensions, Java 11 class compatibility, bundled resources, and absence of backend/JDBC classes in the plugin JAR. It does not replace official Hub CI or API compatibility checks.
 
 The plugin uses `build=standard`, Java 11 output, and only RuneLite-provided runtime dependencies. The standard Hub builder replaces this repository's Gradle files and builds `src/main`; PostgreSQL and the server source set are separate. The BSD 2-Clause license and 32x32 root icon already exist. No gameplay behavior or existing feature is removed for submission.

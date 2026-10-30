@@ -150,7 +150,8 @@ public class RankingPanelTest {
 
     private static JButton button(Container container, String text) {
         for (Component child : container.getComponents()) {
-            if (child instanceof JButton && text.equals(((JButton) child).getText())) return (JButton) child;
+            if (child instanceof JButton && (text.equals(((JButton) child).getText())
+                ||text.equals(((JButton)child).getAccessibleContext().getAccessibleName()))) return (JButton) child;
             if (child instanceof Container) { JButton found = button((Container) child, text); if (found != null) return found; }
         }
         return null;

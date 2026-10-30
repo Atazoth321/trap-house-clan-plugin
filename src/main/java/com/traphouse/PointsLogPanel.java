@@ -9,7 +9,7 @@ import javax.swing.*;
 final class PointsLogPanel extends JPanel {
     interface ItemArt {void load(JsonObject entry,BiConsumer<String,Icon> done);}
     private final ItemArt itemArt;
-    static final String[] CATEGORIES={"All","Drops","Pets","Milestones","Diaries","Challenges","Events","Combat","Collection","Efficiency","Misc"};
+    static final String[] CATEGORIES={"All","Drops","Clues","Pets","Milestones","Diaries","Challenges","Events","Combat","Collection","Efficiency","Misc"};
     private final JComboBox<String> source=new JComboBox<>(CATEGORIES),sort=new JComboBox<>(new String[]{"Newest first","Oldest first","Highest points"});
     private final JTextField search=new JTextField(16);
     private final JCheckBox group=new JCheckBox("Group");
@@ -72,7 +72,7 @@ final class PointsLogPanel extends JPanel {
             JLabel name=ProfileStyle.label(title,11,ProfileStyle.TEXT);name.setToolTipText(title);card.add(name);card.add(Box.createVerticalStrut(12));
             JLabel badge=new JLabel(new RewardIcon(category,false));badge.setAlignmentX(Component.CENTER_ALIGNMENT);card.add(badge);card.add(Box.createVerticalStrut(8));
             itemArt.load(e,(itemName,icon)->{
-                Runnable apply=()->{if(!active||request!=revision)return;name.setText(itemName);name.setToolTipText(itemName+" / "+title);badge.setText("");badge.setIcon(icon);card.revalidate();card.repaint();};
+                Runnable apply=()->{if(!active||request!=revision)return;if(!category.equals("Clues"))name.setText(itemName);name.setToolTipText(itemName+" / "+title);badge.setText("");badge.setIcon(icon);card.revalidate();card.repaint();};
                 if(SwingUtilities.isEventDispatchThread())apply.run();else SwingUtilities.invokeLater(apply);
             });
             long occurrences=e.has("occurrences")?e.get("occurrences").getAsLong():1;card.add(ProfileStyle.label(category+(occurrences>1?" x"+occurrences:""),10,ProfileStyle.MUTED));
@@ -96,7 +96,7 @@ final class PointsLogPanel extends JPanel {
             if(received)card.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(92,163,114)),BorderFactory.createEmptyBorder(10,10,10,10)));
             JLabel name=ProfileStyle.label(title,11,ProfileStyle.TEXT);name.setToolTipText(title);card.add(name);
             JLabel icon=new JLabel(new RewardIcon(category,received));icon.setAlignmentX(Component.CENTER_ALIGNMENT);card.add(icon);
-            card.add(ProfileStyle.label(String.format("+%,d pts%s",entry.get("points").getAsLong(),category.equals("Drops")?" per drop":""),13,ProfileStyle.ACCENT));
+            card.add(ProfileStyle.label(String.format("+%,d pts%s",entry.get("points").getAsLong(),"LOOT".equals(entry.get("sourceType").getAsString())?" per drop":""),13,ProfileStyle.ACCENT));
             card.add(ProfileStyle.label(category,10,ProfileStyle.MUTED));
             boolean manual="MANUAL".equals(entry.get("sourceType").getAsString());
             card.add(ProfileStyle.label(manual?"Staff-reviewed claim":"Automatic reward",10,ProfileStyle.MUTED));

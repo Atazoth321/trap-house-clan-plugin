@@ -10,6 +10,8 @@ final class BalancedRewards {
     static {
         Map<String,AutomaticRewards.Rule> rules=new HashMap<>();
         for(AutomaticRewards.Rule rule:AutomaticRewards.rules())if(rule.type.equals("LOOT"))rules.put(rule.key,rule);
+        for(AutomaticRewards.Rule rule:EncounterRewards.rules())if(rule.type.equals("LOOT"))rules.put(rule.key,rule);
+        for(AutomaticRewards.Rule rule:ExpandedEncounterRewards.rules())if(rule.type.equals("LOOT"))rules.put(rule.key,rule);
         CATALOG=Collections.unmodifiableMap(rules);
     }
     static String sharedItem(String type,String key) {

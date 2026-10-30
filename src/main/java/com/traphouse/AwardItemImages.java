@@ -24,7 +24,18 @@ final class AwardItemImages implements PointsLogPanel.ItemArt {
             if(entry.has("itemId")){int id=entry.get("itemId").getAsInt();return id>0?id:-1;}
             String type=value(entry,"sourceType"),key=value(entry,"sourceKey");
             if(type.equals("LOOT")&&key.matches("[0-9]+:[0-9]+"))return Integer.parseInt(key.substring(key.indexOf(':')+1));
-            if(type.equals("LOOT")&&key.matches("chest:(chambers of xeric|theatre of blood|tombs of amascut|barrows):[0-9]+"))return Integer.parseInt(key.substring(key.lastIndexOf(':')+1));
+            if(type.equals("LOOT")&&key.matches("clue:(beginner|easy|medium|hard|elite|master):[0-9]{1,6}"))return Integer.parseInt(key.substring(key.lastIndexOf(':')+1));
+            if(type.equals("COLLECTION")&&key.matches("clue milestone:(beginner|easy|medium|hard|elite|master):(10|50|100)"))key="clue completion:"+key.split(":")[1];
+            if(type.equals("LOOT")&&key.matches("chest:(chambers of xeric|theatre of blood|tombs of amascut|barrows|lunar chest):[0-9]+"))return Integer.parseInt(key.substring(key.lastIndexOf(':')+1));
+            if(type.equals("COLLECTION"))switch(key) {
+                case "clue completion:beginner":return 23245;
+                case "clue completion:easy":return 20546;
+                case "clue completion:medium":return 20545;
+                case "clue completion:hard":return 20544;
+                case "clue completion:elite":return 20543;
+                case "clue completion:master":return 19836;
+                default:break;
+            }
         }catch(RuntimeException invalid){return -1;}return -1;
     }
     static String itemName(JsonObject entry) {

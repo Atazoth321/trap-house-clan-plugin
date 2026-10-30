@@ -24,6 +24,7 @@ import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.Text;
 
 @PluginDescriptor(name="Trap House Clan Plugin", description="TRAP HOUSE clan rankings, points and Wise Old Man event leaderboards", tags={"clan","events","boss","skills","traphouse","leaderboard","ranks"})
+@net.runelite.client.plugins.PluginDependency(net.runelite.client.plugins.loottracker.LootTrackerPlugin.class)
 public class TrapHouseClanPlugin extends Plugin {
     @Inject private ClientToolbar toolbar;
     @Inject private TrapHouseConfig config;
@@ -249,6 +250,7 @@ public class TrapHouseClanPlugin extends Plugin {
     }
 
     @Subscribe public void onNpcLootReceived(net.runelite.client.events.NpcLootReceived event) {
+        if(RankingTracker.serverLootNpc(event.getNpc().getId())||RankingTracker.expandedLootNpc(event.getNpc().getId()))return;
         String player = trackingPlayer();
         if (player == null) return;
         java.util.Set<Integer> items = new java.util.HashSet<>();
@@ -261,6 +263,14 @@ public class TrapHouseClanPlugin extends Plugin {
         String player=trackingPlayer();
         if(player==null)return;
         for(RankingEvent observation:RankingTracker.containerLoot(player,event))rankings.enqueue(observation);
+    }
+
+    @Subscribe public void onServerNpcLoot(net.runelite.client.events.ServerNpcLoot event) {
+        String player=trackingPlayer();int npc=event.getComposition().getId();
+        if(player==null||!RankingTracker.serverLootNpc(npc))return;
+        java.util.Set<Integer> seen=new java.util.HashSet<>();
+        for(net.runelite.client.game.ItemStack item:event.getItems())
+            if(seen.add(item.getId()))rankings.enqueue(new RankingEvent(player,"LOOT",npc+":"+item.getId()));
     }
 
     @Subscribe public void onChatMessage(net.runelite.api.events.ChatMessage event) {
@@ -276,5 +286,6 @@ public class TrapHouseClanPlugin extends Plugin {
             && event.getType() != ChatMessageType.SPAM)) return;
         RankingEvent observation = RankingTracker.chat(player, event.getMessage());
         if (observation != null) rankings.enqueue(observation);
+        for(RankingEvent milestone:RankingTracker.clueMilestones(player,event.getMessage()))rankings.enqueue(milestone);
     }
 }

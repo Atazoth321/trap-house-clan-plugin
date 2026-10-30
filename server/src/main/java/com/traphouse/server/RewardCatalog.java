@@ -22,6 +22,9 @@ final class RewardCatalog {
                     card.addProperty("sourceType",r.getString("type"));card.addProperty("title",r.getString("title"));
                     card.addProperty("points",r.getInt("points"));card.addProperty("dailyLimit",r.getInt("daily_limit"));
                     card.addProperty("sourceKey",r.getString("source_key"));card.addProperty("category",r.getString("category"));
+                    int clueItem=EncounterRewards.clueItem(r.getString("type"),r.getString("source_key"));
+                    if(clueItem>0)card.addProperty("itemId",clueItem);
+                    if("LOOT".equals(r.getString("type")))card.addProperty("capScope",BalancedRewards.sharedItem("LOOT",r.getString("source_key"))==null?"source":"item");
                     long received=r.getLong("received_count");card.addProperty("receivedCount",received);card.addProperty("received",received>0);
                     card.addProperty("earnedPoints",r.getLong("earned_points"));
                     card.addProperty("onceOnly",r.getBoolean("once_only")||Arrays.asList("COMBAT","COLLECTION").contains(r.getString("type")));

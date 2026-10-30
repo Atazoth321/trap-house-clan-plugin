@@ -37,5 +37,6 @@ final class DatabaseInitialization {
         script(c,"/schema.sql");script(c,"/starter-goals.sql");script(c,"/rank-thresholds-v1.sql");
         MilestoneCatalog.seed(c);MilestoneCatalog.applyRewards(c);MilestoneCatalog.applyRewardBoost(c);MilestoneCatalog.applyCurrentRewards(c);
         script(c,"/activity-rewards-v3.sql");AutomaticRewards.seed(c);BalancedRewards.apply(c);RankManagement.initializeOwnerRanks(c);script(c,"/discord-joining.sql");
+        script(c,"/achievement-diaries.sql");
     }
 }

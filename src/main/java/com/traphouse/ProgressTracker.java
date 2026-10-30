@@ -37,14 +37,22 @@ final class ProgressTracker {
                 for(InventoryID inventory:new InventoryID[]{InventoryID.INVENTORY,InventoryID.EQUIPMENT,InventoryID.BANK}) {
                     ItemContainer container=client.getItemContainer(inventory);
                     if(container!=null)for(Item entry:container.getItems()) {
-                        // Fire cape and Dragon defender ownership includes broken, cosmetic and locked variants.
-                        int observed=(item==6570||item==12954)?ItemVariationMapping.map(entry.getId()):entry.getId();
-                        if(observed==item)quantity+=entry.getQuantity();
+                        if(matchesItem(item,entry.getId()))quantity+=entry.getQuantity();
                     }
                 }
                 return Math.min(Integer.MAX_VALUE,quantity);
             default:return null;
         }
+    }
+    private static boolean matchesItem(int required,int observed) {
+        if(required!=6570&&required!=12954)return observed==required;
+        // Normalize both sides: some families use a broken item as their canonical ID.
+        int family=ItemVariationMapping.map(observed);
+        if(family==ItemVariationMapping.map(required))return true;
+        if(required==6570)return family==ItemVariationMapping.map(21295)
+            ||family==ItemVariationMapping.map(21285); // Infernal max cape variants.
+        return family==ItemVariationMapping.map(22322)
+            ||family==ItemVariationMapping.map(27550); // Ghommal's Avernic variants.
     }
     private static int id(String key){int value=Integer.parseInt(key);if(value<0||value>1000000)throw new IllegalArgumentException("Invalid game ID");return value;}
 }

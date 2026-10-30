@@ -8,7 +8,7 @@ The expanded catalog adds **131 one-time tracking goals**, bringing the seeded t
 
 Skill milestones use unboosted levels. Quest milestones use RuneLite's quest completion state. Multiple thresholds can complete on the same sync for an established account. These probes read current account state; they do not prove the achievement happened after joining the clan. The Owner-authorized reward rollout now assigns positive rewards to 143 milestone and combat-tier goals; see [the reward table](milestone-rewards.md). The seven remaining pet, event, collection, and diary starter goals retain their existing configuration. Completed supported goals can award once during a later sync; existing awarded goals cannot award a second time.
 
-The catalog is added during the existing `init` deployment command, using stable IDs and `ON CONFLICT DO NOTHING`. Repeated deployments preserve edited reward amounts, enabled status, and progress. The client/server currently support 200 definitions per sync; the seeded total of 150 fits that limit, leaving room for 50 custom goals. Additional custom goals beyond that limit require pagination before they can all be tracked.
+The catalog is added during the existing `init` deployment command, using stable IDs and `ON CONFLICT DO NOTHING`. Repeated deployments preserve edited reward amounts, enabled status, and progress. The client/server currently support 200 definitions per sync. With the additional [48 automatic achievement diary tiers](achievement-diaries.md), the seeded total is 198, leaving room for two custom goals. Additional custom goals beyond that limit require pagination before they can all be tracked.
 
 ## Owner-selected ranking intervals
 
