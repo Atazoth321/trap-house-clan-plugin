@@ -41,6 +41,7 @@ final class PointsLog {
         }
         result.addProperty("player",name);result.addProperty("count",count);result.addProperty("total",total);result.addProperty("page",page);result.addProperty("pages",pages);result.add("entries",entries);
         if(p.get("category").equals("Drops"))result.add("availableDrops",dropRewards(c,member,p.get("search"),p.get("sort")));
+        result.add("availableRewards",RewardCatalog.read(c,member,p.get("category"),p.get("search"),p.get("sort")));
         return result;
     }
     static JsonArray dropRewards(Connection c,UUID member,String search,String sort)throws SQLException {

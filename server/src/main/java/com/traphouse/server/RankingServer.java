@@ -274,6 +274,10 @@ public final class RankingServer {
                 try(InputStream input=RankingServer.class.getResourceAsStream("/discord-joining.sql");Statement s=c.createStatement()) {
                     if(input==null)throw new IllegalStateException("Discord joining schema missing");s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));
                 }
+                try(InputStream input=RankingServer.class.getResourceAsStream("/achievement-diaries.sql");Statement s=c.createStatement()) {
+                    if(input==null)throw new IllegalStateException("Achievement diary definitions missing");
+                    s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));
+                }
                 c.commit(); System.out.println("Schema initialized."); return;
             }
             if(args.length==2&&args[0].equals("bootstrap-owner")) {

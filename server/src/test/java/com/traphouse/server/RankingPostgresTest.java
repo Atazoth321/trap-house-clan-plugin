@@ -12,6 +12,44 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    @Test public void achievementDiariesAwardEachTierOnceAndPreserveStaffEdits()throws Exception {
+        String sql;
+        try(InputStream input=RankingServer.class.getResourceAsStream("/achievement-diaries.sql")) {
+            sql=new String(input.readAllBytes(),StandardCharsets.UTF_8);
+        }
+        try(Statement s=c.createStatement()){s.execute(sql);s.execute(sql);}
+        JsonObject body=new JsonObject(),values=new JsonObject();body.addProperty("player",member.name);body.add("values",values);
+        int tiers=0,total=0;Set<String> flags=new HashSet<>();
+        try(PreparedStatement s=RankingStore.query(c,"SELECT id,source,source_key,target,points FROM goals WHERE section LIKE '% achievement diary'");ResultSet r=s.executeQuery()) {
+            while(r.next()) {
+                tiers++;assertEquals("VARBIT",r.getString(2));assertTrue(flags.add(r.getString(3)));assertEquals(1,r.getInt(4));
+                total+=r.getInt(5);values.addProperty(r.getString(1),0);
+            }
+        }
+        assertEquals(48,tiers);assertEquals(4500,total);
+        JsonArray catalog=PointsLog.read(c,"player=Member&category=Diaries").getAsJsonArray("availableRewards");
+        assertEquals(48,catalog.size());
+        int catalogPoints=0;
+        for(JsonElement entry:catalog) {
+            JsonObject card=entry.getAsJsonObject();
+            assertEquals("GOAL",card.get("sourceType").getAsString());
+            assertTrue(card.get("onceOnly").getAsBoolean());assertFalse(card.get("received").getAsBoolean());
+            catalogPoints+=card.get("points").getAsInt();
+        }
+        assertEquals(4500,catalogPoints);
+        long ledgerBefore=count("ledger");ClanFeatures.sync(c,member,body);assertEquals(ledgerBefore,count("ledger"));
+        for(String id:new ArrayList<>(values.keySet()))values.addProperty(id,1);
+        ClanFeatures.sync(c,member,body);assertEquals(ledgerBefore+48,count("ledger"));
+        ClanFeatures.sync(c,member,body);assertEquals(ledgerBefore+48,count("ledger"));
+        for(JsonElement entry:PointsLog.read(c,"player=Member&category=Diaries").getAsJsonArray("availableRewards"))
+            assertTrue(entry.getAsJsonObject().get("received").getAsBoolean());
+        RankingStore.execute(c,"UPDATE goals SET points=123,enabled=false WHERE id='30000000-0000-4000-8000-000000000001'");
+        try(Statement s=c.createStatement()){s.execute(sql);}
+        try(PreparedStatement s=RankingStore.query(c,"SELECT points,enabled FROM goals WHERE id='30000000-0000-4000-8000-000000000001'");ResultSet r=s.executeQuery()) {
+            assertTrue(r.next());assertEquals(123,r.getInt(1));assertFalse(r.getBoolean(2));
+        }
+    }
+
     private Map<String,String> archiveEnv() {
         Map<String,String> env=new HashMap<>();env.put("TRAP_DISCORD_CLIENT_ID","900000000000000001");env.put("TRAP_DISCORD_REVIEW_CHANNEL_ID","900000000000000002");env.put("TRAP_DISCORD_STAFF_LOG_CHANNEL_ID","900000000000000003");return env;
     }
