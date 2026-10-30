@@ -172,7 +172,7 @@ final class RankingPanel extends JPanel {
         JsonObject breakdown=player.has("breakdown")?player.getAsJsonObject("breakdown"):new JsonObject();
         JPanel tiles=new JPanel(new GridLayout(0,3,3,3));tiles.setOpaque(false);
         for(String category:new String[]{"Drops","Clues","Pets","Milestones","Diaries","Challenges","Events","Combat","Collection","Efficiency"}) {
-            if((category.equals("Combat")||category.equals("Collection")||category.equals("Efficiency"))&&!breakdown.has(category))continue;
+            if((category.equals("Combat")||category.equals("Collection"))&&!breakdown.has(category))continue;
             JButton tile=pointsTile(name,category,number(breakdown,category));
             tile.setToolTipText(category+": "+formatted(number(breakdown,category))+" points");tiles.add(tile);
         }

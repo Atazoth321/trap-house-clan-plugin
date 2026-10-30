@@ -8,6 +8,18 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class RankingPanelTest {
+    @Test public void efficiencyTileRemainsVisibleAtZeroOnOwnAndOtherNamedProfiles()throws Exception {
+        SwingUtilities.invokeAndWait(()->{
+            RankingPanel panel=new RankingPanel(()->{});JsonObject own=snapshot();panel.showData(own);
+            JButton efficiency=button(panel,"Efficiency points log");assertNotNull(efficiency);
+            assertTrue(contains(efficiency,"0"));assertEquals("Efficiency: 0 points",efficiency.getToolTipText());
+            JsonObject other=snapshot();other.getAsJsonObject("profile").addProperty("name","Boob Slip");panel.showMember(other);
+            efficiency=button(panel,"Efficiency points log");assertNotNull(efficiency);assertTrue(contains(efficiency,"0"));
+            JsonObject breakdown=new JsonObject();breakdown.addProperty("Efficiency",25);other.getAsJsonObject("profile").add("breakdown",breakdown);
+            panel.showMember(other);efficiency=button(panel,"Efficiency points log");assertNotNull(efficiency);
+            assertTrue(contains(efficiency,"25"));assertEquals("Efficiency: 25 points",efficiency.getToolTipText());
+        });
+    }
     @Test public void rankManagementButtonRequiresAuthenticatedOwnerAndServerEditorData()throws Exception {
         SwingUtilities.invokeAndWait(()->{
             RankingPanel panel=new RankingPanel(()->{});JsonObject data=snapshot();
