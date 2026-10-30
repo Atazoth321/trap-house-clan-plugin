@@ -9,6 +9,20 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class PointsLogPanelTest {
+    @Test public void efficiencyCardsExplainRatesAndSharedWeeklyCap()throws Exception {
+        SwingUtilities.invokeAndWait(()->{
+            JsonObject log=data("Member",1,0);JsonArray catalog=new JsonArray();
+            for(String unit:Arrays.asList("EHP","EHB"))catalog.add(new Gson().fromJson("{category:'Efficiency',title:'"+unit+" gains',points:10,sourceType:'EFFICIENCY',sourceKey:'WOM EHP/EHB gains',unit:'"+unit+"',weeklyCap:250,trackingNote:'Combined EHP/EHB award history'}",JsonObject.class));
+            log.add("availableRewards",catalog);
+            PointsLogPanel panel=new PointsLogPanel("Member","Efficiency",(q,done)->done.accept(log));
+            JTabbedPane tabs=find(panel,JTabbedPane.class);
+            assertEquals("Efficiency rewards",tabs.getTitleAt(tabs.getSelectedIndex()));
+            assertTrue(text(panel,"+10 pts per EHP"));assertTrue(text(panel,"+10 pts per EHB"));
+            assertTrue(text(panel,"Shared weekly cap: 250 pts"));
+            assertFalse(text(panel,"Not received yet"));
+            panel.close();
+        });
+    }
     @Test public void clueUniquesAndMilestonesShareCluesAreaWithTheirOwnGameItemArtwork()throws Exception {
         SwingUtilities.invokeAndWait(()->{
             JsonObject log=data("Member",1,0);

@@ -55,7 +55,7 @@ final class PointsLogPanel extends JPanel {
     private void load() {
         if(!active)return;long request=++revision;prev.setEnabled(false);next.setEnabled(false);summary.setText("Loading...");cards.removeAll();cards.revalidate();cards.repaint();
         rewardCards.removeAll();rewardCards.add(ProfileStyle.label("Loading current rewards...",12,ProfileStyle.MUTED));rewardCards.revalidate();rewardCards.repaint();
-        if(!"Drops".equals(source.getSelectedItem()))views.remove(rewardScroll);
+        if(!hasRewardBrowser())views.remove(rewardScroll);
         JsonObject query=new JsonObject();query.addProperty("player",member);query.addProperty("category",(String)source.getSelectedItem());query.addProperty("sort",new String[]{"newest","oldest","highest"}[sort.getSelectedIndex()]);query.addProperty("search",search.getText());query.addProperty("group",group.isSelected());query.addProperty("page",page);
         loader.accept(query,data->{if(!SwingUtilities.isEventDispatchThread()){SwingUtilities.invokeLater(()->accept(request,data));}else accept(request,data);});
     }
@@ -65,7 +65,7 @@ final class PointsLogPanel extends JPanel {
         if(!RankingTracker.normalize(member).equals(RankingTracker.normalize(data.get("player").getAsString()))){summary.setText("Member mismatch; reload profile.");return;}
         page=data.get("page").getAsInt();int pages=data.get("pages").getAsInt();long count=data.get("count").getAsLong();
         summary.setText(String.format("%,d entries | %+,d pts",count,data.get("total").getAsLong()));pagination.setText("Page "+page+"/"+pages);prev.setEnabled(page>1);next.setEnabled(page<pages);
-        if(data.has("availableRewards")||"Drops".equals(source.getSelectedItem()))showRewards(request,data);
+        if(data.has("availableRewards")||hasRewardBrowser())showRewards(request,data);
         for(JsonElement value:RankingPanel.array(data,"entries")) {
             JsonObject e=value.getAsJsonObject();String category=e.get("category").getAsString(),title=e.get("title").getAsString();long points=e.get("points").getAsLong();
             JPanel card=ProfileStyle.card(null);card.setPreferredSize(new Dimension(200,155));
@@ -80,8 +80,12 @@ final class PointsLogPanel extends JPanel {
         }
         if(count==0)cards.add(ProfileStyle.label("No matching awards.",12,ProfileStyle.MUTED));cards.revalidate();cards.repaint();
     }
+    private boolean hasRewardBrowser() {
+        return java.util.Arrays.asList("Drops","Clues","Efficiency").contains(source.getSelectedItem());
+    }
     private void showRewards(long request,JsonObject data) {
-        String tab="Drops".equals(source.getSelectedItem())?"Available drops":"Available rewards";
+        String selected=(String)source.getSelectedItem();
+        String tab="Drops".equals(selected)?"Available drops":"Clues".equals(selected)?"Clue rewards":"Efficiency".equals(selected)?"Efficiency rewards":"Available rewards";
         if(views.indexOfComponent(rewardScroll)<0){views.insertTab(tab,null,rewardScroll,"Browse rewards and received status",0);views.setSelectedComponent(rewardScroll);}
         else views.setTitleAt(views.indexOfComponent(rewardScroll),tab);
         rewardCards.removeAll();
@@ -96,15 +100,16 @@ final class PointsLogPanel extends JPanel {
             if(received)card.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(92,163,114)),BorderFactory.createEmptyBorder(10,10,10,10)));
             JLabel name=ProfileStyle.label(title,11,ProfileStyle.TEXT);name.setToolTipText(title);card.add(name);
             JLabel icon=new JLabel(new RewardIcon(category,received));icon.setAlignmentX(Component.CENTER_ALIGNMENT);card.add(icon);
-            card.add(ProfileStyle.label(String.format("+%,d pts%s",entry.get("points").getAsLong(),"LOOT".equals(entry.get("sourceType").getAsString())?" per drop":""),13,ProfileStyle.ACCENT));
+            String unit=entry.has("unit")?" per "+entry.get("unit").getAsString():"LOOT".equals(entry.get("sourceType").getAsString())?" per drop":"";
+            card.add(ProfileStyle.label(String.format("+%,d pts%s",entry.get("points").getAsLong(),unit),13,ProfileStyle.ACCENT));
             card.add(ProfileStyle.label(category,10,ProfileStyle.MUTED));
             boolean manual="MANUAL".equals(entry.get("sourceType").getAsString());
             card.add(ProfileStyle.label(manual?"Staff-reviewed claim":"Automatic reward",10,ProfileStyle.MUTED));
             String scope=entry.has("capScope")?entry.get("capScope").getAsString():category.equals("Drops")?"source":"reward";
             boolean once=entry.has("onceOnly")&&entry.get("onceOnly").getAsBoolean();
-            card.add(ProfileStyle.label(once?"One-time reward":"Daily cap: "+entry.get("dailyLimit").getAsInt()+" per "+scope,10,ProfileStyle.MUTED));
+            card.add(ProfileStyle.label(entry.has("weeklyCap")?"Shared weekly cap: "+entry.get("weeklyCap").getAsInt()+" pts":once?"One-time reward":"Daily cap: "+entry.get("dailyLimit").getAsInt()+" per "+scope,10,ProfileStyle.MUTED));
             if(entry.has("familyDailyLimit"))card.add(ProfileStyle.label("All Barrows pieces: "+entry.get("familyDailyLimit").getAsInt()+" per day",10,ProfileStyle.MUTED));
-            card.add(ProfileStyle.label(!known?"Status unavailable; update backend":received?"Received x"+entry.get("receivedCount").getAsLong():"Not received yet",11,received?new Color(125,210,150):ProfileStyle.MUTED));
+            card.add(ProfileStyle.label(entry.has("trackingNote")?entry.get("trackingNote").getAsString():!known?"Status unavailable; update backend":received?"Received x"+entry.get("receivedCount").getAsLong():"Not received yet",11,received?new Color(125,210,150):ProfileStyle.MUTED));
             if(received)card.add(ProfileStyle.label(String.format("%,d pts earned",entry.get("earnedPoints").getAsLong()),10,ProfileStyle.MUTED));
             card.setToolTipText(entry.get("sourceKey").getAsString());rewardCards.add(card);
             itemArt.load(entry,(itemName,image)->{

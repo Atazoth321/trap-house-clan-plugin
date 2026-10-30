@@ -24,7 +24,6 @@ import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.Text;
 
 @PluginDescriptor(name="Trap House Clan Plugin", description="TRAP HOUSE clan rankings, points and Wise Old Man event leaderboards", tags={"clan","events","boss","skills","traphouse","leaderboard","ranks"})
-@net.runelite.client.plugins.PluginDependency(net.runelite.client.plugins.loottracker.LootTrackerPlugin.class)
 public class TrapHouseClanPlugin extends Plugin {
     @Inject private ClientToolbar toolbar;
     @Inject private TrapHouseConfig config;
