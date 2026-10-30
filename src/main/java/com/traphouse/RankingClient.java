@@ -71,8 +71,9 @@ final class RankingClient {
         return value.replaceAll("/+$", "");
     }
 
-    synchronized void enqueue(RankingEvent event) {
-        if (queue.size() < 200) queue.addLast(event);
+    synchronized boolean enqueue(RankingEvent event) {
+        if(queue.size()>=200)return false;
+        queue.addLast(event);return true;
     }
 
     synchronized void reset() { generation++; queue.clear(); pointAlerts.reset(); manualRequest = null; manualPlayer = null;progressRequest=null;memberRequest=null;registrationPath=null;probes=new com.google.gson.JsonArray(); }

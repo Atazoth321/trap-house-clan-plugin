@@ -23,6 +23,7 @@ final class AwardItemImages implements PointsLogPanel.ItemArt {
         try {
             if(entry.has("itemId")){int id=entry.get("itemId").getAsInt();return id>0?id:-1;}
             String type=value(entry,"sourceType"),key=value(entry,"sourceKey");
+            if(type.equals("COLLECTION")&&PetTracker.itemId(key)>0)return PetTracker.itemId(key);
             if(type.equals("LOOT")&&key.matches("[0-9]+:[0-9]+"))return Integer.parseInt(key.substring(key.indexOf(':')+1));
             if(type.equals("LOOT")&&key.matches("clue:(beginner|easy|medium|hard|elite|master):[0-9]{1,6}"))return Integer.parseInt(key.substring(key.lastIndexOf(':')+1));
             if(type.equals("COLLECTION")&&key.matches("clue milestone:(beginner|easy|medium|hard|elite|master):(10|50|100)"))key="clue completion:"+key.split(":")[1];

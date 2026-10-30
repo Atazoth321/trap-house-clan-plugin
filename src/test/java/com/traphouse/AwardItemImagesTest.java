@@ -5,6 +5,10 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class AwardItemImagesTest {
+    @Test public void existingPetReceiptsUseCanonicalInGamePetSprites() {
+        assertEquals(12655,AwardItemImages.itemId(entry("{sourceType:'COLLECTION',sourceKey:'pet kraken',category:'Pets'}")));
+        assertEquals(27352,AwardItemImages.itemId(entry("{sourceType:'COLLECTION',sourceKey:\"tumeken's guardian\",category:'Pets'}")));
+    }
     @Test public void expandedRewardsUseCasketSpritesOnlyForMilestonesAndItemSpritesForUniques() {
         assertEquals(2577,AwardItemImages.itemId(entry("{sourceType:'LOOT',sourceKey:'clue:medium:2577'}")));
         assertEquals(20014,AwardItemImages.itemId(entry("{sourceType:'LOOT',sourceKey:'clue:master:20014'}")));

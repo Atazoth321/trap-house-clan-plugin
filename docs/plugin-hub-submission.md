@@ -14,6 +14,9 @@ Run `gradlew.bat build verifyPluginHub` (or `./gradlew` on Unix). The local chec
 
 The plugin uses `build=standard`, Java 11 output, and only RuneLite-provided runtime dependencies. The standard Hub builder replaces this repository's Gradle files and builds `src/main`; PostgreSQL and the server source set are separate. The BSD 2-Clause license and 32x32 root icon already exist. No gameplay behavior or existing feature is removed for submission.
 
+
+Existing pet recognition also reads the 55 supported pet families from inventory and a loaded bank, including known transformed forms, and uses the existing once-only collection keys and in-game pet sprites. See [existing pet tracking](existing-pet-tracking.md).
+
 ## Reviewer description
 
 TRAP HOUSE clan sidebar with Wise Old Man boss/skill event standings, member profiles, clan points, configurable progression, milestone tracking, and drop/pet rewards. Existing in-game clan ranks are never automatically changed. No input automation or gameplay interaction is performed.
