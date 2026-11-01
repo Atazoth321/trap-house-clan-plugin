@@ -26,6 +26,7 @@ The expanded clan dashboard includes **Achievements**, **Events**, **Diary**, an
 
 ## Features
 
+- Animated confirmed drop/pet award banners, earned-rank milestone celebrations with optional sound, and a shared **Activity** page. See [celebrations and activity](docs/celebrations-and-activity.md) for settings and deployment requirements.
 - **Boss event:** Boss of the Week details and the top ten participants ranked by kills gained during the competition.
 - **Skill event:** Skill of the Month details and the top ten participants ranked by XP gained during the competition.
 - Automatic detection of active clan competitions, with separate competition-ID overrides for each tab.
