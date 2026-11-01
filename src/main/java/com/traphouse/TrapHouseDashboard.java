@@ -27,7 +27,7 @@ final class TrapHouseDashboard extends PluginPanel {
             JPanel navigation = new JPanel(new GridLayout(0,2,5,5));
             navigation.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
             navigation.setOpaque(false);
-            String[] names = {"Profile","Ranks","Leaderboard","Achievements","Events","Diary","Competitions"};
+            String[] names = {"Profile","Ranks","Leaderboard","Achievements","Events","Diary","Competitions","Activity"};
             JComponent[] rankPages = ranking.pages();
             JButton[] buttons = new JButton[names.length];
             navigationButtons=buttons;
@@ -46,10 +46,10 @@ final class TrapHouseDashboard extends PluginPanel {
             eventTabs.addTab("Boss event",bossPanel);eventTabs.addTab("Skill event",skillPanel);
             eventTabs.addTab("Clan events",rankPages[4]);
             pages.add(eventTabs,"4");
-            pages.add(ranking.racePage(),"6");
+            pages.add(ranking.racePage(),"6");pages.add(ranking.activityPage(),"7");
             header.add(navigation); add(header,BorderLayout.NORTH);add(pages,BorderLayout.CENTER);
             ranking.navigation(()->buttons[0].doClick(),()->buttons[2].doClick());
-            buttons[Math.max(0,Math.min(selectedTab,6))].doClick();
+            buttons[Math.max(0,Math.min(selectedTab,7))].doClick();
             return;
         }
         tabs.setFont(new Font("SansSerif", Font.BOLD, 11));

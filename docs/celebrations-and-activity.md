@@ -1,0 +1,11 @@
+# Celebrations and clan activity
+
+Confirmed positive drop and pet awards trigger a five-second banner, with gold drop styling, purple pet styling, an item image when resolvable, and the actual awarded clan points. The banner fades and slides into view with a subtle glow. Drop odds are displayed only when the server supplies a `rarity` field; current award rules do not supply drop odds.
+
+For older notification responses missing a category or item source, the plugin matches the confirmed award title against the server dashboard's reward definitions to resolve drop/pet styling and item art. Unknown rewards remain unclassified. Detected loot and achievement observations request a background sync immediately, batching observations within 150 milliseconds. Observations arriving during that sync trigger a follow-up. The regular 30-second sync remains a fallback. Banners still wait for server confirmation; capped drops with no new point award do not trigger a banner.
+
+Newly observed increases in the server's earned automatic rank show a rank emblem banner. Initial connection establishes a silent baseline. This celebrates eligibility; actual in-game promotion remains manual. Rank sound uses a short system beep and is disabled by default. Drop celebrations and rank celebrations have separate settings. The overlay can be positioned using RuneLite's overlay controls.
+
+The Activity page shows the latest 40 confirmed shared drops, pets, achievements, and earned rank milestones for active members, refreshed with the existing ranking sync (normally every 30 seconds). It does not include manual request reasons or staff audit details. Earned rank history may include milestones recorded during server initialization. Both the updated plugin and updated ranking server must be deployed for the full feature set. An older server displays an availability message in the Activity page.
+
+Celebration queues are bounded and cleared on account, credential, server, or session reset. Repeated award notification pages cannot replay a celebration. Large bursts may omit visual banners while retaining the existing confirmed award chat/history. Graphics use existing item sprites and rank emblems; no additional external asset service is used.

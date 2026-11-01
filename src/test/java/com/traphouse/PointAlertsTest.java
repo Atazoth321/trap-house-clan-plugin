@@ -6,6 +6,17 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class PointAlertsTest {
+    @Test public void celebrationsAreSilentAtBaselineDeduplicatedAndResetWithSession() {
+        PointAlerts alerts=new PointAlerts();
+        alerts.accept(page(10,0,0,0,""));assertTrue(alerts.celebrations().isEmpty());
+        JsonObject award=page(11,11,1,50,"Dragon warhammer");
+        award.getAsJsonArray("awards").get(0).getAsJsonObject().addProperty("sourceKey","1:13576");
+        alerts.accept(award);alerts.accept(award);
+        List<JsonObject> celebrations=alerts.celebrations();assertEquals(1,celebrations.size());
+        assertEquals("1:13576",celebrations.get(0).get("sourceKey").getAsString());
+        assertTrue(alerts.celebrations().isEmpty());assertEquals(1,alerts.drain().size());
+        alerts.accept(page(12,12,1,50,"Pet"));alerts.reset();assertTrue(alerts.celebrations().isEmpty());
+    }
     @Test public void categoryColorsUseConfirmedCategoryAndSanitizeTheRewardTitle() {
         PointAlerts alerts=new PointAlerts();TrapHouseConfig config=new TrapHouseConfig(){};alerts.accept(page(0,0,0,0,""));
         String[] categories={"Drops","Pets","Milestones","Combat","Misc","Unknown"},colors={"ffc048","c080ff","64d282","78c8ff","78c8ff","78c8ff"};

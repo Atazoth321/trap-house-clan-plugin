@@ -24,7 +24,7 @@ final class RewardIcon implements Icon {
                 g.drawArc(8,11,12,16,90,180);g.drawArc(28,11,12,16,270,180);
                 g.drawPolyline(new int[]{16,16,21,27,32,32,16},new int[]{11,23,29,29,23,11,11},7);
                 g.drawLine(24,29,24,37);g.drawLine(17,38,31,38);break;
-            case "Diaries":case "Collection":
+            case "Diaries":case "Collection":case "Clues":
                 g.drawRoundRect(12,10,25,29,3,3);g.drawLine(18,10,18,39);g.drawLine(23,19,32,19);g.drawLine(23,25,32,25);g.drawLine(23,31,30,31);break;
             case "Events":
                 g.drawRoundRect(11,13,27,26,3,3);g.drawLine(11,21,38,21);g.drawLine(18,9,18,17);g.drawLine(31,9,31,17);g.fillOval(20,26,8,8);break;

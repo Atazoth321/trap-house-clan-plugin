@@ -12,6 +12,8 @@ import javax.swing.event.DocumentListener;
 final class RankingPanel extends JPanel {
     private final JPanel profile = ClanStyle.column(), ranks = ClanStyle.column(), leaders = ClanStyle.column();
     private final JPanel achievements = ClanStyle.column(), events = ClanStyle.column(), diary = ClanStyle.column(), races = ClanStyle.column();
+    private final JPanel activity=ClanStyle.column();
+    JComponent activityPage(){return ClanStyle.scroll(activity);}
     private final JPanel leaderRows = ClanStyle.column();
     private final JLabel status = ClanStyle.label("Ranking sync disabled",10,ClanStyle.MUTED);
     private final JProgressBar progress = new JProgressBar(0,100);
@@ -105,7 +107,7 @@ final class RankingPanel extends JPanel {
     JComponent racePage() { return ClanStyle.scroll(races); }
 
     static JsonArray array(JsonObject data,String key) { return data.has(key)&&data.get(key).isJsonArray()?data.getAsJsonArray(key):new JsonArray(); }
-    private static String string(JsonObject data,String key,String fallback) { return data.has(key)&&!data.get(key).isJsonNull()?data.get(key).getAsString():fallback; }
+    static String string(JsonObject data,String key,String fallback) { return data.has(key)&&!data.get(key).isJsonNull()?data.get(key).getAsString():fallback; }
     private static long number(JsonObject data,String key) { return data.has(key)&&!data.get(key).isJsonNull()?data.get(key).getAsLong():0; }
     private static String formatted(long value) { return String.format(Locale.US,"%,d",value); }
     private void message(JPanel page,String title,String text) {
@@ -123,8 +125,23 @@ final class RankingPanel extends JPanel {
         leaderboard=array(data,"leaderboard"); renderLeaderboardPage();
         renderGoals(achievements,data,"Achievements",false);
         renderGoals(diary,data,"Clan diary",true);
-        renderEvents(data); renderRaces(data);
+        renderEvents(data); renderRaces(data); renderActivity(data);
         status.setText("Synced with clan server");
+    }
+
+    private void renderActivity(JsonObject data) {
+        activity.removeAll();toolbar(activity,"CLAN ACTIVITY");
+        JsonArray entries=array(data,"activity");
+        if(entries.size()==0)activity.add(ClanStyle.text(data.has("activity")?"No recent clan activity.":"Activity requires the updated ranking server."));
+        for(JsonElement element:entries) {
+            JsonObject entry=element.getAsJsonObject();String category=string(entry,"category","");
+            JPanel card=ClanStyle.card(CelebrationOverlay.clean(string(entry,"name","Member")));
+            String title=CelebrationOverlay.clean(string(entry,"title","Clan reward"));
+            card.add(ClanStyle.text((category.equals("Ranks")?"Rank milestone unlocked: ":category.equals("Drops")||category.equals("Pets")?"Received ":"Earned ")+title));
+            card.add(ClanStyle.label((category.equals("Ranks")?"Leadership promotion required":"+"+string(entry,"points","0")+" pts | "+category),11,category.equals("Pets")?new Color(192,128,255):ClanStyle.GOLD));
+            card.add(ClanStyle.label(string(entry,"at",""),9,ClanStyle.MUTED));ClanStyle.add(activity,card);
+        }
+        ClanStyle.finish(activity);
     }
 
     void showMember(JsonObject data) { viewingOther=true; renderProfile(data,true); openProfile.run(); profileScroll.getVerticalScrollBar().setValue(0);status.setText("Viewing "+string(data.getAsJsonObject("profile"),"name","member")+"'s profile"); }
@@ -171,8 +188,8 @@ final class RankingPanel extends JPanel {
         ClanStyle.add(profile,ProfileStyle.label("Points from:",12,ProfileStyle.ACCENT));
         JsonObject breakdown=player.has("breakdown")?player.getAsJsonObject("breakdown"):new JsonObject();
         JPanel tiles=new JPanel(new GridLayout(0,3,3,3));tiles.setOpaque(false);
-        for(String category:new String[]{"Drops","Pets","Milestones","Diaries","Challenges","Events","Combat","Collection","Efficiency"}) {
-            if((category.equals("Combat")||category.equals("Collection")||category.equals("Efficiency"))&&!breakdown.has(category))continue;
+        for(String category:new String[]{"Drops","Clues","Pets","Milestones","Diaries","Challenges","Events","Combat","Collection","Efficiency"}) {
+            if((category.equals("Combat")||category.equals("Collection"))&&!breakdown.has(category))continue;
             JButton tile=pointsTile(name,category,number(breakdown,category));
             tile.setToolTipText(category+": "+formatted(number(breakdown,category))+" points");tiles.add(tile);
         }
@@ -303,13 +320,26 @@ final class RankingPanel extends JPanel {
             JsonObject row=element.getAsJsonObject(); position++; String name=string(row,"name","");
             if(!name.toLowerCase(Locale.ROOT).contains(filter))continue;
             final String member=name;
-            JButton button=ClanStyle.button("#"+position+"  "+name+"   "+formatted(number(row,"points")),()->browseMember(member));
+            JButton button=leaderboardButton(position,name,string(row,"rank","Unranked"),formatted(number(row,"points")),()->browseMember(member));
             button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             button.setToolTipText("View "+name+" / "+string(row,"rank","Unranked"));
             button.setForeground(position<=3?ClanStyle.GOLD:ClanStyle.WHITE); ClanStyle.add(leaderRows,button);
-            ClanStyle.add(leaderRows,RankEmblems.label(string(row,"rank","Unranked"),string(row,"rank","Unranked"),10,ClanStyle.MUTED)); visible++;
+            visible++;
         }
         if(visible==0)leaderRows.add(ClanStyle.text("No matching clan members.")); ClanStyle.finish(leaderRows); ClanStyle.finish(leaders);
+    }
+    static JButton leaderboardButton(int position,String name,String rank,String points,Runnable action) {
+        JButton row=ClanStyle.button("",action);
+        row.setLayout(new BorderLayout(6,0));
+        row.setMargin(new Insets(2,8,2,8));
+        Color color=position<=3?ClanStyle.GOLD:ClanStyle.WHITE;
+        row.add(ClanStyle.label("#"+position,10,ClanStyle.MUTED),BorderLayout.WEST);
+        row.add(RankEmblems.label(name,rank,11,color),BorderLayout.CENTER);
+        row.add(ClanStyle.label(points,10,color),BorderLayout.EAST);
+        row.setToolTipText("View "+name+" / "+rank);
+        row.getAccessibleContext().setAccessibleName("#"+position+"  "+name+"   "+points);
+        row.getAccessibleContext().setAccessibleDescription(rank);
+        return row;
     }
     private void openFullBoard() {
         if(GraphicsEnvironment.isHeadless())return;
@@ -393,6 +423,7 @@ final class RankingPanel extends JPanel {
         if(array(data,"races").size()==0)ClanStyle.add(races,ClanStyle.text("No race competitions configured. Boss and Skill competitions use Wise Old Man."));ClanStyle.finish(races);
     }
     void clear(String message) {
+        message(activity,"CLAN ACTIVITY",message);
         closeRankEditor();
         for(JDialog dialog:new java.util.ArrayList<>(logWindows)){((PointsLogPanel)dialog.getContentPane()).close();dialog.dispose();}logWindows.clear();
         snapshot=null; viewingOther=false;leaderboard=new JsonArray();

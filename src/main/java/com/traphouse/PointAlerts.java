@@ -7,6 +7,8 @@ import net.runelite.client.util.Text;
 /** Session-local cursor: old awards stay silent and repeated pages cannot repeat chat. */
 final class PointAlerts {
     private Long cursor;
+    private final ArrayDeque<JsonObject> celebrations=new ArrayDeque<>();
+    java.util.List<JsonObject> celebrations(){java.util.List<JsonObject> result=new ArrayList<>(celebrations);celebrations.clear();return result;}
     private static final class Notice {
         final String text,category;
         Notice(String text,String category){this.text=text;this.category=category;}
@@ -14,7 +16,7 @@ final class PointAlerts {
     private final ArrayDeque<Notice> messages=new ArrayDeque<>();
 
     Long cursor(){return cursor;}
-    void reset(){cursor=null;messages.clear();}
+    void reset(){cursor=null;messages.clear();celebrations.clear();}
     void accept(JsonObject data) {
         long next=Long.parseLong(data.get("cursor").getAsString());
         JsonArray awards=data.getAsJsonArray("awards");
@@ -40,7 +42,7 @@ final class PointAlerts {
         if(previous!=next)throw new IllegalArgumentException("Missing award entries");
         // Leave the cursor untouched if chat is backed up; the next sync retries the page.
         if(messages.size()+pending.size()>200)return;
-        messages.addAll(pending);cursor=next;
+        messages.addAll(pending);for(JsonElement award:awards){if(celebrations.size()<200)celebrations.add(award.getAsJsonObject().deepCopy());}cursor=next;
     }
     List<String> drain() {return drain(null);}
     List<String> drain(TrapHouseConfig config) {

@@ -32,11 +32,13 @@ public class TrapHouseClanPlugin extends Plugin {
     @Inject private Client client;
     @Inject private OverlayManager overlayManager;
     @Inject private TrapHouseEventOverlay eventOverlay;
+    @Inject private CelebrationOverlay celebrationOverlay;
     @Inject private RankingClient rankings;
     @Inject private AwardItemImages awardItemImages;
     @Inject private DiscordSignIn discordSignIn;
     private volatile RankingPanel rankingPanel;
     private ScheduledFuture<?> rankingTask;
+    private DropSync dropSync;
     private NavigationButton navigationButton;
     private TrapHouseDashboard dashboard;
     private volatile EventLeaderboardController bossBoard;
@@ -49,6 +51,7 @@ public class TrapHouseClanPlugin extends Plugin {
     private volatile String playerName;
     private volatile boolean rankingMember;
     private int progressTicks;
+    private final PetTracker petTracker=new PetTracker();
     private EventAlerts bossAlerts;
     private EventAlerts skillAlerts;
 
@@ -57,12 +60,15 @@ public class TrapHouseClanPlugin extends Plugin {
     }
 
     @Override protected void startUp() {
+        dropSync=new DropSync(executor,this::syncRankings);
+        petTracker.reset();
         loginSession = false;
         playerName = null;
         rankingMember = false;
         bossAlerts = new EventAlerts();
         skillAlerts = new EventAlerts();
         overlayManager.add(eventOverlay);
+        overlayManager.add(celebrationOverlay);
         SwingUtilities.invokeLater(() -> {
             active = true;
             bossBoard = new EventLeaderboardController(wiseOldMan, executor, config::competitionId, false);
@@ -108,8 +114,11 @@ public class TrapHouseClanPlugin extends Plugin {
     }
 
     @Override protected void shutDown() {
+        if(dropSync!=null)dropSync.close();
+        petTracker.reset();
         discordSignIn.cancel();
         overlayManager.remove(eventOverlay);
+        overlayManager.remove(celebrationOverlay);
         loginSession = false;
         if (refreshTask != null) refreshTask.cancel(false);
         if (rankingTask != null) rankingTask.cancel(false);
@@ -133,6 +142,7 @@ public class TrapHouseClanPlugin extends Plugin {
             if(!java.util.Set.of("rankingEnabled","rankingUrl","rankingToken").contains(event.getKey()))return;
             if(event.getKey().equals("rankingUrl"))discordSignIn.cancel();
             rankings.reset();
+            petTracker.reset();
             SwingUtilities.invokeLater(() -> {
                 if (rankingPanel != null) rankingPanel.clear("Ranking settings changed; reconnecting");
             });
@@ -164,6 +174,7 @@ public class TrapHouseClanPlugin extends Plugin {
     @Subscribe public void onGameStateChanged(GameStateChanged event) {
         // Hopping and loading stay in the same session; returning to login resets it.
         if (event.getGameState() == GameState.LOGIN_SCREEN) {
+            petTracker.reset();
             rankingMember = false;
             loginSession = false;
             updatePlayer(null);
@@ -180,6 +191,7 @@ public class TrapHouseClanPlugin extends Plugin {
         if (config.rankingEnabled() && rankingMember && ++progressTicks >= 50) {
             progressTicks=0;
             rankings.progress(ProgressTracker.collect(client,localName,rankings.probes()));
+            petTracker.scan(client,localName,this::queueAward);
         }
         updatePlayer(client.getLocalPlayer() == null ? null : client.getLocalPlayer().getName());
         if(rankingMember)for(String message:rankings.pointMessages(config)) {
@@ -237,9 +249,15 @@ public class TrapHouseClanPlugin extends Plugin {
         client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", message, null);
     }
 
-    private void syncRankings() {
+    private synchronized void syncRankings() {
         RankingPanel panel = rankingPanel;
         if (panel != null) rankings.sync(config, rankingMember ? playerName : null, panel);
+    }
+
+    private boolean queueAward(RankingEvent event) {
+        boolean accepted=rankings.enqueue(event);
+        if(accepted&&dropSync!=null)dropSync.request();
+        return accepted;
     }
 
     private String trackingPlayer() {
@@ -248,19 +266,35 @@ public class TrapHouseClanPlugin extends Plugin {
         return client.getLocalPlayer().getName();
     }
 
+    @Subscribe public void onItemContainerChanged(net.runelite.api.events.ItemContainerChanged event) {
+        if(event.getContainerId()!=net.runelite.api.InventoryID.INVENTORY.getId()
+            &&event.getContainerId()!=net.runelite.api.InventoryID.BANK.getId())return;
+        String player=trackingPlayer();
+        if(player!=null)petTracker.scan(client,player,this::queueAward);
+    }
+
     @Subscribe public void onNpcLootReceived(net.runelite.client.events.NpcLootReceived event) {
+        if(RankingTracker.serverLootNpc(event.getNpc().getId())||RankingTracker.expandedLootNpc(event.getNpc().getId()))return;
         String player = trackingPlayer();
         if (player == null) return;
         java.util.Set<Integer> items = new java.util.HashSet<>();
         for (net.runelite.client.game.ItemStack item : event.getItems()) {
-            if (items.add(item.getId())) rankings.enqueue(new RankingEvent(player, "LOOT", event.getNpc().getId() + ":" + item.getId()));
+            if (items.add(item.getId())) queueAward(new RankingEvent(player, "LOOT", event.getNpc().getId() + ":" + item.getId()));
         }
     }
 
     @Subscribe public void onLootReceived(net.runelite.client.plugins.loottracker.LootReceived event) {
         String player=trackingPlayer();
         if(player==null)return;
-        for(RankingEvent observation:RankingTracker.containerLoot(player,event))rankings.enqueue(observation);
+        for(RankingEvent observation:RankingTracker.containerLoot(player,event))queueAward(observation);
+    }
+
+    @Subscribe public void onServerNpcLoot(net.runelite.client.events.ServerNpcLoot event) {
+        String player=trackingPlayer();int npc=event.getComposition().getId();
+        if(player==null||!RankingTracker.serverLootNpc(npc))return;
+        java.util.Set<Integer> seen=new java.util.HashSet<>();
+        for(net.runelite.client.game.ItemStack item:event.getItems())
+            if(seen.add(item.getId()))queueAward(new RankingEvent(player,"LOOT",npc+":"+item.getId()));
     }
 
     @Subscribe public void onChatMessage(net.runelite.api.events.ChatMessage event) {
@@ -275,6 +309,7 @@ public class TrapHouseClanPlugin extends Plugin {
         if (player == null || (event.getType() != ChatMessageType.GAMEMESSAGE
             && event.getType() != ChatMessageType.SPAM)) return;
         RankingEvent observation = RankingTracker.chat(player, event.getMessage());
-        if (observation != null) rankings.enqueue(observation);
+        if (observation != null) queueAward(observation);
+        for(RankingEvent milestone:RankingTracker.clueMilestones(player,event.getMessage()))queueAward(milestone);
     }
 }

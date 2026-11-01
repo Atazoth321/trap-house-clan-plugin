@@ -26,6 +26,25 @@ final class RankingClient {
     private long memberRevision;
     private String registrationPath;
     private final PointAlerts pointAlerts=new PointAlerts();
+    private com.google.gson.JsonArray awardSources=new com.google.gson.JsonArray();
+    @Inject private CelebrationOverlay celebrations;
+    private String earnedRank;
+    private long earnedThreshold;
+    private void rankMilestone(JsonObject data) {
+        JsonObject profile=data.getAsJsonObject("profile");
+        String rank=RankingPanel.string(profile,"automaticRank",RankingPanel.string(profile,"rank","Unranked"));
+        Long threshold=null;
+        for(com.google.gson.JsonElement element:RankingPanel.array(data,"ranks")) {
+            JsonObject tier=element.getAsJsonObject();
+            if(rank.equals(RankingPanel.string(tier,"name","")))threshold=tier.get("threshold").getAsLong();
+        }
+        if(threshold==null) {
+            if(rank.equals("Unranked")){earnedRank=rank;earnedThreshold=-1;}
+            return;
+        }
+        if(earnedRank!=null&&!earnedRank.equals(rank)&&threshold>earnedThreshold&&celebrations!=null)celebrations.rank(rank);
+        earnedRank=rank;earnedThreshold=threshold;
+    }
 
     synchronized java.util.List<String> pointMessages(){return pointAlerts.drain();}
     synchronized java.util.List<String> pointMessages(TrapHouseConfig config){return pointAlerts.drain(config);}
@@ -71,11 +90,12 @@ final class RankingClient {
         return value.replaceAll("/+$", "");
     }
 
-    synchronized void enqueue(RankingEvent event) {
-        if (queue.size() < 200) queue.addLast(event);
+    synchronized boolean enqueue(RankingEvent event) {
+        if(queue.size()>=200)return false;
+        queue.addLast(event);return true;
     }
 
-    synchronized void reset() { generation++; queue.clear(); pointAlerts.reset(); manualRequest = null; manualPlayer = null;progressRequest=null;memberRequest=null;registrationPath=null;probes=new com.google.gson.JsonArray(); }
+    synchronized void reset() { generation++; awardSources=new com.google.gson.JsonArray(); earnedRank=null; earnedThreshold=0; if(celebrations!=null)celebrations.reset(); queue.clear(); pointAlerts.reset(); manualRequest = null; manualPlayer = null;progressRequest=null;memberRequest=null;registrationPath=null;probes=new com.google.gson.JsonArray(); }
 
     synchronized void requestReward(String player, String key, String reason) {
         if (player == null || manualRequest != null) return;
@@ -152,7 +172,7 @@ final class RankingClient {
                 byte[] bytes = response.body().byteStream().readNBytes(1_048_577);
                 if (bytes.length > 1_048_576) throw new IOException("Dashboard response too large");
                 JsonObject data = gson.fromJson(new String(bytes, java.nio.charset.StandardCharsets.UTF_8), JsonObject.class);
-                synchronized(this){if(epoch!=generation)return;probes=RankingPanel.array(data,"goals");}
+                synchronized(this){if(epoch!=generation)return;probes=RankingPanel.array(data,"goals");awardSources=RankingPanel.array(data,"sources").deepCopy();rankMilestone(data);}
                 final String actionMessage=actionError;
                 SwingUtilities.invokeLater(() -> { synchronized (this) {
                     if (epoch == generation) {
@@ -194,7 +214,11 @@ final class RankingClient {
             if(bytes.length>262144)return;
             JsonObject data=gson.fromJson(new String(bytes,java.nio.charset.StandardCharsets.UTF_8),JsonObject.class);
             if(!RankingTracker.normalize(player).equals(RankingTracker.normalize(data.get("player").getAsString())))return;
-            synchronized(this){if(epoch==generation)pointAlerts.accept(data);}
+            synchronized(this){if(epoch==generation){
+                com.google.gson.JsonArray awards=data.getAsJsonArray("awards");
+                if(awards!=null)for(int i=0;i<awards.size();i++)awards.set(i,AwardDetails.enrich(awards.get(i).getAsJsonObject(),awardSources));
+                pointAlerts.accept(data);for(JsonObject award:pointAlerts.celebrations())if(celebrations!=null)celebrations.award(award);
+            }}
         }catch(IOException|RuntimeException unavailable){ /* Retry the same cursor later; older servers can still sync rankings. */ }
     }
 

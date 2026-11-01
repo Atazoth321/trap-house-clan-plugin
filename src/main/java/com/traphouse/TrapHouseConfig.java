@@ -4,6 +4,12 @@ import net.runelite.client.config.*;
 
 @ConfigGroup("traphouse")
 public interface TrapHouseConfig extends Config {
+    @ConfigItem(keyName="dropCelebrations", name="Drop celebrations", description="Animate confirmed drop and pet awards.", position=30)
+    default boolean dropCelebrations(){return true;}
+    @ConfigItem(keyName="rankCelebrations", name="Rank celebrations", description="Animate newly confirmed earned rank milestones.", position=31)
+    default boolean rankCelebrations(){return true;}
+    @ConfigItem(keyName="rankCelebrationSound", name="Rank celebration sound", description="Play a short system sound for a new earned rank milestone.", position=32)
+    default boolean rankCelebrationSound(){return false;}
     @ConfigItem(keyName="dropChatColors", name="Color in-game drop notices", description="Color your game's drop notices gold, pet notices purple and collection-log unlocks green. Uses the drop, pet and milestone color settings below.", position=29)
     default boolean dropChatColors() { return true; }
 
