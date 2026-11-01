@@ -177,20 +177,36 @@ public class RankingPostgresTest {
     @Test public void easyCowhideTestDropSeedsExistingInstallsAndEnforcesCapsWithoutDuplicateAwards()throws Exception {
         RankingStore.execute(c,"INSERT INTO configuration_migrations(name) VALUES ('automatic-rewards-v1'),('automatic-rewards-v2')");
         AutomaticRewards.seed(c);AutomaticRewards.seed(c);
-        for(AutomaticRewards.Rule rule:AutomaticRewards.testDropRules())assertArrayEquals(new int[]{1,1},RankingStore.rule(c,"LOOT",rule.key));
+        for(AutomaticRewards.Rule rule:AutomaticRewards.testDropRules())assertArrayEquals(new int[]{1,10},RankingStore.rule(c,"LOOT",rule.key));
         JsonObject first=event("LOOT","2790:1739");
         assertEquals(1,RankingStore.event(c,member,first).get("points").getAsInt());
         assertEquals("DUPLICATE",RankingStore.event(c,member,first).get("status").getAsString());
+        for(int i=1;i<10;i++)assertEquals(1,RankingStore.event(c,member,event("LOOT","2790:1739")).get("points").getAsInt());
         rejected(422,()->RankingStore.event(c,member,event("LOOT","2790:1739")));
         rejected(422,()->RankingStore.event(c,member,event("LOOT","2792:1739")));
         rejected(422,()->RankingStore.event(c,member,event("LOOT","2790:526")));
-        assertEquals(1,count("ledger"));
+        assertEquals(10,count("ledger"));
         RankingStore.execute(c,"UPDATE rules SET enabled=false,points=3 WHERE type='LOOT' AND event_key='2790:1739'");
         RankingStore.execute(c,"DELETE FROM rules WHERE type='LOOT' AND event_key='2791:1739'");
         AutomaticRewards.seed(c);
         rejected(422,()->RankingStore.rule(c,"LOOT","2790:1739"));
         rejected(422,()->RankingStore.rule(c,"LOOT","2791:1739"));
-        assertEquals(1,count("ledger"));
+        assertEquals(10,count("ledger"));
+    }
+    @Test public void cowhideLimitUpgradePreservesOperatorEditsAndRunsOnce()throws Exception {
+        AutomaticRewards.seed(c);
+        RankingStore.execute(c,"DELETE FROM configuration_migrations WHERE name='easy-test-cowhide-limit-v2'");
+        RankingStore.execute(c,"UPDATE rules SET daily_limit=1 WHERE type='LOOT' AND event_key IN ('2790:1739','2791:1739','2793:1739','2795:1739')");
+        RankingStore.execute(c,"UPDATE rules SET enabled=false WHERE event_key='2791:1739' AND type='LOOT'");
+        RankingStore.execute(c,"UPDATE rules SET points=3 WHERE event_key='2793:1739' AND type='LOOT'");
+        RankingStore.execute(c,"UPDATE rules SET daily_limit=4 WHERE event_key='2795:1739' AND type='LOOT'");
+        AutomaticRewards.seed(c);
+        assertArrayEquals(new int[]{1,10},RankingStore.rule(c,"LOOT","2790:1739"));
+        rejected(422,()->RankingStore.rule(c,"LOOT","2791:1739"));
+        assertArrayEquals(new int[]{3,1},RankingStore.rule(c,"LOOT","2793:1739"));
+        assertArrayEquals(new int[]{1,4},RankingStore.rule(c,"LOOT","2795:1739"));
+        RankingStore.execute(c,"UPDATE rules SET daily_limit=2 WHERE event_key='2790:1739' AND type='LOOT'");
+        AutomaticRewards.seed(c);assertArrayEquals(new int[]{1,2},RankingStore.rule(c,"LOOT","2790:1739"));
     }
     private static final String LINK_OWNER="111111111111111111";
     private UUID approvedLink()throws Exception {

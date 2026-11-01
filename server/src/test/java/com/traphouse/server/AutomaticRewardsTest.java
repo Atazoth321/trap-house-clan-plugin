@@ -9,7 +9,7 @@ public class AutomaticRewardsTest {
         Set<String> keys=new HashSet<>();
         for(AutomaticRewards.Rule rule:AutomaticRewards.testDropRules()) {
             assertEquals("LOOT",rule.type);assertEquals("Drops",rule.category);
-            assertEquals(1,rule.points);assertEquals(1,rule.limit);assertTrue(keys.add(rule.key));
+            assertEquals(1,rule.points);assertEquals(10,rule.limit);assertTrue(keys.add(rule.key));
         }
         assertEquals(new HashSet<>(Arrays.asList("2790:1739","2791:1739","2793:1739","2795:1739")),keys);
     }

@@ -130,7 +130,7 @@ final class AutomaticRewards {
         List<Rule> rules=new ArrayList<>();
         // Ordinary cows only, excluding calves, quest encounters and minigames.
         for(int npc:new int[]{2790,2791,2793,2795}) {
-            rules.add(new Rule("LOOT",npc+":1739","Cowhide (easy test drop)","Drops",1,1));
+            rules.add(new Rule("LOOT",npc+":1739","Cowhide (easy test drop)","Drops",1,10));
         }
         return Collections.unmodifiableList(rules);
     }
@@ -147,6 +147,17 @@ final class AutomaticRewards {
         seed(c,"automatic-rewards-v2",expandedRules());
         lowerBarrowsRewards(c);
         seed(c,"easy-test-cowhide-v1",testDropRules());
+        expandCowhideTestLimit(c);
+    }
+    private static void expandCowhideTestLimit(Connection c)throws SQLException {
+        try(Statement s=c.createStatement()){s.execute("SELECT pg_advisory_xact_lock(72419051001)");}
+        String migration="easy-test-cowhide-limit-v2";
+        try(PreparedStatement s=RankingStore.query(c,"SELECT 1 FROM configuration_migrations WHERE name=?",migration);ResultSet r=s.executeQuery()){if(r.next())return;}
+        for(Rule rule:testDropRules()) {
+            // Expand only original defaults. Keep disabled/custom rules and history intact.
+            RankingStore.execute(c,"UPDATE rules SET daily_limit=? WHERE type='LOOT' AND event_key=? AND enabled AND points=1 AND daily_limit=1 AND category='Drops' AND display_name='Cowhide (easy test drop)'",rule.limit,rule.key);
+        }
+        RankingStore.execute(c,"INSERT INTO configuration_migrations(name) VALUES (?)",migration);
     }
     private static void lowerBarrowsRewards(Connection c)throws SQLException {
         try(Statement s=c.createStatement()){s.execute("SELECT pg_advisory_xact_lock(72419051001)");}
