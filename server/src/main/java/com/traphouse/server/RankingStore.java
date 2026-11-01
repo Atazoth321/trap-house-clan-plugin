@@ -221,7 +221,7 @@ final class RankingStore {
         try (PreparedStatement s = query(c, "SELECT l.points,l.created_at,coalesce(e.type,CASE WHEN a.id IS NOT NULL THEN 'ADJUSTMENT' ELSE 'MANUAL' END),coalesce(g.name,e.event_key,r.event_key,a.reason) FROM point_entries l LEFT JOIN point_adjustments a ON a.id=l.id LEFT JOIN events e ON e.id=l.event_id LEFT JOIN manual_rewards r ON r.id=l.reward_id LEFT JOIN goals g ON e.type='GOAL' AND g.id::text=e.event_key WHERE l.member_id=? ORDER BY l.created_at DESC,l.id LIMIT 20", actor.id); ResultSet r = s.executeQuery()) {
             while (r.next()) { JsonObject row = new JsonObject(); row.addProperty("points", r.getInt(1)); row.addProperty("at", r.getTimestamp(2).toInstant().toString()); row.addProperty("type", r.getString(3)); row.addProperty("key", r.getString(4)); history.add(row); }
         }
-        data.add("history", history);
+        data.add("history", history);data.add("activity",ClanActivity.read(c));
         JsonArray rewards = new JsonArray();
         try (PreparedStatement s = query(c, "SELECT id,event_key,points,status FROM manual_rewards WHERE member_id=? ORDER BY requested_at DESC,id LIMIT 20", actor.id); ResultSet r = s.executeQuery()) {
             while (r.next()) { JsonObject row = new JsonObject(); row.addProperty("id", r.getString(1)); row.addProperty("key", r.getString(2)); row.addProperty("points", r.getInt(3)); row.addProperty("status", r.getString(4)); rewards.add(row); }

@@ -2,6 +2,8 @@
 
 Original Java 11 REST service, deployed separately from RuneLite. PostgreSQL 16+ stores verified membership, credentials, rules, ranks, events, an award ledger, manual approvals and a Discord outbox. The plugin JAR contains no server classes or JDBC driver. No endpoint performs game actions or changes an in-game clan rank.
 
+The authenticated dashboard includes `activity`: the latest 40 confirmed drops, pets, achievements and earned rank milestones from active members. It excludes private manual-request evidence and staff audit details. Deploy this backend update to populate the plugin's Activity page; restarting RuneLite alone cannot add the server response field.
+
 ## Deployment
 
 The backend now imports public WOM EHP/EHB by default and can award capped points for new gains after a fresh baseline. See [efficiency rewards](../docs/efficiency-rewards.md) for rates, limits, and configuration; older descriptions of this importer as display-only are superseded.

@@ -12,6 +12,28 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    @Test public void clanActivitySharesConfirmedAwardsAndRanksWithoutPrivateRequestsOrInactiveMembers()throws Exception {
+        RankingStore.execute(c,"UPDATE rules SET category='Drops',display_name='Cowhide' WHERE type='LOOT' AND event_key='1:2'");
+        RankingStore.event(c,member,event("LOOT","1:2"));
+        JsonObject adminDrop=event("LOOT","1:2");adminDrop.addProperty("player",admin.name);RankingStore.event(c,admin,adminDrop);
+        RankingStore.execute(c,"UPDATE members SET active=false WHERE id=?",admin.id);
+        JsonObject request=new JsonObject();request.addProperty("id",UUID.randomUUID().toString());request.addProperty("key","clan event");request.addProperty("reason","PRIVATE EVIDENCE");
+        RankingStore.requestReward(c,member,request);
+        RankingStore.execute(c,"INSERT INTO earned_rank_history(member_id,rank,threshold,points_at_earning) VALUES (?,'Pawn',500,500)",member.id);
+        JsonArray activity=RankingStore.dashboard(c,member,member.name).getAsJsonArray("activity");
+        assertEquals(2,activity.size());assertFalse(activity.toString().contains("PRIVATE EVIDENCE"));
+        Set<String> categories=new HashSet<>();
+        for(JsonElement element:activity){JsonObject entry=element.getAsJsonObject();assertEquals(member.name,entry.get("name").getAsString());categories.add(entry.get("category").getAsString());assertTrue(entry.has("at"));}
+        assertEquals(new HashSet<>(Arrays.asList("Drops","Ranks")),categories);
+    }
+    @Test public void clanActivityIsBoundedToFortyRecentEntries()throws Exception {
+        RankingStore.execute(c,"UPDATE rules SET category='Drops',display_name='Cowhide',daily_limit=100 WHERE type='LOOT' AND event_key='1:2'");
+        for(int i=0;i<45;i++)RankingStore.event(c,member,event("LOOT","1:2"));
+        JsonArray activity=ClanActivity.read(c);assertEquals(40,activity.size());
+        Instant previous=Instant.MAX;
+        for(JsonElement element:activity){Instant at=Instant.parse(element.getAsJsonObject().get("at").getAsString());assertFalse(at.isAfter(previous));previous=at;}
+    }
+
     @Test public void initializationRecoversFromARealDeadlockWithoutCommittingPartialWork()throws Exception {
         RankingStore.execute(c,"CREATE TABLE init_lock_a(id integer)");RankingStore.execute(c,"CREATE TABLE init_lock_b(id integer)");RankingStore.execute(c,"CREATE TABLE init_marker(id integer PRIMARY KEY)");c.commit();
         ExecutorService pool=Executors.newSingleThreadExecutor();CountDownLatch initializerHasA=new CountDownLatch(1);
