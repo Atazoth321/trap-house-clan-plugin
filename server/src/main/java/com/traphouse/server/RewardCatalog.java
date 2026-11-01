@@ -22,6 +22,9 @@ final class RewardCatalog {
                     card.addProperty("sourceType",r.getString("type"));card.addProperty("title",r.getString("title"));
                     card.addProperty("points",r.getInt("points"));card.addProperty("dailyLimit",r.getInt("daily_limit"));
                     card.addProperty("sourceKey",r.getString("source_key"));card.addProperty("category",r.getString("category"));
+                    int clueItem=EncounterRewards.clueItem(r.getString("type"),r.getString("source_key"));
+                    if(clueItem>0)card.addProperty("itemId",clueItem);
+                    if("LOOT".equals(r.getString("type")))card.addProperty("capScope",BalancedRewards.sharedItem("LOOT",r.getString("source_key"))==null?"source":"item");
                     long received=r.getLong("received_count");card.addProperty("receivedCount",received);card.addProperty("received",received>0);
                     card.addProperty("earnedPoints",r.getLong("earned_points"));
                     card.addProperty("onceOnly",r.getBoolean("once_only")||Arrays.asList("COMBAT","COLLECTION").contains(r.getString("type")));
@@ -31,8 +34,26 @@ final class RewardCatalog {
                 }
             }
         }
+        if(category.equals("All")||category.equals("Efficiency"))
+            for(JsonElement reward:efficiencyCards(search))cards.add(reward.getAsJsonObject());
         Comparator<JsonObject> byName=Comparator.comparing(e->e.get("title").getAsString(),String.CASE_INSENSITIVE_ORDER);
         cards.sort(sort.equals("highest")?Comparator.<JsonObject>comparingInt(e->e.get("points").getAsInt()).reversed().thenComparing(byName):byName);
         JsonArray result=new JsonArray();for(JsonObject card:cards)result.add(card);return result;
+    }
+
+    static JsonArray efficiencyCards(String search) {
+        JsonArray cards=new JsonArray();
+        for(String unit:Arrays.asList("EHP","EHB")) {
+            String title=unit.equals("EHP")?"Efficient skilling (EHP)":"Efficient bossing (EHB)";
+            if(!(title+" Wise Old Man efficiency gains").toLowerCase(Locale.ROOT).contains(search.toLowerCase(Locale.ROOT)))continue;
+            JsonObject card=new JsonObject();
+            card.addProperty("title",title);card.addProperty("category","Efficiency");
+            card.addProperty("sourceType","EFFICIENCY");card.addProperty("sourceKey","WOM EHP/EHB gains");
+            card.addProperty("points",unit.equals("EHP")?EfficiencyRewards.EHP_RATE:EfficiencyRewards.EHB_RATE);
+            card.addProperty("unit",unit);card.addProperty("weeklyCap",EfficiencyRewards.WEEKLY_CAP);
+            card.addProperty("trackingNote","Combined EHP/EHB award history");
+            cards.add(card);
+        }
+        return cards;
     }
 }

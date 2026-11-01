@@ -167,7 +167,7 @@ final class RankingStore {
 
     static String category(Connection c,String type,String key) throws SQLException {
         try(PreparedStatement s=query(c,"SELECT category FROM rules WHERE type=? AND event_key=?",type,key);ResultSet r=s.executeQuery()) {
-            if(r.next()&&java.util.Set.of("Drops","Pets","Milestones","Combat","Collection","Diaries","Challenges","Events","Misc").contains(r.getString(1)))return r.getString(1);
+            if(r.next()&&java.util.Set.of("Drops","Clues","Pets","Milestones","Combat","Collection","Diaries","Challenges","Events","Misc").contains(r.getString(1)))return r.getString(1);
         }
         return type.equals("LOOT")?"Drops":type.equals("COMBAT")?"Combat":type.equals("COLLECTION")?"Collection":"Misc";
     }
