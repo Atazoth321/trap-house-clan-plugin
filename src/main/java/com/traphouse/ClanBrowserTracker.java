@@ -23,9 +23,11 @@ final class ClanBrowserTracker {
         for(String pair:mapping){String[] parts=pair.split("=");COUNTERS.put(parts[0],Integer.parseInt(parts[1]));}
         COUNTERS.put("grotesque_guardians",1669);COUNTERS.put("the_gauntlet",2353);COUNTERS.put("the_corrupted_gauntlet",2354);
         COUNTERS.put("the_fight_caves",1522);COUNTERS.put("the_inferno",1585);COUNTERS.put("kalphite_queen",1516);COUNTERS.put("the_hueycoatl",4404);
-        optionalCounter("fortis_colosseum","TOTAL_SOL_KILLS");optionalCounter("maggot_king","TOTAL_MAGGOT_KING_KILLS");optionalCounter("shellbane_gryphon","TOTAL_GRYPHON_BOSS_KILLS");optionalCounter("the_fractured_archive","TOTAL_COMPLETED_THEFRACTUREDARCHIVE");
+        COUNTERS.put("fortis_colosseum",VarPlayerID.TOTAL_SOL_KILLS);
+        COUNTERS.put("maggot_king",VarPlayerID.TOTAL_MAGGOT_KING_KILLS);
+        COUNTERS.put("shellbane_gryphon",VarPlayerID.TOTAL_GRYPHON_BOSS_KILLS);
+        COUNTERS.put("the_fractured_archive",VarPlayerID.TOTAL_COMPLETED_THEFRACTUREDARCHIVE);
     }
-    private static void optionalCounter(String page,String field){try{COUNTERS.put(page,VarPlayerID.class.getField(field).getInt(null));}catch(ReflectiveOperationException unavailable){/* Available when this game cache/API includes the encounter. */}}
     synchronized void reset(){pages.clear();quantities.clear();pendingDrops.clear();drops.clear();pendingPages.clear();pageCursor=sendCursor=0;catalogueLoaded=false;}
     static String key(String label){return label.toLowerCase(Locale.ROOT).replaceAll("['()]","").replaceAll("[^a-z0-9]+","_").replaceAll("^_|_$","");}
     synchronized void item(Client client,ScriptPreFired event) {
