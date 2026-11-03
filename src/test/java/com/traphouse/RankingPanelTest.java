@@ -8,6 +8,20 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class RankingPanelTest {
+    @Test public void profileShowsAllCollectionMilestonesBeforeEarningPointsAndLoadsSprites()throws Exception {
+        SwingUtilities.invokeAndWait(()->{
+            RankingPanel panel=new RankingPanel(()->{});java.util.List<Integer> requested=new java.util.ArrayList<>();
+            panel.itemArt((entry,done)->{if(entry.has("itemId")){requested.add(entry.get("itemId").getAsInt());done.accept("Collection log",new ImageIcon(new java.awt.image.BufferedImage(32,32,java.awt.image.BufferedImage.TYPE_INT_ARGB)));}});
+            JsonObject data=snapshot();JsonArray goals=new JsonArray();
+            int[] targets={100,300,500,700,900,1000,1100,1200,1550};
+            for(int target:targets){JsonObject goal=new JsonObject();goal.addProperty("id",java.util.UUID.randomUUID().toString());goal.addProperty("name",target+"+ items logged");goal.addProperty("category","Collection");goal.addProperty("section","Collection Log milestones");goal.addProperty("source","MILESTONE");goal.addProperty("sourceKey","COLLECTION_COUNT");goal.addProperty("itemId",22711);goal.addProperty("target",target);goal.addProperty("progress",Math.min(target,650));goal.addProperty("points",200);goal.addProperty("completed",target<=650);goals.add(goal);}
+            data.add("goals",goals);panel.showData(data);
+            assertNotNull(button(panel,"Collection points log"));assertNotNull(findLabel(panel,"Collection Log milestones"));
+            for(int target:targets){assertNotNull(findLabel(panel,target+"+ items logged"));assertTrue(contains(panel,String.format(java.util.Locale.US,"%,d / %,d items",Math.min(target,650),target)));}
+            assertTrue(requested.size()>=9);assertTrue(requested.stream().allMatch(id->id==22711));
+            panel.showMember(data);assertNotNull(findLabel(panel,"1550+ items logged"));
+        });
+    }
     @Test public void guestsCanBrowseStandingsWithoutOpeningMemberProfiles()throws Exception {
         SwingUtilities.invokeAndWait(()->{
             RankingPanel panel=new RankingPanel(()->{});

@@ -120,3 +120,5 @@ Starter clan diary goals now pay 100 for the first accepted combat task, 100 for
 The later [automatic drops and pets catalog](automatic-drops-and-pets.md) enables exact rules for supported loot and named pet collection unlocks. Pet insurance flag correctness has not been verified, so the two existing pet tracking probes remain without automatic point rewards. Manual claim amounts do not imply automatic support for every in-game item or pet.
 
 Validation: Gradle build/serverDist and IDE compilation passed. PostgreSQL integration tests cover v3 top-up idempotence, retained Owner deductions, unchanged daily caps and disabled rules, but require a disposable PostgreSQL database and have not been executed locally. Live deployment and awards remain unverified.
+
+See [additional prestige and collection milestones](additional-milestones.md) for the 16 newly added one-time rewards, worth 4,375 points in total.

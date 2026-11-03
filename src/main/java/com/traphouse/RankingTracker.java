@@ -21,6 +21,8 @@ final class RankingTracker {
         }
         if(event.getType()!=net.runelite.http.api.loottracker.LootRecordType.EVENT)return Collections.emptyList();
         String source=normalize(event.getName());
+        if(source.equals("supply crate (wintertodt)")||source.equals("reward cart (wintertodt)"))source="wintertodt";
+        else if(source.equals("reward pool (tempoross)"))source="tempoross";
         if(source.matches("clue scroll \\((beginner|easy|medium|hard|elite|master)\\)")) {
             if(event.getItems().isEmpty())return Collections.emptyList();
             String tier=source.substring(source.indexOf('(')+1,source.length()-1);
@@ -29,7 +31,7 @@ final class RankingTracker {
             for(net.runelite.client.game.ItemStack item:event.getItems())if(seen.add(item.getId()))result.add(new RankingEvent(player,"LOOT","clue:"+tier+":"+item.getId()));
             return result;
         }
-        if(!Arrays.asList("chambers of xeric","theatre of blood","tombs of amascut","barrows","lunar chest").contains(source))return Collections.emptyList();
+        if(!Arrays.asList("chambers of xeric","theatre of blood","tombs of amascut","barrows","lunar chest","unsired","wintertodt","tempoross","guardians of the rift").contains(source))return Collections.emptyList();
         List<RankingEvent> result=new ArrayList<>();Set<Integer> seen=new HashSet<>();
         for(net.runelite.client.game.ItemStack item:event.getItems()) {
             if(seen.add(item.getId()))result.add(new RankingEvent(player,"LOOT","chest:"+source+":"+item.getId()));
@@ -41,7 +43,7 @@ final class RankingTracker {
             ||(npc>=13599&&npc<=13606)||npc==13668||npc==13669;
     }
     static boolean expandedLootNpc(int npc) {
-        return npc==12596||(npc>=14147&&npc<=14149)||(npc>=14009&&npc<=14013)
+        return npc==9049||npc==9050||npc==12596||(npc>=14147&&npc<=14149)||(npc>=14009&&npc<=14013)
             ||npc==377||npc==378||(npc>=9416&&npc<=9433)||(npc>=9460&&npc<=9464)||(npc>=11153&&npc<=11155);
     }
     private static final Pattern CLUE_COUNT=Pattern.compile("^You have completed ([0-9]+) (beginner|easy|medium|hard|elite|master) Treasure Trails?\\.$");

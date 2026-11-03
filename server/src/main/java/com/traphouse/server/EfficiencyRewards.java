@@ -8,8 +8,8 @@ import java.util.UUID;
 
 /** Positive rewards from server-fetched WOM deltas only. Never accepts client observations. */
 final class EfficiencyRewards {
-    static final BigDecimal EHP_RATE=BigDecimal.valueOf(10), EHB_RATE=BigDecimal.valueOf(10);
-    static final int WEEKLY_CAP=250;
+    static final BigDecimal EHP_RATE=BigDecimal.valueOf(20), EHB_RATE=BigDecimal.valueOf(20);
+    static final int WEEKLY_CAP=500;
     static Instant week(Instant now) {
         return now.atZone(ZoneOffset.UTC).toLocalDate().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).atStartOfDay(ZoneOffset.UTC).toInstant();
     }

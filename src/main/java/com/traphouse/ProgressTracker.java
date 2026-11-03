@@ -10,7 +10,7 @@ final class ProgressTracker {
         JsonObject body=new JsonObject(),values=new JsonObject();body.addProperty("player",player);
         int count=0;
         for(JsonElement element:definitions) {
-            if(count++>=200)break;
+            if(count++>=250)break;
             JsonObject goal=element.getAsJsonObject();
             try {
                 String source=goal.get("source").getAsString(),key=goal.get("sourceKey").getAsString();
@@ -23,6 +23,7 @@ final class ProgressTracker {
 
     static Long read(Client client,String source,String key) {
         switch(source) {
+            case "MILESTONE":return MilestoneTracker.read(client,key);
             case "VARBIT":return (long)client.getVarbitValue(id(key));
             case "VARP":return (long)client.getVarpValue(id(key));
             case "TOTAL_LEVEL":return (long)client.getTotalLevel();

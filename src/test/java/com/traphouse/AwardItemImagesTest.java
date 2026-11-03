@@ -5,6 +5,12 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class AwardItemImagesTest {
+    @Test public void allNewContainerRewardsUseTheirActualItemSprites() {
+        String[] keys={"chest:unsired:13274","chest:unsired:13275","chest:unsired:13276","chest:unsired:13265","chest:wintertodt:20716","chest:tempoross:25576","chest:tempoross:25582","chest:tempoross:25580","chest:guardians of the rift:26813","chest:guardians of the rift:26822"};
+        for(String key:keys)assertEquals(Integer.parseInt(key.substring(key.lastIndexOf(':')+1)),AwardItemImages.itemId(entry("{sourceType:'LOOT',sourceKey:'"+key+"'}")));
+        assertEquals(22711,AwardItemImages.itemId(entry("{sourceType:'GOAL',itemId:22711}")));
+        assertEquals(-1,AwardItemImages.itemId(entry("{sourceType:'LOOT',sourceKey:'chest:unknown:22711'}")));
+    }
     @Test public void existingPetReceiptsUseCanonicalInGamePetSprites() {
         assertEquals(12655,AwardItemImages.itemId(entry("{sourceType:'COLLECTION',sourceKey:'pet kraken',category:'Pets'}")));
         assertEquals(27352,AwardItemImages.itemId(entry("{sourceType:'COLLECTION',sourceKey:\"tumeken's guardian\",category:'Pets'}")));

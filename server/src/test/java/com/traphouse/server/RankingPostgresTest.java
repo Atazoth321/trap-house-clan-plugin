@@ -12,6 +12,127 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    @Test public void milestoneSpritesReachProfileCatalogAndGroupedAndIndividualHistory()throws Exception {
+        for(String resource:new String[]{"/additional-milestones.sql","/collection-milestones.sql"})try(InputStream input=RankingServer.class.getResourceAsStream(resource);Statement s=c.createStatement()){s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));}
+        JsonArray definitions=RankingStore.dashboard(c,member,member.name).getAsJsonArray("goals");assertEquals(16,definitions.size());
+        for(JsonElement value:definitions){JsonObject goal=value.getAsJsonObject();assertTrue(goal.has("itemId"));ClanFeatures.sync(c,member,observation(UUID.fromString(goal.get("id").getAsString()),goal.get("target").getAsLong()));}
+        JsonArray catalog=RewardCatalog.read(c,member.id,"Collection","","name");int milestones=0;
+        for(JsonElement entry:catalog){JsonObject card=entry.getAsJsonObject();if(!card.get("sourceType").getAsString().equals("GOAL"))continue;milestones++;assertEquals(22711,card.get("itemId").getAsInt());}assertEquals(9,milestones);
+        JsonArray prestige=RewardCatalog.read(c,member.id,"Milestones","","name");assertEquals(7,prestige.size());for(JsonElement entry:prestige)assertTrue(entry.getAsJsonObject().has("itemId"));
+        for(String grouped:new String[]{"true","false"}) {
+            JsonArray history=PointsLog.read(c,"player=Member&category=Collection&group="+grouped).getAsJsonArray("entries");assertEquals(9,history.size());
+            for(JsonElement entry:history)assertEquals(22711,entry.getAsJsonObject().get("itemId").getAsInt());
+        }
+    }
+    @Test public void beginnerAndSkillingDropsAwardAllRequestedItemsOnceAndPreserveStaffEdits()throws Exception {
+        AutomaticRewards.seed(c);
+        Set<String> seen=new HashSet<>();
+        for(AutomaticRewards.Rule rule:BeginnerDropRewards.rules()) {
+            String item=rule.key.substring(rule.key.lastIndexOf(':')+1);if(!seen.add(item))continue;
+            JsonObject drop=event("LOOT",rule.key);assertEquals(rule.points,RankingStore.event(c,member,drop).get("points").getAsInt());
+            assertEquals("DUPLICATE",RankingStore.event(c,member,drop).get("status").getAsString());
+        }
+        assertEquals(25,count("ledger"));assertEquals(3050,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        RankingStore.event(c,member,event("LOOT","10398:21028"));
+        rejected(422,()->RankingStore.event(c,member,event("LOOT","8611:21028")));
+        RankingStore.event(c,member,event("LOOT","chest:wintertodt:20716"));
+        rejected(422,()->RankingStore.event(c,member,event("LOOT","chest:wintertodt:20716")));
+        for(String invalid:new String[]{"2004:22957","11192:22994","12502:28583","12740:28813","14172:20727","chest:tempoross:20716","12720:28810"})rejected(422,()->RankingStore.event(c,member,event("LOOT",invalid)));
+        RankingStore.execute(c,"UPDATE rules SET points=17,enabled=false WHERE event_key='7221:28798'");
+        AutomaticRewards.seed(c);
+        try(Statement s=c.createStatement();ResultSet r=s.executeQuery("SELECT points,enabled FROM rules WHERE event_key='7221:28798'")){r.next();assertEquals(17,r.getInt(1));assertFalse(r.getBoolean(2));}
+        assertEquals(27,count("ledger"));
+    }
+    @Test public void sirePolicyUpgradesExistingInstallationsOnceAndSharesDaggerCaps()throws Exception {
+        AdditionalDropRewards.seed(c);
+        // Recreate the prior version's enabled Unsired / disabled exchange policy.
+        RankingStore.execute(c,"DELETE FROM configuration_migrations WHERE name='sire-exchanged-uniques-v2'");
+        RankingStore.execute(c,"UPDATE rules SET enabled=true WHERE event_key='5908:13273'");
+        RankingStore.execute(c,"UPDATE rules SET enabled=false WHERE event_key LIKE 'chest:unsired:%'");
+        RankingStore.event(c,member,event("LOOT","5908:13273"));
+        AdditionalDropRewards.seed(c);
+        assertEquals(1,count("ledger")); // Keep historical Unsired points unchanged.
+        rejected(422,()->RankingStore.event(c,member,event("LOOT","5908:13273")));
+        for(int item:new int[]{13274,13275,13276})assertEquals(200,RankingStore.event(c,member,event("LOOT","chest:unsired:"+item)).get("points").getAsInt());
+        JsonObject dagger=event("LOOT","chest:unsired:13265");RankingStore.event(c,member,dagger);RankingStore.event(c,member,dagger);
+        RankingStore.event(c,member,event("LOOT","415:13265"));
+        rejected(422,()->RankingStore.event(c,member,event("LOOT","chest:unsired:13265")));
+        assertEquals(6,count("ledger"));
+        RankingStore.execute(c,"UPDATE rules SET enabled=false,points=17 WHERE event_key='chest:unsired:13274'");
+        AdditionalDropRewards.seed(c);
+        try(Statement s=c.createStatement();ResultSet r=s.executeQuery("SELECT points,enabled FROM rules WHERE event_key='chest:unsired:13274'")){r.next();assertEquals(17,r.getInt(1));assertFalse(r.getBoolean(2));}
+        assertEquals(1150,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+    }
+    @Test public void additionalDropRewardsShareVariantCapsAndPreserveEditsWithoutDoublePayingSire()throws Exception {
+        AdditionalDropRewards.seed(c);
+        assertEquals(250,RankingStore.event(c,member,event("LOOT","7144:19529")).get("points").getAsInt());
+        JsonObject second=event("LOOT","7145:19529");RankingStore.event(c,member,second);RankingStore.event(c,member,second);
+        rejected(422,()->RankingStore.event(c,member,event("LOOT","7146:19529")));
+        for(String invalid:new String[]{"7152:19529","7573:13576","11961:13273","12124:23953","9599:24777","5908:13273"})rejected(422,()->RankingStore.event(c,member,event("LOOT",invalid)));
+        assertEquals(200,RankingStore.event(c,member,event("LOOT","chest:unsired:13274")).get("points").getAsInt());
+        assertEquals(100,RankingStore.event(c,member,event("LOOT","9049:6571")).get("points").getAsInt());
+        assertEquals(200,RankingStore.event(c,member,event("LOOT","415:13265")).get("points").getAsInt());
+        assertEquals(5,count("ledger"));
+        RankingStore.execute(c,"UPDATE rules SET points=17,enabled=false WHERE event_key='9293:24268'");
+        AdditionalDropRewards.seed(c);
+        try(Statement s=c.createStatement();ResultSet r=s.executeQuery("SELECT points,enabled FROM rules WHERE event_key='9293:24268'")){r.next();assertEquals(17,r.getInt(1));assertFalse(r.getBoolean(2));}
+        assertEquals(5,count("ledger"));
+    }
+    @Test public void efficiencyAllowanceUpgradePreservesStateAndAwardsOnlyNewGains()throws Exception {
+        Instant now=Instant.parse("2026-10-25T12:00:00Z");
+        EfficiencyRewards.observe(c,member,new java.math.BigDecimal("100"),new java.math.BigDecimal("50"),now,now);
+        EfficiencyRewards.observe(c,member,new java.math.BigDecimal("112.5"),new java.math.BigDecimal("50"),now.plusSeconds(10),now.plusSeconds(10));
+        RankingStore.execute(c,"ALTER TABLE efficiency_reward_state DROP CONSTRAINT efficiency_reward_state_weekly_points_check");
+        RankingStore.execute(c,"ALTER TABLE efficiency_reward_state ADD CONSTRAINT efficiency_reward_state_weekly_points_check CHECK(weekly_points BETWEEN 0 AND 250)");
+        String before;
+        try(Statement s=c.createStatement();ResultSet r=s.executeQuery("SELECT row_to_json(e)::text FROM efficiency_reward_state e")){r.next();before=r.getString(1);}
+        for(int i=0;i<2;i++)try(InputStream input=RankingServer.class.getResourceAsStream("/efficiency-rewards-v2.sql");Statement s=c.createStatement()){s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));}
+        try(Statement s=c.createStatement();ResultSet r=s.executeQuery("SELECT row_to_json(e)::text FROM efficiency_reward_state e")){r.next();assertEquals(before,r.getString(1));}
+        assertEquals(1,count("ledger"));
+        EfficiencyRewards.observe(c,member,new java.math.BigDecimal("113.5"),new java.math.BigDecimal("50"),now.plusSeconds(20),now.plusSeconds(20));
+        assertEquals(270,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        EfficiencyRewards.observe(c,member,new java.math.BigDecimal("200"),new java.math.BigDecimal("100"),now.plusSeconds(30),now.plusSeconds(30));
+        assertEquals(500,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        assertEquals(0,count("point_adjustments"));
+    }
+    @Test public void newMilestonesPreserveOverridesAndAwardExactlyOnceBeyondTwoHundredGoals()throws Exception {
+        MilestoneCatalog.seed(c);
+        for(String resource:new String[]{"/starter-goals.sql","/achievement-diaries.sql","/additional-milestones.sql","/collection-milestones.sql"}) {
+            try(InputStream input=RankingServer.class.getResourceAsStream(resource);Statement s=c.createStatement()){s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));}
+        }
+        assertEquals(214,count("goals"));
+        assertEquals(214,RankingStore.dashboard(c,member,member.name).getAsJsonArray("goals").size());
+        JsonObject values=new JsonObject();
+        for(JsonElement entry:RankingStore.dashboard(c,member,member.name).getAsJsonArray("goals")) {
+            JsonObject definition=entry.getAsJsonObject();String source=definition.get("source").getAsString();
+            if(!source.equals("EVENT")&&!source.equals("MANUAL"))values.addProperty(definition.get("id").getAsString(),0);
+        }
+        assertTrue(values.size()>200);
+        for(int i=1;i<=7;i++)values.addProperty(String.format("40000000-0000-4000-8000-%012d",i),1);
+        for(int i=1;i<=9;i++)values.addProperty(String.format("41000000-0000-4000-8000-%012d",i),1550);
+        JsonObject body=new JsonObject();body.addProperty("player",member.name);body.add("values",values);
+        ClanFeatures.sync(c,member,body);ClanFeatures.sync(c,member,body);
+        assertEquals(16,count("ledger"));
+        assertEquals(4375,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        RankingStore.execute(c,"UPDATE goals SET points=17,enabled=false WHERE id='40000000-0000-4000-8000-000000000001'");
+        for(String resource:new String[]{"/additional-milestones.sql","/collection-milestones.sql"}) {
+            try(InputStream input=RankingServer.class.getResourceAsStream(resource);Statement s=c.createStatement()){s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));}
+        }
+        try(Statement s=c.createStatement();ResultSet r=s.executeQuery("SELECT points,enabled FROM goals WHERE id='40000000-0000-4000-8000-000000000001'")){r.next();assertEquals(17,r.getInt(1));assertFalse(r.getBoolean(2));}
+        assertEquals(16,count("ledger"));
+    }
+    @Test public void collectionMilestonesAwardOnlyReachedThresholdsAndAcceptFullCatalogSync()throws Exception {
+        for(String resource:new String[]{"/additional-milestones.sql","/collection-milestones.sql"}) {
+            try(InputStream input=RankingServer.class.getResourceAsStream(resource);Statement s=c.createStatement()){s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));}
+        }
+        JsonObject values=new JsonObject();for(int i=1;i<=9;i++)values.addProperty(String.format("41000000-0000-4000-8000-%012d",i),299);
+        JsonObject body=new JsonObject();body.addProperty("player",member.name);body.add("values",values);ClanFeatures.sync(c,member,body);
+        assertEquals(1,count("ledger"));
+        assertEquals(200,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        for(int i=1;i<=9;i++)values.addProperty(String.format("41000000-0000-4000-8000-%012d",i),300);
+        ClanFeatures.sync(c,member,body);ClanFeatures.sync(c,member,body);assertEquals(2,count("ledger"));
+        assertEquals(600,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+    }
     @Test public void clanActivitySharesConfirmedAwardsAndRanksWithoutPrivateRequestsOrInactiveMembers()throws Exception {
         RankingStore.execute(c,"UPDATE rules SET category='Drops',display_name='Cowhide' WHERE type='LOOT' AND event_key='1:2'");
         RankingStore.event(c,member,event("LOOT","1:2"));
@@ -588,20 +709,20 @@ public class RankingPostgresTest {
         EfficiencyRewards.observe(c,member,new java.math.BigDecimal("99"),new java.math.BigDecimal("49"),now.plusSeconds(120),now.plusSeconds(120));assertEquals(1,count("ledger"));
         EfficiencyRewards.observe(c,member,new java.math.BigDecimal("101"),new java.math.BigDecimal("51"),now.plusSeconds(180),now.plusSeconds(180));assertEquals(1,count("ledger"));
         EfficiencyRewards.observe(c,member,new java.math.BigDecimal("200"),new java.math.BigDecimal("100"),now.plusSeconds(240),now.plusSeconds(240));assertEquals(2,count("ledger"));
-        assertEquals(250,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        assertEquals(500,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
         Instant monday=Instant.parse("2026-10-26T12:00:00Z");
         EfficiencyRewards.observe(c,member,new java.math.BigDecimal("200"),new java.math.BigDecimal("100"),monday,monday);assertEquals(2,count("ledger"));
         EfficiencyRewards.observe(c,member,new java.math.BigDecimal("201"),new java.math.BigDecimal("101"),monday.plusSeconds(60),monday.plusSeconds(60));assertEquals(3,count("ledger"));
-        assertEquals(270,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        assertEquals(540,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
         assertEquals(0,count("point_adjustments"));
-        assertEquals(270,PointsLog.read(c,"player=Member&category=Efficiency&sort=newest").get("total").getAsInt());
+        assertEquals(540,PointsLog.read(c,"player=Member&category=Efficiency&sort=newest").get("total").getAsInt());
     }
     @Test public void efficiencyFractionalGainsAccumulateButStaleDataCannotStartBaseline()throws Exception {
         Instant now=Instant.parse("2026-10-25T12:00:00Z");
         EfficiencyRewards.observe(c,member,java.math.BigDecimal.TEN,java.math.BigDecimal.ZERO,now.minusSeconds(90000),now);assertEquals(0,count("efficiency_reward_state"));
         EfficiencyRewards.observe(c,member,java.math.BigDecimal.TEN,java.math.BigDecimal.ZERO,now,now);
-        EfficiencyRewards.observe(c,member,new java.math.BigDecimal("10.05"),java.math.BigDecimal.ZERO,now.plusSeconds(10),now.plusSeconds(10));assertEquals(0,count("ledger"));
-        EfficiencyRewards.observe(c,member,new java.math.BigDecimal("10.1"),java.math.BigDecimal.ZERO,now.plusSeconds(20),now.plusSeconds(20));assertEquals(1,count("ledger"));
+        EfficiencyRewards.observe(c,member,new java.math.BigDecimal("10.025"),java.math.BigDecimal.ZERO,now.plusSeconds(10),now.plusSeconds(10));assertEquals(0,count("ledger"));
+        EfficiencyRewards.observe(c,member,new java.math.BigDecimal("10.05"),java.math.BigDecimal.ZERO,now.plusSeconds(20),now.plusSeconds(20));assertEquals(1,count("ledger"));
     }
     @Test public void rewardBoostTopsUpPaidGoalsOnceWithoutRewritingAwardsOrDeductions()throws Exception {
         try(InputStream input=RankingServer.class.getResourceAsStream("/starter-goals.sql");Statement s=c.createStatement()){s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));}

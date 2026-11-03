@@ -150,6 +150,8 @@ final class AutomaticRewards {
         expandCowhideTestLimit(c);
         seed(c,"encounter-and-clue-rewards-v1",EncounterRewards.rules());
         seed(c,"expanded-encounter-and-clue-rewards-v1",ExpandedEncounterRewards.rules());
+        AdditionalDropRewards.seed(c);
+        seed(c,"beginner-and-skilling-drop-rewards-v1",BeginnerDropRewards.rules());
     }
     private static void expandCowhideTestLimit(Connection c)throws SQLException {
         try(Statement s=c.createStatement()){s.execute("SELECT pg_advisory_xact_lock(72419051001)");}

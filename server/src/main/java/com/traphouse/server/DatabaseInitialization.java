@@ -39,5 +39,8 @@ final class DatabaseInitialization {
         script(c,"/activity-rewards-v3.sql");AutomaticRewards.seed(c);BalancedRewards.apply(c);RankManagement.initializeOwnerRanks(c);script(c,"/discord-joining.sql");
         script(c,"/achievement-diaries.sql");
         script(c,"/clan-browser.sql");
+        script(c,"/additional-milestones.sql");
+        script(c,"/collection-milestones.sql");
+        script(c,"/efficiency-rewards-v2.sql");
     }
 }

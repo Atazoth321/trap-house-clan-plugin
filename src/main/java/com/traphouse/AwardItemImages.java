@@ -27,7 +27,7 @@ final class AwardItemImages implements PointsLogPanel.ItemArt {
             if(type.equals("LOOT")&&key.matches("[0-9]+:[0-9]+"))return Integer.parseInt(key.substring(key.indexOf(':')+1));
             if(type.equals("LOOT")&&key.matches("clue:(beginner|easy|medium|hard|elite|master):[0-9]{1,6}"))return Integer.parseInt(key.substring(key.lastIndexOf(':')+1));
             if(type.equals("COLLECTION")&&key.matches("clue milestone:(beginner|easy|medium|hard|elite|master):(10|50|100)"))key="clue completion:"+key.split(":")[1];
-            if(type.equals("LOOT")&&key.matches("chest:(chambers of xeric|theatre of blood|tombs of amascut|barrows|lunar chest):[0-9]+"))return Integer.parseInt(key.substring(key.lastIndexOf(':')+1));
+            if(type.equals("LOOT")&&key.matches("chest:(chambers of xeric|theatre of blood|tombs of amascut|barrows|lunar chest|unsired|wintertodt|tempoross|guardians of the rift):[0-9]+"))return Integer.parseInt(key.substring(key.lastIndexOf(':')+1));
             if(type.equals("COLLECTION"))switch(key) {
                 case "clue completion:beginner":return 23245;
                 case "clue completion:easy":return 20546;

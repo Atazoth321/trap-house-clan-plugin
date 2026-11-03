@@ -45,7 +45,7 @@ The Drops page reads actual deployed rule prices and shows whether the cap is pe
 
 ## Ongoing skilling, PvM, and clan participation
 
-WOM efficiency gains now pay **10 points/EHP and 10 points/EHB**, with a **250-point combined weekly cap**. That avoids paying double for EHB even though PvM also receives drop rewards. The first fresh import still establishes a baseline without paying lifetime efficiency totals. Existing highs, snapshots, baseline, fractional carry, and current-week usage are preserved on deployment. Only new processed gains receive the new rate; past awards are not recalculated. The weekly allowance resets Monday 00:00 UTC, not the lifetime points balance.
+WOM efficiency gains now pay **20 points/EHP and 20 points/EHB**, with a **500-point combined weekly cap**. Both activities use the same rate; PvM also receives its configured drop rewards. The first fresh import still establishes a baseline without paying lifetime efficiency totals. Existing highs, snapshots, baseline, fractional carry, and current-week usage are preserved on deployment. Only new processed gains receive the new rate; past awards are not recalculated. The weekly allowance resets Monday 00:00 UTC, not the lifetime points balance.
 
 Default staff-reviewed claims:
 

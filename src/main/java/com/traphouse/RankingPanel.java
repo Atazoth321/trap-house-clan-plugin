@@ -214,7 +214,7 @@ final class RankingPanel extends JPanel {
         JsonObject breakdown=player.has("breakdown")?player.getAsJsonObject("breakdown"):new JsonObject();
         JPanel tiles=new JPanel(new GridLayout(0,3,3,3));tiles.setOpaque(false);
         for(String category:new String[]{"Drops","Clues","Pets","Milestones","Diaries","Challenges","Events","Combat","Collection","Efficiency"}) {
-            if((category.equals("Combat")||category.equals("Collection"))&&!breakdown.has(category))continue;
+            if(category.equals("Combat")&&!breakdown.has(category))continue;
             JButton tile=pointsTile(name,category,number(breakdown,category));
             tile.setToolTipText(category+": "+formatted(number(breakdown,category))+" points");tiles.add(tile);
         }
@@ -265,23 +265,40 @@ final class RankingPanel extends JPanel {
         if(!metrics.has(key)||metrics.get(key).isJsonNull())return "Not synced";
         try{return String.format(Locale.US,"%,.1f",metrics.get(key).getAsDouble());}catch(RuntimeException invalid){return "Not synced";}
     }
+    private static Icon goalIconSize(Icon icon,int size) {
+        return new Icon(){public int getIconWidth(){return size;}public int getIconHeight(){return size;}
+            public void paintIcon(Component owner,Graphics graphics,int x,int y){Graphics2D g=(Graphics2D)graphics.create();g.translate(x,y);g.scale((double)size/icon.getIconWidth(),(double)size/icon.getIconHeight());icon.paintIcon(owner,g,0,0);g.dispose();}};
+    }
+    private void goalIcon(JLabel label,JsonObject goal,int size) {
+        boolean complete=goal.has("completed")&&goal.get("completed").getAsBoolean();
+        label.setIcon(goalIconSize(new RewardIcon(string(goal,"category","Milestones"),complete),size));
+        JsonObject art=goal.deepCopy();art.addProperty("sourceType","GOAL");art.addProperty("sourceKey",string(goal,"id",""));
+        itemArt.load(art,(name,icon)->{
+            Runnable apply=()->{label.setIcon(goalIconSize(icon,size));label.revalidate();label.repaint();};
+            if(SwingUtilities.isEventDispatchThread())apply.run();else SwingUtilities.invokeLater(apply);
+        });
+    }
     private void compactProfileGoals(JsonObject data) {
         java.util.Map<String,JPanel> groups=new java.util.LinkedHashMap<>();
         for(JsonElement entry:array(data,"goals")) {
             JsonObject goal=entry.getAsJsonObject();String category=string(goal,"category","");
-            if(!category.equals("Milestones")&&!category.equals("Combat"))continue;
+            if(!category.equals("Milestones")&&!category.equals("Combat")&&!category.equals("Collection"))continue;
             String section=string(goal,"section",category);
             JPanel group=groups.computeIfAbsent(section,ProfileStyle::card),row=ProfileStyle.row();
             boolean complete=goal.has("completed")&&goal.get("completed").getAsBoolean();
             JLabel check=ProfileStyle.label(complete?"\u2713":" ",11,ProfileStyle.GREEN);check.setOpaque(true);
             check.setHorizontalAlignment(SwingConstants.CENTER);check.setBackground(complete?new Color(38,66,51):new Color(43,47,57));
             check.setPreferredSize(new Dimension(12,12));check.setToolTipText(complete?"Completed":"Not completed");
-            JPanel marker=new JPanel(new GridBagLayout());marker.setOpaque(false);marker.add(check);row.add(marker,BorderLayout.WEST);
+            JPanel marker=new JPanel(new GridBagLayout());marker.setOpaque(false);JPanel symbols=new JPanel(new FlowLayout(FlowLayout.LEFT,3,0));symbols.setOpaque(false);symbols.add(check);JLabel sprite=new JLabel();goalIcon(sprite,goal,18);symbols.add(sprite);marker.add(symbols);row.add(marker,BorderLayout.WEST);
             JLabel title=ProfileStyle.label(string(goal,"name","Goal"),10,ProfileStyle.TEXT);
             title.setPreferredSize(new Dimension(95,18));title.setMinimumSize(new Dimension(0,18));row.add(title,BorderLayout.CENTER);
             row.add(ProfileStyle.label(number(goal,"points")==0?"Tracking":"+"+number(goal,"points")+" pts",10,ProfileStyle.ACCENT),BorderLayout.EAST);
             String tooltip=string(goal,"name","")+" / "+string(goal,"description","")+" / "+number(goal,"progress")+" of "+number(goal,"target");
             title.setToolTipText(tooltip);row.setToolTipText(tooltip);group.add(row);
+            if(category.equals("Collection"))group.add(ProfileStyle.label(formatted(number(goal,"progress"))+" / "+formatted(number(goal,"target"))+" items",9,ProfileStyle.MUTED));
+        }
+        for(String section:new String[]{"Prestige milestones","Collection Log milestones"}) {
+            JPanel group=groups.remove(section);if(group!=null)ClanStyle.add(profile,group);
         }
         for(JPanel group:groups.values())ClanStyle.add(profile,group);
     }
@@ -402,7 +419,7 @@ final class RankingPanel extends JPanel {
             if(summary&&!category.equals("Milestones")&&!category.equals("Combat"))continue;
             JPanel group=groups.computeIfAbsent(string(goal,"section",category),ClanStyle::card);
             boolean completed=goal.has("completed")&&goal.get("completed").getAsBoolean();
-            group.add(ClanStyle.label((completed?"[x] ":"[ ] ")+string(goal,"name","Goal"),11,completed?ClanStyle.GREEN:ClanStyle.WHITE));
+            JLabel heading=ClanStyle.label((completed?"[x] ":"[ ] ")+string(goal,"name","Goal"),11,completed?ClanStyle.GREEN:ClanStyle.WHITE);goalIcon(heading,goal,24);group.add(heading);
             group.add(ClanStyle.text(string(goal,"description","")+"\n"+number(goal,"progress")+" / "+number(goal,"target")+"   "+(number(goal,"points")==0?"Tracking only":"+"+number(goal,"points")+" pts")));
             if(goal.has("claimKey")&&!goal.get("claimKey").isJsonNull()&&!completed&&(!summary||!viewingOther)) {
                 String key=goal.get("claimKey").getAsString();

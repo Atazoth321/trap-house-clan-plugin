@@ -20,7 +20,7 @@ final class ClanFeatures {
     static JsonObject sync(Connection c,Actor actor,JsonObject body) throws SQLException {
         if(body.has("points"))throw new Policy.Rejected(400,"Points are calculated by the server");
         if(!Policy.normalize(Policy.text(body,"player",12)).equals(Policy.normalize(actor.name)))throw new Policy.Rejected(403,"Character mismatch");
-        if(!body.has("values")||!body.get("values").isJsonObject()||body.getAsJsonObject("values").size()>200)throw new Policy.Rejected(400,"At most 200 progress values required");
+        if(!body.has("values")||!body.get("values").isJsonObject()||body.getAsJsonObject("values").size()>250)throw new Policy.Rejected(400,"At most 250 progress values required");
         lockMember(c,actor.id);
         for(java.util.Map.Entry<String,JsonElement> entry:body.getAsJsonObject("values").entrySet()) {
             UUID goal=Policy.uuid(entry.getKey());
@@ -38,7 +38,7 @@ final class ClanFeatures {
     }
 
     static void updateEventGoals(Connection c,Actor actor) throws SQLException {
-        try(PreparedStatement s=query(c,"SELECT id,source,source_key,target,points,category,name FROM goals WHERE enabled AND source IN ('EVENT','MANUAL') ORDER BY sort_order,id LIMIT 200");ResultSet r=s.executeQuery()) {
+        try(PreparedStatement s=query(c,"SELECT id,source,source_key,target,points,category,name FROM goals WHERE enabled AND source IN ('EVENT','MANUAL') ORDER BY sort_order,id LIMIT 250");ResultSet r=s.executeQuery()) {
             while(r.next()) {
                 String source=r.getString(2),key=r.getString(3);long count;
                 if(source.equals("MANUAL")) {
@@ -102,9 +102,10 @@ final class ClanFeatures {
         }
         data.getAsJsonObject("profile").add("metrics",metrics);
         JsonArray goals=new JsonArray();
-        try(PreparedStatement s=query(c,"SELECT g.id,g.name,g.description,g.category,g.section,g.source,g.source_key,g.target,CASE WHEN g.source='MANUAL' THEN coalesce(r.points,0) ELSE g.points END,coalesce(p.value,0),p.completed_at IS NOT NULL FROM goals g LEFT JOIN goal_progress p ON p.goal_id=g.id AND p.member_id=? LEFT JOIN rules r ON r.type='MANUAL' AND r.event_key=g.source_key AND r.enabled WHERE g.enabled ORDER BY g.sort_order,g.id LIMIT 200",actor.id);ResultSet r=s.executeQuery()) {
+        try(PreparedStatement s=query(c,"SELECT g.id,g.name,g.description,g.category,g.section,g.source,g.source_key,g.target,CASE WHEN g.source='MANUAL' THEN coalesce(r.points,0) ELSE g.points END,coalesce(p.value,0),p.completed_at IS NOT NULL FROM goals g LEFT JOIN goal_progress p ON p.goal_id=g.id AND p.member_id=? LEFT JOIN rules r ON r.type='MANUAL' AND r.event_key=g.source_key AND r.enabled WHERE g.enabled ORDER BY g.sort_order,g.id LIMIT 250",actor.id);ResultSet r=s.executeQuery()) {
             while(r.next()) {
                 JsonObject goal=new JsonObject();goal.addProperty("id",r.getString(1));goal.addProperty("name",r.getString(2));goal.addProperty("description",r.getString(3));goal.addProperty("category",r.getString(4));goal.addProperty("section",r.getString(5));goal.addProperty("source",r.getString(6));goal.addProperty("sourceKey",r.getString(7));goal.addProperty("target",r.getLong(8));goal.addProperty("points",r.getInt(9));goal.addProperty("progress",r.getLong(10));goal.addProperty("completed",r.getBoolean(11));
+                int icon=GoalArtwork.itemId(r.getString(6),r.getString(7));if(icon>0)goal.addProperty("itemId",icon);
                 if(r.getString(6).equals("MANUAL")&&r.getInt(9)>0)goal.addProperty("claimKey",r.getString(7));goals.add(goal);
             }
         }

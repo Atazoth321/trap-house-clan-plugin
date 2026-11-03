@@ -323,6 +323,6 @@ CREATE TABLE IF NOT EXISTS efficiency_reward_state (
  last_snapshot timestamptz NOT NULL,
  baseline_at timestamptz NOT NULL,
  week_start timestamptz NOT NULL,
- weekly_points integer NOT NULL DEFAULT 0 CHECK(weekly_points BETWEEN 0 AND 250),
+ weekly_points integer NOT NULL DEFAULT 0 CHECK(weekly_points BETWEEN 0 AND 500),
  carry numeric(20,8) NOT NULL DEFAULT 0 CHECK(carry>=0 AND carry<1)
 );

@@ -4,6 +4,28 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class RankingTrackerTest {
+    @Test public void skillingContainersUseCanonicalSourcesAndOnlyActualEventLoot() {
+        String[] names={"Supply crate (Wintertodt)","Reward cart (Wintertodt)","Reward pool (Tempoross)","Guardians of the Rift"};
+        String[] sources={"wintertodt","wintertodt","tempoross","guardians of the rift"};
+        int[] items={20716,20716,25582,26822};
+        for(int i=0;i<names.length;i++) {
+            net.runelite.client.plugins.loottracker.LootReceived loot=new net.runelite.client.plugins.loottracker.LootReceived(
+                names[i],0,net.runelite.http.api.loottracker.LootRecordType.EVENT,
+                java.util.Arrays.asList(new net.runelite.client.game.ItemStack(items[i],1),new net.runelite.client.game.ItemStack(items[i],1)),1,null);
+            assertEquals(1,RankingTracker.containerLoot("Member",loot).size());
+            assertEquals("chest:"+sources[i]+":"+items[i],RankingTracker.containerLoot("Member",loot).get(0).key);
+            loot.setType(net.runelite.http.api.loottracker.LootRecordType.NPC);assertTrue(RankingTracker.containerLoot("Member",loot).isEmpty());
+        }
+    }
+    @Test public void additionalRewardContainersUseActualLootAndDeduplicateItemStacks() {
+        net.runelite.client.plugins.loottracker.LootReceived loot=new net.runelite.client.plugins.loottracker.LootReceived(
+            "Zalcano",0,net.runelite.http.api.loottracker.LootRecordType.NPC,
+            java.util.Arrays.asList(new net.runelite.client.game.ItemStack(23953,1),new net.runelite.client.game.ItemStack(23953,1)),1,java.util.Collections.singletonMap("id",9049));
+        assertEquals(1,RankingTracker.containerLoot("Member",loot).size());assertEquals("9049:23953",RankingTracker.containerLoot("Member",loot).get(0).key);
+        loot.setType(net.runelite.http.api.loottracker.LootRecordType.EVENT);loot.setName("Unsired");loot.setItems(java.util.Collections.singletonList(new net.runelite.client.game.ItemStack(13274,1)));
+        assertEquals("chest:unsired:13274",RankingTracker.containerLoot("Member",loot).get(0).key);
+        assertFalse(RankingTracker.expandedLootNpc(12124));
+    }
     @Test public void clueUniquesComeFromCasketContentsAndNpcDropsUseEncounterMetadata() {
         net.runelite.client.plugins.loottracker.LootReceived loot=new net.runelite.client.plugins.loottracker.LootReceived(
             "Clue Scroll (Medium)",0,net.runelite.http.api.loottracker.LootRecordType.EVENT,
