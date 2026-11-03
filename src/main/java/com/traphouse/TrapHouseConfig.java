@@ -13,7 +13,7 @@ public interface TrapHouseConfig extends Config {
     @ConfigItem(keyName="dropChatColors", name="Color in-game drop notices", description="Color your game's drop notices gold, pet notices purple and collection-log unlocks green. Uses the drop, pet and milestone color settings below.", position=29)
     default boolean dropChatColors() { return true; }
 
-    @ConfigItem(keyName="rankingEnabled", name="Enable ranking sync", description="Opt in to sending your character name, supported events and configured achievement/progress observations to your clan ranking server.", position=20)
+    @ConfigItem(keyName="rankingEnabled", name="Enable ranking sync", description="Opt in to sending your character name, account type, stats, observed collection-log items/counters, supported events and achievement progress to your clan server. Score leaderboards are public; collection details require member sign-in.", position=20)
     default boolean rankingEnabled() { return false; }
 
     @ConfigItem(keyName="rankingUrl", name="Ranking API URL", description="HTTPS base URL of the TRAP HOUSE ranking server. No trailing path or query.", position=21)

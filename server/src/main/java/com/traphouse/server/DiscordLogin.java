@@ -71,7 +71,16 @@ final class DiscordLogin {
         int status=200; String type="application/json; charset=utf-8"; String output;
         try {
             String path=exchange.getRequestURI().getPath(), method=exchange.getRequestMethod();
-            if(method.equals("POST")&&path.equals("/auth/discord/device")) {
+            if(method.equals("POST")&&path.equals("/auth/discord/code")) {
+                limitStarts();required("TRAP_DISCORD_PUBLIC_KEY");required("TRAP_DISCORD_CLIENT_ID");required("TRAP_DISCORD_GUILD_ID");
+                JsonObject body=RankingServer.readBody(exchange);String deviceHash=Policy.hash(capability(body));
+                String code=secret();UUID id=UUID.randomUUID();
+                try(Connection c=connections.open()) {
+                    RankingStore.execute(c,"DELETE FROM discord_login_sessions WHERE expires_at<now()");
+                    RankingStore.execute(c,"INSERT INTO discord_login_sessions(id,device_hash,browser_hash,state_hash) VALUES (?,?,?,?)",id,deviceHash,Policy.hash(code),Policy.hash("code:"+code));
+                }
+                JsonObject data=new JsonObject();data.addProperty("session",id.toString());data.addProperty("code",code);data.addProperty("expiresIn",600);output=JSON.toJson(data);
+            } else if(method.equals("POST")&&path.equals("/auth/discord/device")) {
                 limitStarts(); required("TRAP_DISCORD_CLIENT_ID");required("TRAP_DISCORD_CLIENT_SECRET");required("TRAP_DISCORD_GUILD_ID");
                 JsonObject body=RankingServer.readBody(exchange);String hash=Policy.hash(capability(body));
                 UUID id=UUID.randomUUID();String browser=secret();
@@ -149,6 +158,19 @@ final class DiscordLogin {
         } catch(IllegalArgumentException|JsonParseException invalid) {status=400;output="{\"error\":\"Invalid sign-in request\"}";
         } catch(Exception failure) {status=503;output="{\"error\":\"Discord sign-in unavailable; start again shortly\"}";}
         reply(exchange,status,type,output);
+    }
+    static JsonObject verifyCode(Connection c,String discord,String code)throws SQLException {
+        if(code==null||!code.matches("[A-Za-z0-9_-]{43}"))throw new Policy.Rejected(400,"Copy the complete connection code from your own RuneLite plugin.");
+        UUID member;String name;
+        try(PreparedStatement s=RankingStore.query(c,"SELECT m.id,m.name FROM discord_member_links l JOIN members m ON m.id=l.member_id WHERE l.discord_user_id=? AND m.active FOR SHARE OF m,l",discord);ResultSet r=s.executeQuery()) {
+            if(!r.next())throw new Policy.Rejected(403,"An approved active character link is required. Use /link and ask leadership to verify it first.");
+            member=r.getObject(1,UUID.class);name=r.getString(2);
+        }
+        try(PreparedStatement s=RankingStore.query(c,"UPDATE discord_login_sessions SET member_id=?,callback_used=true WHERE browser_hash=? AND state_hash=? AND expires_at>now() AND member_id IS NULL AND NOT callback_used",member,Policy.hash(code),Policy.hash("code:"+code))) {
+            if(s.executeUpdate()!=1)throw new Policy.Rejected(400,"Code expired, already used, or invalid. Generate a new code in RuneLite.");
+        }
+        RankingStore.execute(c,"INSERT INTO audit(actor,action,target) VALUES (?,'DISCORD_CODE_VERIFIED',?)",member,member);
+        return DiscordJoining.message("Verified for "+name+". Return to your RuneLite plugin to finish connecting.");
     }
     private static String page(String title,String message) {
         return "<!doctype html><html><meta charset='utf-8'><meta name='viewport' content='width=device-width'><title>TRAP HOUSE sign-in</title><body style='background:#11151c;color:#eee;font:18px system-ui;max-width:640px;margin:80px auto;padding:24px'><h1>"+title+"</h1><p>"+message+"</p></body></html>";

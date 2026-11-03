@@ -22,6 +22,26 @@ final class RankingClient {
     private String manualPlayer;
     private volatile com.google.gson.JsonArray probes = new com.google.gson.JsonArray();
     private JsonObject progressRequest;
+    private JsonObject browserSnapshot;
+    synchronized void browserSnapshot(JsonObject snapshot){browserSnapshot=snapshot;}
+    void browserView(TrapHouseConfig config,JsonObject selection,boolean refresh,java.util.function.Consumer<JsonObject> done,java.util.function.Consumer<String> failed) {
+        final long epoch;synchronized(this){epoch=generation;}
+        try {
+            String origin=endpoint(config.rankingUrl().trim());HttpUrl.Builder url=HttpUrl.parse(origin+"/v1/browser").newBuilder();
+            for(java.util.Map.Entry<String,com.google.gson.JsonElement> entry:selection.entrySet())if(java.util.Set.of("mode","metric","category","player").contains(entry.getKey()))url.addQueryParameter(entry.getKey(),entry.getValue().getAsString());
+            if(refresh)url.addQueryParameter("refresh","1");Request.Builder request=new Request.Builder().url(url.build()).get().header("User-Agent","TrapHouseRankings/1.0");
+            try(Response response=http.newCall(request.build()).execute()) {
+                if(response.code()==401||response.code()==403)throw new IOException("The server is restricting this public browser. Deploy the updated backend and refresh.");
+                if(!response.isSuccessful()||response.body()==null)throw new IOException("Clan browser unavailable (HTTP "+response.code()+"). Refresh to retry.");
+                byte[] bytes=response.body().byteStream().readNBytes(3_145_729);if(bytes.length>3_145_728)throw new IOException("Clan browser response is too large.");
+                JsonObject data=gson.fromJson(new String(bytes,java.nio.charset.StandardCharsets.UTF_8),JsonObject.class);if(data==null)throw new IOException("Invalid clan browser response.");
+                SwingUtilities.invokeLater(()->{synchronized(this){if(epoch==generation)done.accept(data);}});
+            }
+        }catch(IOException|RuntimeException failure) {
+            String message=failure instanceof IOException?failure.getMessage():"Clan browser unavailable. Refresh to retry.";
+            SwingUtilities.invokeLater(()->{synchronized(this){if(epoch==generation)failed.accept(message);}});
+        }
+    }
     private String memberRequest;
     private long memberRevision;
     private String registrationPath;
@@ -95,7 +115,7 @@ final class RankingClient {
         queue.addLast(event);return true;
     }
 
-    synchronized void reset() { generation++; awardSources=new com.google.gson.JsonArray(); earnedRank=null; earnedThreshold=0; if(celebrations!=null)celebrations.reset(); queue.clear(); pointAlerts.reset(); manualRequest = null; manualPlayer = null;progressRequest=null;memberRequest=null;registrationPath=null;probes=new com.google.gson.JsonArray(); }
+    synchronized void reset() { generation++; awardSources=new com.google.gson.JsonArray(); earnedRank=null; earnedThreshold=0; if(celebrations!=null)celebrations.reset(); queue.clear(); pointAlerts.reset(); manualRequest = null; manualPlayer = null;progressRequest=null;browserSnapshot=null;memberRequest=null;registrationPath=null;probes=new com.google.gson.JsonArray(); }
 
     synchronized void requestReward(String player, String key, String reason) {
         if (player == null || manualRequest != null) return;
@@ -105,12 +125,30 @@ final class RankingClient {
         manualPlayer = player;
     }
 
+    void publicLeaderboard(TrapHouseConfig config,RankingPanel panel) {
+        final long epoch;synchronized(this){epoch=generation;}
+        try {
+            String origin=endpoint(config.rankingUrl().trim());
+            try(Response response=http.newCall(new Request.Builder().url(origin+"/v1/leaderboard").get()
+                .header("User-Agent","TrapHouseRankings/1.0").build()).execute()) {
+                if(!response.isSuccessful()||response.body()==null)throw new IOException("Leaderboard unavailable");
+                byte[] bytes=response.body().byteStream().readNBytes(1_048_577);
+                if(bytes.length>1_048_576)throw new IOException("Leaderboard too large");
+                JsonObject data=gson.fromJson(new String(bytes,java.nio.charset.StandardCharsets.UTF_8),JsonObject.class);
+                if(data==null||!data.has("leaderboard")||!data.get("leaderboard").isJsonArray())throw new IOException("Invalid leaderboard");
+                SwingUtilities.invokeLater(()->{synchronized(this){if(epoch==generation)panel.showPublicLeaderboard(data);}});
+            }
+        }catch(IOException|RuntimeException failure) {
+            SwingUtilities.invokeLater(()->{synchronized(this){if(epoch==generation)panel.publicLeaderboardError();}});
+        }
+    }
+
     void sync(TrapHouseConfig config, String player, RankingPanel panel) {
         final long epoch;
         synchronized (this) { epoch = generation; }
         if (!config.rankingEnabled() || player == null || config.rankingToken().trim().isEmpty()) {
             SwingUtilities.invokeLater(() -> { synchronized (this) {
-                if (epoch == generation) panel.clear("Ranking sync disabled or no logged-in member credential.");
+                if (epoch == generation) panel.disconnected("Sign in for your profile. The clan leaderboard is available to everyone.");
             }});
             return;
         }
@@ -120,6 +158,10 @@ final class RankingClient {
             String token = config.rankingToken().trim();
             boolean baseline;
             synchronized(this){if(epoch!=generation)return;baseline=pointAlerts.cursor()==null;}
+            JsonObject browser; synchronized(this){browser=browserSnapshot;}
+            if(browser!=null&&RankingTracker.normalize(player).equals(RankingTracker.normalize(browser.get("player").getAsString()))) {
+                if(submit(origin+"/v1/browser/sync",token,browser))synchronized(this){if(epoch==generation&&browserSnapshot==browser)browserSnapshot=null;}
+            }
             if(baseline)pollPointAlerts(origin,token,player,epoch);
             String actionError=null;
             JsonObject progressBody;String registerPath;
@@ -168,7 +210,12 @@ final class RankingClient {
             }
             HttpUrl url = HttpUrl.parse(origin + "/v1/dashboard").newBuilder().addQueryParameter("player", player).build();
             try (Response response = http.newCall(request(url.toString(), token).get().build()).execute()) {
-                if (!response.isSuccessful() || response.body() == null) throw new IOException("Dashboard unavailable");
+                if (!response.isSuccessful()) {
+                    String message=dashboardFailure(response.code());
+                    SwingUtilities.invokeLater(()->{synchronized(this){if(epoch==generation)panel.actionError(message);}});
+                    return;
+                }
+                if (response.body() == null) throw new IOException("Dashboard unavailable");
                 byte[] bytes = response.body().byteStream().readNBytes(1_048_577);
                 if (bytes.length > 1_048_576) throw new IOException("Dashboard response too large");
                 JsonObject data = gson.fromJson(new String(bytes, java.nio.charset.StandardCharsets.UTF_8), JsonObject.class);
@@ -197,6 +244,13 @@ final class RankingClient {
         } catch (IOException | RuntimeException failure) {
             SwingUtilities.invokeLater(() -> { synchronized (this) { if (epoch == generation) panel.error(); }});
         } finally { busy.set(false); }
+    }
+
+    static String dashboardFailure(int code) {
+        if(code==401)return "Your login expired or was revoked. Sign in with Discord again.";
+        if(code==403)return "Profile access rejected. Log into your linked OSRS character; ask leadership to check your Discord link and active membership.";
+        if(code==429)return "Too many requests. Your profile will retry automatically.";
+        return "Profile unavailable (HTTP "+code+"). Retrying automatically.";
     }
 
     private Request.Builder request(String url, String token) {

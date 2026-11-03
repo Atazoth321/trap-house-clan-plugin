@@ -12,6 +12,37 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class RankingClientTest {
+    @Test public void allBrowserReadsAreAnonymous()throws Exception {
+        AtomicInteger delivered=new AtomicInteger();RankingClient client=new RankingClient(new OkHttpClient.Builder().addInterceptor(chain->{
+            assertEquals("GET",chain.request().method());assertEquals("/v1/browser",chain.request().url().encodedPath());
+            assertNull(chain.request().header("Authorization"));
+            assertEquals("1",chain.request().url().queryParameter("refresh"));return response(chain,200,"{\"kind\":\"leaderboard\",\"panels\":[]}");
+        }).build(),JSON);
+        for(String mode:new String[]{"leaderboard","catalogue","clog","luck","deserved","dryboard"}) {JsonObject selection=new JsonObject();selection.addProperty("mode",mode);client.browserView(config,selection,true,data->delivered.incrementAndGet(),error->fail(error));}
+        SwingUtilities.invokeAndWait(()->{});assertEquals(6,delivered.get());
+    }
+    @Test public void publicStandingsDoNotSendCredentialsOrRequireSyncAndDiscardResetResponses()throws Exception {
+        TrapHouseConfig guest=new TrapHouseConfig(){public String rankingUrl(){return "https://clan.example";}};
+        AtomicBoolean reset=new AtomicBoolean();RankingClient[] client=new RankingClient[1];RankingPanel panel=panel();
+        java.lang.reflect.Field field=RankingPanel.class.getDeclaredField("leaderboard");field.setAccessible(true);
+        client[0]=new RankingClient(new OkHttpClient.Builder().addInterceptor(chain->{
+            assertEquals("/v1/leaderboard",chain.request().url().encodedPath());assertNull(chain.request().header("Authorization"));assertNull(chain.request().url().query());
+            if(reset.get())client[0].reset();return response(chain,200,"{\"leaderboard\":[{\"name\":\"Raider\",\"points\":250,\"rank\":\"Corporal\"}]}");
+        }).build(),JSON);
+        client[0].publicLeaderboard(guest,panel);SwingUtilities.invokeAndWait(()->{});assertEquals(1,((JsonArray)field.get(panel)).size());
+        SwingUtilities.invokeAndWait(()->panel.clear("Reset"));
+        reset.set(true);client[0].publicLeaderboard(guest,panel);SwingUtilities.invokeAndWait(()->{});assertEquals(0,((JsonArray)field.get(panel)).size());
+    }
+    @Test public void rejectedDashboardExplainsHowToReconnect()throws Exception {
+        for(int code:new int[]{401,403,429,503}) {
+            RankingPanel panel=panel();
+            RankingClient client=new RankingClient(new OkHttpClient.Builder().addInterceptor(chain->response(chain,code,"{}")).build(),JSON);
+            client.sync(config,"Member",panel);
+            SwingUtilities.invokeAndWait(()->{});
+            java.lang.reflect.Field field=RankingPanel.class.getDeclaredField("status");field.setAccessible(true);
+            assertEquals(RankingClient.dashboardFailure(code),((javax.swing.JLabel)field.get(panel)).getText());
+        }
+    }
     @Test public void ownerRankChangesUseAuthenticatedRequestsAndDiscardQueuedWorkAfterReset()throws Exception {
         AtomicInteger posts=new AtomicInteger(),callbacks=new AtomicInteger();
         RankingClient client=new RankingClient(new OkHttpClient.Builder().addInterceptor(chain->{

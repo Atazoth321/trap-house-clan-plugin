@@ -22,11 +22,31 @@ final class WiseOldManStats implements Runnable {
             result.addProperty(metric,value);
         }
         if(data.has("updatedAt")&&!data.get("updatedAt").isJsonNull())result.addProperty("snapshotAt",java.time.Instant.parse(data.get("updatedAt").getAsString()).toString());
+        JsonObject browser=new JsonObject();
+        String type=data.has("type")?data.get("type").getAsString():"";
+        switch(type){case "regular":browser.addProperty("accountType","NORMAL");break;case "ironman":browser.addProperty("accountType","IRONMAN");break;case "hardcore":browser.addProperty("accountType","HARDCORE_IRONMAN");break;case "ultimate":browser.addProperty("accountType","ULTIMATE_IRONMAN");break;default:break;}
+        if(data.has("latestSnapshot")&&data.get("latestSnapshot").isJsonObject()) {
+            JsonObject snapshot=data.getAsJsonObject("latestSnapshot");
+            if(snapshot.has("data")&&snapshot.get("data").isJsonObject()) {
+                JsonObject stats=snapshot.getAsJsonObject("data");
+                if(stats.has("skills")&&stats.getAsJsonObject("skills").has("overall"))copyMetric(stats.getAsJsonObject("skills").getAsJsonObject("overall"),"experience",browser,"xp");
+                JsonObject bosses=new JsonObject(),clues=new JsonObject();
+                if(stats.has("bosses"))for(java.util.Map.Entry<String,JsonElement> entry:stats.getAsJsonObject("bosses").entrySet())copyMetric(entry.getValue().getAsJsonObject(),"kills",bosses,entry.getKey());
+                if(stats.has("activities"))for(java.util.Map.Entry<String,JsonElement> entry:stats.getAsJsonObject("activities").entrySet())if(entry.getKey().startsWith("clue_scrolls_"))copyMetric(entry.getValue().getAsJsonObject(),"score",clues,entry.getKey().substring("clue_scrolls_".length()));
+                if(bosses.size()>0)browser.add("bosses",bosses);if(clues.size()>0)browser.add("clues",clues);
+            }
+        }
+        result.add("browser",browser);
         return result;
+    }
+    private static void copyMetric(JsonObject source,String key,JsonObject target,String name) {
+        if(source.has(key)&&source.get(key).isJsonPrimitive()&&source.getAsJsonPrimitive(key).isNumber()) {
+            long value=source.get(key).getAsLong();if(value>=0&&value<=1_000_000_000_000L)target.addProperty(name,value);
+        }
     }
     @Override public void run() {
         UUID id;String name;
-        try(Connection c=connections.open();PreparedStatement s=RankingStore.query(c,"SELECT m.id,m.name FROM members m LEFT JOIN member_metrics v ON v.member_id=m.id LEFT JOIN efficiency_reward_state e ON e.member_id=m.id LEFT JOIN metric_attempts a ON a.member_id=m.id WHERE m.active AND (v.fetched_at IS NULL OR v.fetched_at<now()-interval '1 hour' OR e.member_id IS NULL) AND (a.last_attempt IS NULL OR a.last_attempt<now()-interval '5 minutes') ORDER BY a.last_attempt NULLS FIRST,m.id LIMIT 1");ResultSet r=s.executeQuery()) {
+        try(Connection c=connections.open();PreparedStatement s=RankingStore.query(c,"SELECT m.id,m.name FROM members m LEFT JOIN member_metrics v ON v.member_id=m.id LEFT JOIN efficiency_reward_state e ON e.member_id=m.id LEFT JOIN browser_statistics b ON b.member_id=m.id LEFT JOIN metric_attempts a ON a.member_id=m.id WHERE m.active AND (v.fetched_at IS NULL OR v.fetched_at<now()-interval '1 hour' OR e.member_id IS NULL OR b.member_id IS NULL) AND (a.last_attempt IS NULL OR a.last_attempt<now()-interval '5 minutes') ORDER BY a.last_attempt NULLS FIRST,m.id LIMIT 1");ResultSet r=s.executeQuery()) {
             if(!r.next())return;id=r.getObject(1,UUID.class);name=r.getString(2);
             RankingStore.execute(c,"INSERT INTO metric_attempts(member_id) VALUES (?) ON CONFLICT(member_id) DO UPDATE SET last_attempt=now()",id);
         }catch(SQLException unavailable){return;}
@@ -45,6 +65,10 @@ final class WiseOldManStats implements Runnable {
                 try {
                     RankingStore.lockMember(c,id);
                     RankingStore.execute(c,"INSERT INTO member_metrics(member_id,ehp,ehb) VALUES (?,?,?) ON CONFLICT(member_id) DO UPDATE SET ehp=excluded.ehp,ehb=excluded.ehb,fetched_at=now()",id,values.get("ehp").getAsBigDecimal(),values.get("ehb").getAsBigDecimal());
+                    JsonObject browser=values.getAsJsonObject("browser");
+                    // WOM cannot distinguish every group-iron variant. Keep a client's observed account type.
+                    try(PreparedStatement s=RankingStore.query(c,"SELECT statistics->>'accountType' FROM browser_statistics WHERE member_id=?",id);ResultSet r=s.executeQuery()){if(r.next()&&r.getString(1)!=null)browser.remove("accountType");}
+                    ClanBrowserData.saveStats(c,id,browser);
                     EfficiencyRewards.observe(c,new RankingStore.Actor(id,name,false),values.get("ehp").getAsBigDecimal(),values.get("ehb").getAsBigDecimal(),
                         values.has("snapshotAt")?java.time.Instant.parse(values.get("snapshotAt").getAsString()):null,java.time.Instant.now());
                     c.commit();

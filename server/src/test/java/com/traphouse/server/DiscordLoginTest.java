@@ -29,6 +29,28 @@ public class DiscordLoginTest {
         assertEquals("no-store",response.headers().firstValue("Cache-Control").get());
         assertEquals("no-referrer",response.headers().firstValue("Referrer-Policy").get());
     }
+    @Test public void disabledCodeSignInDoesNotOpenDatabase()throws Exception {
+        assertEquals(503,post("/auth/discord/code","{}").statusCode());
+    }
+    @Test public void configuredCodeRouteRejectsShortDeviceSecretsBeforeDatabaseAccess()throws Exception {
+        Map<String,String> env=new HashMap<>();env.put("TRAP_DISCORD_PUBLIC_KEY","a".repeat(64));
+        env.put("TRAP_DISCORD_CLIENT_ID","123456789012345678");env.put("TRAP_DISCORD_GUILD_ID","123456789012345679");
+        server.removeContext("/");
+        server.createContext("/",new DiscordLogin(()->{throw new AssertionError("Invalid secret must not access database");},env,null)::handle);
+        assertEquals(400,post("/auth/discord/code","{\"secret\":\"short\"}").statusCode());
+    }
+    @Test public void invalidCodesCannotAccessDatabase()throws Exception {
+        for(String code:new String[]{null,"","short","<script>","a".repeat(44)}) {
+            try {DiscordLogin.verifyCode(null,"123456789012345678",code);fail();}
+            catch(Policy.Rejected expected){assertEquals(400,expected.status);}
+        }
+    }
+    @Test public void verifyCommandRequiresOneFullCode() {
+        com.google.gson.JsonObject command=DiscordJoinBot.command("verify");
+        com.google.gson.JsonObject option=command.getAsJsonArray("options").get(0).getAsJsonObject();
+        assertEquals("code",option.get("name").getAsString());assertEquals(3,option.get("type").getAsInt());
+        assertTrue(option.get("required").getAsBoolean());assertEquals(43,option.get("min_length").getAsInt());assertEquals(43,option.get("max_length").getAsInt());
+    }
     @Test public void missingOrForgedCallbackStateCannotContactDiscord()throws Exception {
         for(String query:new String[]{"code=fake","code=fake&state=invalid","state=invalid&state=another&code=fake"}) {
             HttpResponse<String> response=http.send(HttpRequest.newBuilder(URI.create(origin+"/auth/discord/callback?"+query)).build(),HttpResponse.BodyHandlers.ofString());

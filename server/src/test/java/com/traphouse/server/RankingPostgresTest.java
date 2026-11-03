@@ -12,6 +12,28 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    @Test public void clanActivitySharesConfirmedAwardsAndRanksWithoutPrivateRequestsOrInactiveMembers()throws Exception {
+        RankingStore.execute(c,"UPDATE rules SET category='Drops',display_name='Cowhide' WHERE type='LOOT' AND event_key='1:2'");
+        RankingStore.event(c,member,event("LOOT","1:2"));
+        JsonObject adminDrop=event("LOOT","1:2");adminDrop.addProperty("player",admin.name);RankingStore.event(c,admin,adminDrop);
+        RankingStore.execute(c,"UPDATE members SET active=false WHERE id=?",admin.id);
+        JsonObject request=new JsonObject();request.addProperty("id",UUID.randomUUID().toString());request.addProperty("key","clan event");request.addProperty("reason","PRIVATE EVIDENCE");
+        RankingStore.requestReward(c,member,request);
+        RankingStore.execute(c,"INSERT INTO earned_rank_history(member_id,rank,threshold,points_at_earning) VALUES (?,'Pawn',500,500)",member.id);
+        JsonArray activity=RankingStore.dashboard(c,member,member.name).getAsJsonArray("activity");
+        // Membership records Recruit for both active members before subsequent awards/ranks.
+        assertEquals(4,activity.size());assertFalse(activity.toString().contains("PRIVATE EVIDENCE"));
+        Set<String> categories=new HashSet<>();
+        for(JsonElement element:activity){JsonObject entry=element.getAsJsonObject();String name=entry.get("name").getAsString();assertTrue(name.equals(member.name)||name.equals(clanOwner.name));if(name.equals(clanOwner.name))assertEquals("Recruit",entry.get("title").getAsString());categories.add(entry.get("category").getAsString());assertTrue(entry.has("at"));}
+        assertEquals(new HashSet<>(Arrays.asList("Drops","Ranks")),categories);
+    }
+    @Test public void clanActivityIsBoundedToFortyRecentEntries()throws Exception {
+        RankingStore.execute(c,"UPDATE rules SET category='Drops',display_name='Cowhide',daily_limit=100 WHERE type='LOOT' AND event_key='1:2'");
+        for(int i=0;i<45;i++)RankingStore.event(c,member,event("LOOT","1:2"));
+        JsonArray activity=ClanActivity.read(c);assertEquals(40,activity.size());
+        Instant previous=Instant.MAX;
+        for(JsonElement element:activity){Instant at=Instant.parse(element.getAsJsonObject().get("at").getAsString());assertFalse(at.isAfter(previous));previous=at;}
+    }
     @Test public void expandedBossAndClueRewardsHaveIndependentHistoryCapsAndIdempotentMilestones()throws Exception {
         AutomaticRewards.seed(c);
         assertEquals(100,RankingStore.event(c,member,event("LOOT","12596:30626")).get("points").getAsInt());
@@ -79,29 +101,31 @@ public class RankingPostgresTest {
         AutomaticRewards.seed(c);assertEquals(123,RankingStore.rule(c,"LOOT","13599:29580")[0]);
         rejected(422,()->RankingStore.rule(c,"LOOT","13668:29799"));
     }
-
-    @Test public void clanActivitySharesConfirmedAwardsAndRanksWithoutPrivateRequestsOrInactiveMembers()throws Exception {
-        RankingStore.execute(c,"UPDATE rules SET category='Drops',display_name='Cowhide' WHERE type='LOOT' AND event_key='1:2'");
-        RankingStore.event(c,member,event("LOOT","1:2"));
-        JsonObject adminDrop=event("LOOT","1:2");adminDrop.addProperty("player",admin.name);RankingStore.event(c,admin,adminDrop);
-        RankingStore.execute(c,"UPDATE members SET active=false WHERE id=?",admin.id);
-        JsonObject request=new JsonObject();request.addProperty("id",UUID.randomUUID().toString());request.addProperty("key","clan event");request.addProperty("reason","PRIVATE EVIDENCE");
-        RankingStore.requestReward(c,member,request);
-        RankingStore.execute(c,"INSERT INTO earned_rank_history(member_id,rank,threshold,points_at_earning) VALUES (?,'Pawn',500,500)",member.id);
-        JsonArray activity=RankingStore.dashboard(c,member,member.name).getAsJsonArray("activity");
-        assertEquals(2,activity.size());assertFalse(activity.toString().contains("PRIVATE EVIDENCE"));
-        Set<String> categories=new HashSet<>();
-        for(JsonElement element:activity){JsonObject entry=element.getAsJsonObject();assertEquals(member.name,entry.get("name").getAsString());categories.add(entry.get("category").getAsString());assertTrue(entry.has("at"));}
-        assertEquals(new HashSet<>(Arrays.asList("Drops","Ranks")),categories);
+    @Test public void achievementDiariesAwardEachTierOnceAndPreserveStaffEdits()throws Exception {
+        String sql;
+        try(InputStream input=RankingServer.class.getResourceAsStream("/achievement-diaries.sql")) {
+            sql=new String(input.readAllBytes(),StandardCharsets.UTF_8);
+        }
+        try(Statement s=c.createStatement()){s.execute(sql);s.execute(sql);}
+        JsonObject body=new JsonObject(),values=new JsonObject();body.addProperty("player",member.name);body.add("values",values);
+        int tiers=0,total=0;Set<String> flags=new HashSet<>();
+        try(PreparedStatement s=RankingStore.query(c,"SELECT id,source,source_key,target,points FROM goals WHERE section LIKE '% achievement diary'");ResultSet r=s.executeQuery()) {
+            while(r.next()) {
+                tiers++;assertEquals("VARBIT",r.getString(2));assertTrue(flags.add(r.getString(3)));assertEquals(1,r.getInt(4));
+                total+=r.getInt(5);values.addProperty(r.getString(1),0);
+            }
+        }
+        assertEquals(48,tiers);assertEquals(4500,total);
+        long ledgerBefore=count("ledger");ClanFeatures.sync(c,member,body);assertEquals(ledgerBefore,count("ledger"));
+        for(String id:new ArrayList<>(values.keySet()))values.addProperty(id,1);
+        ClanFeatures.sync(c,member,body);assertEquals(ledgerBefore+48,count("ledger"));
+        ClanFeatures.sync(c,member,body);assertEquals(ledgerBefore+48,count("ledger"));
+        RankingStore.execute(c,"UPDATE goals SET points=123,enabled=false WHERE id='30000000-0000-4000-8000-000000000001'");
+        try(Statement s=c.createStatement()){s.execute(sql);}
+        try(PreparedStatement s=RankingStore.query(c,"SELECT points,enabled FROM goals WHERE id='30000000-0000-4000-8000-000000000001'");ResultSet r=s.executeQuery()) {
+            assertTrue(r.next());assertEquals(123,r.getInt(1));assertFalse(r.getBoolean(2));
+        }
     }
-    @Test public void clanActivityIsBoundedToFortyRecentEntries()throws Exception {
-        RankingStore.execute(c,"UPDATE rules SET category='Drops',display_name='Cowhide',daily_limit=100 WHERE type='LOOT' AND event_key='1:2'");
-        for(int i=0;i<45;i++)RankingStore.event(c,member,event("LOOT","1:2"));
-        JsonArray activity=ClanActivity.read(c);assertEquals(40,activity.size());
-        Instant previous=Instant.MAX;
-        for(JsonElement element:activity){Instant at=Instant.parse(element.getAsJsonObject().get("at").getAsString());assertFalse(at.isAfter(previous));previous=at;}
-    }
-
     @Test public void initializationRecoversFromARealDeadlockWithoutCommittingPartialWork()throws Exception {
         RankingStore.execute(c,"CREATE TABLE init_lock_a(id integer)");RankingStore.execute(c,"CREATE TABLE init_lock_b(id integer)");RankingStore.execute(c,"CREATE TABLE init_marker(id integer PRIMARY KEY)");c.commit();
         ExecutorService pool=Executors.newSingleThreadExecutor();CountDownLatch initializerHasA=new CountDownLatch(1);

@@ -137,6 +137,14 @@ final class DiscordJoining {
         if(type==2) {
             String command=Policy.text(data,"name",32);if(command.equals("pending"))return pending(c,discord,staff);
             if(command.equals("link"))return linkForm(c,discord);
+            if(command.equals("verify")) {
+                String code=null;
+                if(data.has("options"))for(JsonElement value:data.getAsJsonArray("options")) {
+                    JsonObject option=value.getAsJsonObject();
+                    if("code".equals(Policy.text(option,"name",32))&&option.get("type").getAsInt()==3)code=Policy.text(option,"value",43);
+                }
+                return DiscordLogin.verifyCode(c,discord,code);
+            }
             if(command.equals("edit-link")||command.equals("revoke-link")) {
                 owner(c,discord);
                 return DiscordLinkManagement.form(c,discord,DiscordLinkManagement.target(data),command.equals("edit-link"));

@@ -52,6 +52,7 @@ public class TrapHouseClanPlugin extends Plugin {
     private volatile boolean rankingMember;
     private int progressTicks;
     private final PetTracker petTracker=new PetTracker();
+    private final ClanBrowserTracker browserTracker=new ClanBrowserTracker();
     private EventAlerts bossAlerts;
     private EventAlerts skillAlerts;
 
@@ -62,6 +63,7 @@ public class TrapHouseClanPlugin extends Plugin {
     @Override protected void startUp() {
         dropSync=new DropSync(executor,this::syncRankings);
         petTracker.reset();
+        browserTracker.reset();
         loginSession = false;
         playerName = null;
         rankingMember = false;
@@ -99,12 +101,17 @@ public class TrapHouseClanPlugin extends Plugin {
             if(error==null)executor.execute(this::syncRankings);
         })));
         rankingPanel.itemArt(awardItemImages);
+        rankingPanel.browserLoader((selection,refresh,done,failed)->executor.execute(()->rankings.browserView(config,selection,refresh,done,failed)));
         rankingPanel.discordLogin(()->discordSignIn.start(config,message->{if(rankingPanel!=null)rankingPanel.loginStatus(message);}));
+        rankingPanel.fallbackLogin(()->discordSignIn.startCode(config,
+            message->{if(rankingPanel!=null)rankingPanel.loginStatus(message);},
+            code->{if(rankingPanel!=null)rankingPanel.connectionCode(code);}));
         rankingPanel.actions(name->{rankings.browse(name);executor.execute(this::syncRankings);},
             (id,join)->{rankings.register(id,join);executor.execute(this::syncRankings);},dashboard::showProfile);
         BufferedImage icon = ImageUtil.loadImageResource(getClass(), "icon.png");
         navigationButton = NavigationButton.builder().tooltip("TRAP HOUSE").icon(icon).priority(6).panel(dashboard).build();
         toolbar.addNavigation(navigationButton);
+        executor.execute(this::syncRankings);
     }
 
     private void refreshBoth() {
@@ -143,6 +150,7 @@ public class TrapHouseClanPlugin extends Plugin {
             if(event.getKey().equals("rankingUrl"))discordSignIn.cancel();
             rankings.reset();
             petTracker.reset();
+            browserTracker.reset();
             SwingUtilities.invokeLater(() -> {
                 if (rankingPanel != null) rankingPanel.clear("Ranking settings changed; reconnecting");
             });
@@ -188,9 +196,11 @@ public class TrapHouseClanPlugin extends Plugin {
         rankingMember = settings != null && localName != null
             && "trap house".equals(RankingTracker.normalize(settings.getName()))
             && settings.findMember(localName) != null;
+        if(config.rankingEnabled()&&rankingMember)browserTracker.tick(client);
         if (config.rankingEnabled() && rankingMember && ++progressTicks >= 50) {
             progressTicks=0;
             rankings.progress(ProgressTracker.collect(client,localName,rankings.probes()));
+            rankings.browserSnapshot(browserTracker.collect(client,localName));
             petTracker.scan(client,localName,this::queueAward);
         }
         updatePlayer(client.getLocalPlayer() == null ? null : client.getLocalPlayer().getName());
@@ -221,6 +231,7 @@ public class TrapHouseClanPlugin extends Plugin {
     private void updatePlayer(String name) {
         if (java.util.Objects.equals(playerName, name)) return;
         playerName = name;
+        browserTracker.reset();
         rankings.reset();
         SwingUtilities.invokeLater(() -> {
             if (!active) return;
@@ -251,7 +262,12 @@ public class TrapHouseClanPlugin extends Plugin {
 
     private synchronized void syncRankings() {
         RankingPanel panel = rankingPanel;
-        if (panel != null) rankings.sync(config, rankingMember ? playerName : null, panel);
+        if(panel!=null && config.rankingEnabled() && !config.rankingToken().trim().isEmpty() && !rankingMember) {
+            SwingUtilities.invokeLater(()->{if(panel==rankingPanel)panel.disconnected(playerName==null
+                ? "Discord connected. Log into your linked OSRS character to load your profile."
+                : "Discord connected. Waiting for your in-game TRAP HOUSE clan membership; check that you are on your linked character.");});
+        } else if (panel != null) rankings.sync(config, rankingMember ? playerName : null, panel);
+        if(panel!=null)rankings.publicLeaderboard(config,panel);
     }
 
     private boolean queueAward(RankingEvent event) {
@@ -274,6 +290,7 @@ public class TrapHouseClanPlugin extends Plugin {
     }
 
     @Subscribe public void onNpcLootReceived(net.runelite.client.events.NpcLootReceived event) {
+        if(trackingPlayer()!=null)browserTracker.loot(client,event.getNpc().getName(),event.getItems());
         if(RankingTracker.serverLootNpc(event.getNpc().getId())||RankingTracker.expandedLootNpc(event.getNpc().getId()))return;
         String player = trackingPlayer();
         if (player == null) return;
@@ -286,15 +303,21 @@ public class TrapHouseClanPlugin extends Plugin {
     @Subscribe public void onLootReceived(net.runelite.client.plugins.loottracker.LootReceived event) {
         String player=trackingPlayer();
         if(player==null)return;
+        browserTracker.loot(client,event.getName(),event.getItems());
         for(RankingEvent observation:RankingTracker.containerLoot(player,event))queueAward(observation);
     }
 
     @Subscribe public void onServerNpcLoot(net.runelite.client.events.ServerNpcLoot event) {
         String player=trackingPlayer();int npc=event.getComposition().getId();
+        if(player!=null)browserTracker.loot(client,event.getComposition().getName(),event.getItems());
         if(player==null||!RankingTracker.serverLootNpc(npc))return;
         java.util.Set<Integer> seen=new java.util.HashSet<>();
         for(net.runelite.client.game.ItemStack item:event.getItems())
             if(seen.add(item.getId()))queueAward(new RankingEvent(player,"LOOT",npc+":"+item.getId()));
+    }
+
+    @Subscribe public void onScriptPreFired(net.runelite.api.events.ScriptPreFired event) {
+        if(trackingPlayer()!=null)browserTracker.item(client,event);
     }
 
     @Subscribe public void onChatMessage(net.runelite.api.events.ChatMessage event) {

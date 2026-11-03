@@ -179,6 +179,28 @@ final class RankingStore {
         execute(c, "INSERT INTO discord_outbox(id,content) VALUES (?,?)", UUID.randomUUID(), actor.name + " earned " + points + " TRAP HOUSE points. " + description);
     }
 
+    static JsonObject publicLeaderboard(Connection c)throws SQLException {
+        JsonArray ranks=new JsonArray();
+        try(PreparedStatement s=query(c,"SELECT name,threshold FROM ranks WHERE name NOT IN (SELECT name FROM protected_ranks) AND name NOT IN (SELECT legacy_name FROM rank_aliases) ORDER BY threshold");ResultSet r=s.executeQuery()) {
+            while(r.next()){JsonObject rank=new JsonObject();rank.addProperty("name",r.getString(1));rank.addProperty("threshold",r.getLong(2));ranks.add(rank);}
+        }
+        JsonArray rows=new JsonArray();
+        for(JsonElement value:leaderboard(c,ranks)) {
+            JsonObject source=value.getAsJsonObject(),row=new JsonObject();
+            for(String key:new String[]{"name","points","rank"})row.add(key,source.get(key));
+            rows.add(row);
+        }
+        JsonObject data=new JsonObject();data.add("leaderboard",rows);return data;
+    }
+
+    private static JsonArray leaderboard(Connection c,JsonArray ranks)throws SQLException {
+        JsonArray leaders = new JsonArray();
+        try (PreparedStatement s = query(c, "SELECT m.name,coalesce(sum(l.points),0) AS total,coalesce(labels.rank_name,s.assigned_rank),coalesce(s.locked,false),p.name IS NOT NULL,a.rank FROM members m LEFT JOIN point_entries l ON m.id=l.member_id LEFT JOIN member_rank_state s ON s.member_id=m.id LEFT JOIN rank_aliases labels ON labels.legacy_name=s.assigned_rank LEFT JOIN protected_ranks p ON p.name=coalesce(labels.rank_name,s.assigned_rank) LEFT JOIN retained_automatic_ranks a ON a.member_id=m.id WHERE m.active GROUP BY m.id,m.name,s.assigned_rank,labels.rank_name,s.locked,p.name,a.rank ORDER BY total DESC,m.normalized_name,m.id LIMIT 1000"); ResultSet r = s.executeQuery()) {
+            while (r.next()) { JsonObject row = new JsonObject(); row.addProperty("name", r.getString(1)); row.addProperty("points", r.getLong(2)); String eligible="Unranked";for(JsonElement tier:ranks){if(tier.getAsJsonObject().get("threshold").getAsLong()<=r.getLong(2))eligible=tier.getAsJsonObject().get("name").getAsString();}eligible=r.getString(6)==null?eligible:r.getString(6);row.addProperty("automaticRank",eligible);row.addProperty("assignedRank",r.getString(3));row.addProperty("rankLocked",r.getBoolean(4));row.addProperty("protectedRank",r.getBoolean(5));row.addProperty("rank",r.getString(3)==null?eligible:r.getString(3));leaders.add(row); }
+        }
+        return leaders;
+    }
+
     static JsonObject dashboard(Connection c, Actor actor, String player) throws SQLException {
         if (!Policy.normalize(actor.name).equals(Policy.normalize(player))) throw new Policy.Rejected(403, "Character mismatch");
         JsonObject data = new JsonObject();
@@ -207,11 +229,7 @@ final class RankingStore {
         }
         data.add("protectedRanks",staffRanks);
         if(actor.role==RankSecurity.Role.OWNER)data.add("rankManagement",RankManagement.read(c,actor));
-        JsonArray leaders = new JsonArray();
-        try (PreparedStatement s = query(c, "SELECT m.name,coalesce(sum(l.points),0) AS total,coalesce(labels.rank_name,s.assigned_rank),coalesce(s.locked,false),p.name IS NOT NULL,a.rank FROM members m LEFT JOIN point_entries l ON m.id=l.member_id LEFT JOIN member_rank_state s ON s.member_id=m.id LEFT JOIN rank_aliases labels ON labels.legacy_name=s.assigned_rank LEFT JOIN protected_ranks p ON p.name=coalesce(labels.rank_name,s.assigned_rank) LEFT JOIN retained_automatic_ranks a ON a.member_id=m.id WHERE m.active GROUP BY m.id,m.name,s.assigned_rank,labels.rank_name,s.locked,p.name,a.rank ORDER BY total DESC,m.normalized_name,m.id LIMIT 1000"); ResultSet r = s.executeQuery()) {
-            while (r.next()) { JsonObject row = new JsonObject(); row.addProperty("name", r.getString(1)); row.addProperty("points", r.getLong(2)); String eligible="Unranked";for(JsonElement tier:ranks){if(tier.getAsJsonObject().get("threshold").getAsLong()<=r.getLong(2))eligible=tier.getAsJsonObject().get("name").getAsString();}eligible=r.getString(6)==null?eligible:r.getString(6);row.addProperty("automaticRank",eligible);row.addProperty("assignedRank",r.getString(3));row.addProperty("rankLocked",r.getBoolean(4));row.addProperty("protectedRank",r.getBoolean(5));row.addProperty("rank",r.getString(3)==null?eligible:r.getString(3));leaders.add(row); }
-        }
-        data.add("leaderboard", leaders);
+        data.add("leaderboard", leaderboard(c,ranks));
         JsonArray sources = new JsonArray();
         try (PreparedStatement s = query(c, "SELECT type,event_key,points,daily_limit,display_name FROM rules WHERE enabled ORDER BY type,event_key LIMIT 1000"); ResultSet r = s.executeQuery()) {
             while (r.next()) { JsonObject row = new JsonObject(); row.addProperty("type", r.getString(1)); row.addProperty("key", r.getString(2)); row.addProperty("points", r.getInt(3)); row.addProperty("dailyLimit", r.getInt(4));row.addProperty("name",r.getString(5).isEmpty()?r.getString(2):r.getString(5)); sources.add(row); }

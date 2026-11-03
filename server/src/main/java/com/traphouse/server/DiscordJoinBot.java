@@ -28,6 +28,7 @@ final class DiscordJoinBot implements Runnable {
         JsonObject body=new JsonObject();body.addProperty("name",name);body.addProperty("type",1);
         switch(name) {
             case "link":body.addProperty("description","Request a verified RuneLite character link");break;
+            case "verify":body.addProperty("description","Connect your RuneLite plugin using its temporary code");break;
             case "pending":body.addProperty("description","Staff: review pending RuneLite character links");break;
             case "edit-link":body.addProperty("description","Owner: correct an accepted RuneLite link's character name");break;
             case "revoke-link":body.addProperty("description","Owner: revoke an accepted RuneLite link and its credentials");break;
@@ -37,6 +38,11 @@ final class DiscordJoinBot implements Runnable {
             JsonObject member=new JsonObject();member.addProperty("type",6);member.addProperty("name","member");
             member.addProperty("description","Discord member whose accepted link you want to manage");member.addProperty("required",true);
             JsonArray options=new JsonArray();options.add(member);body.add("options",options);
+        }
+        if(name.equals("verify")) {
+            JsonObject code=new JsonObject();code.addProperty("type",3);code.addProperty("name","code");code.addProperty("description","Connection code from your own RuneLite plugin; never verify someone else's code");code.addProperty("required",true);
+            code.addProperty("min_length",43);code.addProperty("max_length",43);
+            JsonArray options=new JsonArray();options.add(code);body.add("options",options);
         }
         return body;
     }
@@ -91,7 +97,7 @@ final class DiscordJoinBot implements Runnable {
         try(Connection c=connections.open();PreparedStatement s=RankingStore.query(c,"SELECT 1 FROM discord_member_links l JOIN members m ON m.id=l.member_id JOIN member_permissions p ON p.member_id=m.id WHERE m.active AND p.permission='OWNER' LIMIT 1");ResultSet r=s.executeQuery()) {
             if(!r.next())throw new IllegalStateException("Link and bootstrap the verified clan Owner before setting up Discord approvals. See docs/discord-joining.md.");
         }
-        for(String command:new String[]{"link","pending","edit-link","revoke-link"}) {
+        for(String command:new String[]{"link","pending","edit-link","revoke-link","verify"}) {
             JsonObject body=command(command);
             // Upsert only our commands; do not replace unrelated application commands.
             int status=send("POST","applications/"+app+"/guilds/"+guild+"/commands",body);

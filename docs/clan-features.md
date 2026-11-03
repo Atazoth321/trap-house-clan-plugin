@@ -6,11 +6,13 @@ The clan screens use the existing TRAP HOUSE logo, red gradient header, rounded 
 | --- | --- | --- |
 | Profile | Points, eligible rank, next-rank progress, category breakdown, EHP/EHB, milestone/combat checklists, award history, manual requests | Server award ledger, configured goals, optional public WOM metrics |
 | Ranks | Thresholds and enabled point sources | PostgreSQL rank/rule configuration |
-| Leaderboard | Up to 1,000 active members, original standing retained during search, clickable profiles, sortable/searchable full window | Server totals; browsing requires a valid member credential |
+| Leaderboard | Public standings for up to 1,000 active members; original standing retained during search, sortable/searchable full window; linked members can click profiles | Server totals; names, displayed ranks and points require no login or clan membership. Profiles still require a valid member credential. |
 | Achievements | Grouped milestones, pets, combat tiers, collection goals and challenges with observed progress/completion | Server-defined probes and server-computed event totals |
 | Events | Existing Boss of the Week and Skill of the Month panels, plus scheduled clan events with register/cancel, capacity limits and closed-registration handling | Existing WOM competition API plus PostgreSQL events/registrations |
 | Diary | Configurable sections and tasks; automatic event/progress criteria or independent staff approval | Server definitions, progress, approved manual rewards |
 | Competitions | Race firsts, standings and projected placement prizes | Accepted server observations |
+
+The public leaderboard loads even when ranking sync is disabled, RuneLite is logged out, or the viewer is outside TRAP HOUSE. It sends no member credential and does not enable tracking. Deploy the backend and release the updated Plugin Hub client to enable it; no schema migration is added. Profile details, points logs, rewards, and staff actions retain their existing authentication requirements.
 
 ## Progress and rewards
 

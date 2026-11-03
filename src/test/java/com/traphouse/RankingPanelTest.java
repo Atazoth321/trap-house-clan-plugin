@@ -8,6 +8,22 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class RankingPanelTest {
+    @Test public void guestsCanBrowseStandingsWithoutOpeningMemberProfiles()throws Exception {
+        SwingUtilities.invokeAndWait(()->{
+            RankingPanel panel=new RankingPanel(()->{});
+            TrapHouseDashboard dashboard=new TrapHouseDashboard(new TrapHousePanel(new TrapHouseConfig(){},()->{}),new TrapHousePanel(new TrapHouseConfig(){},()->{},true),2,panel);
+            AtomicInteger requests=new AtomicInteger();panel.actions(name->requests.incrementAndGet(),(id,join)->{},dashboard::showProfile);
+            JsonObject data=new Gson().fromJson("{leaderboard:[{name:'Raider',rank:'Corporal',points:250}]}",JsonObject.class);
+            panel.showPublicLeaderboard(data);
+            JButton row=button(dashboard,"#1  Raider   250");assertNotNull(row);assertEquals(2,dashboard.selectedTab());
+            row.doClick();assertEquals(0,requests.get());assertEquals(2,dashboard.selectedTab());
+            assertNull(button(panel,"Manage player ranks"));assertNotNull(button(dashboard,"Open full leaderboard"));
+            panel.disconnected("Sign in for your profile");panel.showPublicLeaderboard(data);
+            panel.disconnected("Sign in for your profile");assertNotNull(button(dashboard,"#1  Raider   250"));
+            panel.showData(snapshot());panel.showPublicLeaderboard(data);
+            assertNull(button(dashboard,"#1  Raider   250"));
+        });
+    }
     @Test public void efficiencyTileRemainsVisibleAtZeroOnOwnAndOtherNamedProfiles()throws Exception {
         SwingUtilities.invokeAndWait(()->{
             RankingPanel panel=new RankingPanel(()->{});JsonObject own=snapshot();panel.showData(own);

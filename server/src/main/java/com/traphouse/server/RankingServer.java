@@ -17,10 +17,24 @@ public final class RankingServer {
     private final DiscordWorker.Connections connections;
     private final DiscordLogin discordLogin;
     private final DiscordInteractions discordInteractions;
+    private final PublicClanBrowser clanBrowser;
     private final Map<UUID, Window> windows = new HashMap<>();
+    private JsonObject publicBoard;
+    private long publicBoardExpires;
+    private synchronized JsonObject publicLeaderboard()throws SQLException {
+        if(publicBoard!=null&&System.nanoTime()<publicBoardExpires)return publicBoard;
+        try(Connection c=connections.open()) {
+            c.setReadOnly(true);c.setAutoCommit(false);
+            try {
+                RankingStore.execute(c,"SET LOCAL statement_timeout='5s'");
+                JsonObject data=RankingStore.publicLeaderboard(c);c.commit();
+                publicBoard=data;publicBoardExpires=System.nanoTime()+TimeUnit.SECONDS.toNanos(15);return data;
+            }catch(SQLException|RuntimeException failure){c.rollback();throw failure;}
+        }
+    }
     private static final class Window { long minute; int count; }
 
-    RankingServer(DiscordWorker.Connections connections) { this.connections = connections; this.discordLogin=new DiscordLogin(connections);this.discordInteractions=new DiscordInteractions(connections,System.getenv()); }
+    RankingServer(DiscordWorker.Connections connections) { this.connections = connections; this.discordLogin=new DiscordLogin(connections);this.discordInteractions=new DiscordInteractions(connections,System.getenv());this.clanBrowser=new PublicClanBrowser(connections); }
 
     private synchronized void rateLimit(UUID member) {
         long minute = System.currentTimeMillis() / 60000;
@@ -49,6 +63,13 @@ public final class RankingServer {
                     s.executeQuery("SELECT 1 FROM members LIMIT 1").close();
                 }
                 JsonObject health = new JsonObject(); health.addProperty("status", "ready"); result = health;
+            } else if("/v1/browser".equals(path)) {
+                if(!"GET".equals(method))throw new Policy.Rejected(405,"Use GET");
+                result=clanBrowser.read(exchange.getRequestURI().getRawQuery(),exchange.getRequestHeaders().getFirst("Authorization"));
+            } else if("/v1/leaderboard".equals(path)) {
+                if(!"GET".equals(method))throw new Policy.Rejected(405,"Use GET");
+                if(exchange.getRequestURI().getRawQuery()!=null)throw new Policy.Rejected(400,"Leaderboard does not accept query parameters");
+                result=publicLeaderboard();
             } else {
                 JsonObject body = "POST".equals(method) ? readBody(exchange) : new JsonObject();
                 try (Connection c = connections.open()) {
@@ -95,6 +116,7 @@ public final class RankingServer {
     }
 
     static JsonElement route(Connection c, RankingStore.Actor actor, String method, String path, String query, JsonObject body) throws SQLException {
+        if(method.equals("POST")&&path.equals("/v1/browser/sync"))return ClanBrowserData.sync(c,actor,body);
         if(method.equals("POST")&&path.matches("/v1/admin/members/[0-9a-fA-F-]{36}/(rank|points|permission)")) {
             String[] parts=path.split("/"); UUID member=Policy.uuid(parts[4]);
             if(parts[5].equals("rank"))return RankSecurity.changeRank(c,actor,member,body);

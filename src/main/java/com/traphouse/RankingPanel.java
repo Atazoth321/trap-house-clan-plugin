@@ -22,16 +22,37 @@ final class RankingPanel extends JPanel {
     private final JButton request;
     private final Runnable refresh;
     private Runnable discordLogin=()->{};
+    private Runnable codeLogin=()->{};
     void discordLogin(Runnable login){discordLogin=login;}
+    void fallbackLogin(Runnable code){codeLogin=code;}
+    void connectionCode(String code) {
+        JPanel content=new JPanel(new BorderLayout(0,8));
+        content.add(new JLabel("<html>In the clan Discord, enter /verify with this code.<br>Expires in 10 minutes. Only verify codes from your own RuneLite.</html>"),BorderLayout.NORTH);
+        JTextField value=new JTextField(code);value.setEditable(false);value.selectAll();content.add(value,BorderLayout.CENTER);
+        JOptionPane.showMessageDialog(this,content,"Connect with Discord code",JOptionPane.INFORMATION_MESSAGE);
+    }
     void loginStatus(String text){status.setText(text);status.setToolTipText(text);}
     private JsonObject snapshot;
     private JsonArray leaderboard = new JsonArray();
+    private final JLabel leaderboardStatus=ClanStyle.label("",10,ClanStyle.MUTED);
+    void showPublicLeaderboard(JsonObject data) {
+        if(snapshot!=null)return;
+        leaderboard=array(data,"leaderboard");renderLeaderboardPage();
+        updateFullBoard();
+        leaderboardStatus.setText("Public standings · no sign-in required");
+    }
+    void publicLeaderboardError() {
+        if(snapshot==null){leaderboardStatus.setText("Leaderboard unavailable; refresh to retry.");if(fullBoardPanel!=null)fullBoardPanel.error();}
+    }
     private Consumer<String> browse = name -> {};
     private BiConsumer<String,Boolean> registration = (id, join) -> {};
     private Runnable openProfile = () -> {};
     private Runnable openLeaderboard = () -> {};
     private final JScrollPane profileScroll=ClanStyle.scroll(profile);
     private JFrame fullBoard;
+    private FullLeaderboardPanel fullBoardPanel;
+    private FullLeaderboardPanel.Loader browserLoader=(query,refresh,done,failed)->failed.accept("Clan browser is not connected.");
+    void browserLoader(FullLeaderboardPanel.Loader loader){browserLoader=loader;}
     private boolean viewingOther;
     private BiConsumer<JsonObject,Consumer<JsonObject>> logLoader=(query,done)->done.accept(null);
     private PointsLogPanel.ItemArt itemArt=(entry,done)->{};
@@ -69,7 +90,10 @@ final class RankingPanel extends JPanel {
     RankingPanel(Runnable refresh, BiConsumer<String,String> reward) {
         super(new BorderLayout()); this.refresh = refresh;
         setBackground(ClanStyle.BACKGROUND);
-        add(ClanStyle.button("Sign in with Discord",()->discordLogin.run()),BorderLayout.NORTH);
+        JPanel connections=ClanStyle.column();
+        connections.add(ClanStyle.button("Sign in with Discord",()->discordLogin.run()));
+        connections.add(ClanStyle.button("Connect with Discord code",()->codeLogin.run()));
+        add(connections,BorderLayout.NORTH);
         add(profileScroll,BorderLayout.CENTER);
         status.setToolTipText("Rankings are calculated by the clan service. Promotions are manual.");
         add(status,BorderLayout.SOUTH);
@@ -123,6 +147,7 @@ final class RankingPanel extends JPanel {
         snapshot=data;
         if(!viewingOther)renderProfile(data,false); renderRanks(data);
         leaderboard=array(data,"leaderboard"); renderLeaderboardPage();
+        updateFullBoard();
         renderGoals(achievements,data,"Achievements",false);
         renderGoals(diary,data,"Clan diary",true);
         renderEvents(data); renderRaces(data); renderActivity(data);
@@ -308,6 +333,8 @@ final class RankingPanel extends JPanel {
 
     private void renderLeaderboardPage() {
         leaders.removeAll(); toolbar(leaders,"CLAN LEADERBOARD");
+        leaderboardStatus.setText(snapshot==null?"Loading public standings…":"Clan standings");
+        ClanStyle.add(leaders,leaderboardStatus);
         ClanStyle.add(leaders,ClanStyle.label(leaderboard.size()+" members",10,ClanStyle.MUTED));
         search.setMaximumSize(new Dimension(Integer.MAX_VALUE,28)); ClanStyle.add(leaders,search);
         ClanStyle.add(leaders,ClanStyle.button("Open full leaderboard",this::openFullBoard));
@@ -323,6 +350,7 @@ final class RankingPanel extends JPanel {
             JButton button=leaderboardButton(position,name,string(row,"rank","Unranked"),formatted(number(row,"points")),()->browseMember(member));
             button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             button.setToolTipText("View "+name+" / "+string(row,"rank","Unranked"));
+            if(snapshot==null)button.setToolTipText(name+" / "+string(row,"rank","Unranked")+" — sign in as a linked clan member to view profiles");
             button.setForeground(position<=3?ClanStyle.GOLD:ClanStyle.WHITE); ClanStyle.add(leaderRows,button);
             visible++;
         }
@@ -343,30 +371,22 @@ final class RankingPanel extends JPanel {
     }
     private void openFullBoard() {
         if(GraphicsEnvironment.isHeadless())return;
-        if(fullBoard!=null) fullBoard.dispose();
-        fullBoard=new JFrame("TRAP HOUSE / Clan leaderboard");
-        String[] columns={"Rank","Member","Points","Eligible rank"}; Object[][] rows=new Object[leaderboard.size()][4];
-        for(int i=0;i<rows.length;i++) {
-            JsonObject row=leaderboard.get(i).getAsJsonObject(); rows[i]=new Object[]{i+1,string(row,"name",""),number(row,"points"),string(row,"rank","")};
-        }
-        JTable table=new JTable(new javax.swing.table.DefaultTableModel(rows,columns){public boolean isCellEditable(int r,int c){return false;}public Class<?> getColumnClass(int c){return c==0?Integer.class:c==2?Long.class:String.class;}});
-        table.setAutoCreateRowSorter(true);
-        table.setRowHeight(28);
-        table.getColumnModel().getColumn(3).setCellRenderer(new javax.swing.table.DefaultTableCellRenderer(){
-            public Component getTableCellRendererComponent(JTable owner,Object value,boolean selected,boolean focus,int row,int column){
-                JLabel label=(JLabel)super.getTableCellRendererComponent(owner,value,selected,focus,row,column);
-                label.setIcon(RankEmblems.icon(String.valueOf(value)));label.setIconTextGap(5);return label;
-            }
-        });
-        table.addMouseListener(new java.awt.event.MouseAdapter(){public void mouseClicked(java.awt.event.MouseEvent e){int row=table.rowAtPoint(e.getPoint());if(e.getClickCount()==1&&row>=0)browseMember((String)table.getValueAt(row,1));}});
-        JTextField filter=new JTextField(); filter.setToolTipText("Search members");
-        javax.swing.table.TableRowSorter<?> sorter=(javax.swing.table.TableRowSorter<?>)table.getRowSorter();
-        filter.getDocument().addDocumentListener(new DocumentListener(){private void apply(){sorter.setRowFilter(RowFilter.regexFilter("(?i)"+java.util.regex.Pattern.quote(filter.getText()),1));}public void insertUpdate(DocumentEvent e){apply();}public void removeUpdate(DocumentEvent e){apply();}public void changedUpdate(DocumentEvent e){apply();}});
-        fullBoard.add(filter,BorderLayout.NORTH); fullBoard.add(new JScrollPane(table)); fullBoard.setSize(620,600);
-        fullBoard.setLocationRelativeTo(this); fullBoard.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE); fullBoard.setVisible(true);
+        if(fullBoard!=null&&fullBoard.isDisplayable()){fullBoard.toFront();return;}
+        fullBoard=new JFrame("TRAP HOUSE / Clan Points Leaderboard");
+        fullBoardPanel=new FullLeaderboardPanel(browserLoader,snapshot==null?null:string(snapshot.getAsJsonObject("profile"),"name",""),snapshot!=null,itemArt);
+        fullBoard.setContentPane(fullBoardPanel);fullBoard.setMinimumSize(new Dimension(960,620));fullBoard.pack();
+        fullBoard.setLocationRelativeTo(this);fullBoard.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        final JFrame window=fullBoard;
+        final FullLeaderboardPanel browser=fullBoardPanel;
+        fullBoard.addWindowListener(new java.awt.event.WindowAdapter(){public void windowClosed(java.awt.event.WindowEvent event){browser.close();if(fullBoard==window){fullBoard=null;fullBoardPanel=null;}}});
+        fullBoard.setVisible(true);fullBoardPanel.start();
+    }
+    private void updateFullBoard() {
+        if(fullBoardPanel!=null)fullBoardPanel.identity(snapshot==null?null:string(snapshot.getAsJsonObject("profile"),"name",""),snapshot!=null);
     }
     private void browseMember(String member) {
-        if(fullBoard!=null){fullBoard.dispose();fullBoard=null;}
+        if(snapshot==null){leaderboardStatus.setText("Sign in as a linked clan member to view profiles.");return;}
+        if(fullBoard!=null){fullBoard.dispose();fullBoard=null;fullBoardPanel=null;}
         status.setText("Loading "+member+"'s profile...");browse.accept(member);
     }
 
@@ -422,6 +442,9 @@ final class RankingPanel extends JPanel {
         }
         if(array(data,"races").size()==0)ClanStyle.add(races,ClanStyle.text("No race competitions configured. Boss and Skill competitions use Wise Old Man."));ClanStyle.finish(races);
     }
+    void disconnected(String message) {
+        if(snapshot!=null||!message.equals(status.getText()))clear(message);
+    }
     void clear(String message) {
         message(activity,"CLAN ACTIVITY",message);
         closeRankEditor();
@@ -431,8 +454,8 @@ final class RankingPanel extends JPanel {
         message(achievements,"ACHIEVEMENTS",message);message(diary,"CLAN DIARY",message);
         message(events,"CLAN EVENTS",message);message(races,"RACE COMPETITIONS",message);renderLeaderboardPage();
         manualRules.removeAllItems();request.setEnabled(false);reason.setText("");progress.setValue(0);status.setText(message);
-        if(fullBoard!=null){fullBoard.dispose();fullBoard=null;}
+        if(fullBoard!=null){fullBoard.dispose();fullBoard=null;fullBoardPanel=null;}
     }
-    void error(){status.setText("Sync failed; displayed data may be stale");}
+    void error(){status.setText("Sync failed; displayed data may be stale");if(fullBoardPanel!=null)fullBoardPanel.error();}
     void actionError(String message){status.setText(message);status.setToolTipText(message);}
 }

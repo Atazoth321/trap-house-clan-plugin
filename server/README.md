@@ -88,11 +88,17 @@ Disable a rule with `UPDATE rules SET enabled=false ...`. A manual request snaps
 
 ## API
 
-All `/v1/*` requests require `Authorization: Bearer <token>`. POSTs require JSON and are limited to 16 KiB. Responses are JSON with `Cache-Control: no-store`; cookie authentication and CORS are not enabled.
+All `/v1/*` requests except `GET /v1/leaderboard` and all selections on `GET /v1/browser` require `Authorization: Bearer <token>`. The full read-only collection browser is public; uploading observations requires active member sign-in. POSTs require JSON and are limited to 16 KiB. Responses are JSON with `Cache-Control: no-store`; cookie authentication and CORS are not enabled.
 
 | Route | Behavior |
 | --- | --- |
 | `GET /health` | Unauthenticated process health |
+| `GET /v1/leaderboard` | Public, no login required: up to 1,000 active members' names, displayed ranks and points, ordered by points. No profile details or account actions. Server results are cached for 15 seconds. No query parameters. |
+| `GET /v1/browser?mode=leaderboard&metric=points` | Public statistic leaderboard with separate account groups; ten metrics, clue tiers and boss selection. See [full clan browser](../docs/full-leaderboard.md). |
+| `GET /v1/browser?mode=catalogue` | Member-only collection category catalogue |
+| `GET /v1/browser?mode=clog&player=Example&category=vorkath` | Member-only recorded collection items and counters |
+| `GET /v1/browser?mode=luck&category=vorkath` | Member-only frozen completion standings; `deserved` reverses ordering; `dryboard` uses comparable current/last-drop counters |
+| `POST /v1/browser/sync` | Member-bound browser observations; no points, rank or identity mutations |
 | `GET /v1/dashboard?player=Example` | Bound profile, eligible rank/next threshold, top 50 active members, enabled sources, recent 20 awards/manual requests |
 | `POST /v1/events` | Observe supported event; calculate points on server |
 | `POST /v1/manual-rewards` | Request a configured reward for the credential owner |

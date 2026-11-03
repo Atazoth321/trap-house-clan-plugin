@@ -46,7 +46,7 @@ All thresholds combined: **2,850 points**. These stack with individual skill goa
 | Champion cape | 300 |
 | Cursed phalanx | 1200 |
 
-Combined: **2,450 points**. Detection requires the configured exact item ID in inventory, equipment, or an opened bank. Alternate cosmetic variants are not automatically equivalent, and untradeability/possession is client evidence rather than independent server verification.
+Combined: **2,450 points**. Detection checks inventory, equipment, or an opened bank. Fire cape also accepts Infernal capes and Infernal max capes; Dragon defender also accepts Avernic defenders and Ghommal's Avernic defenders. These two milestones recognize RuneLite's mapped cosmetic, broken, and locked variants. An Avernic defender hilt alone does not qualify. Other item goals require their configured exact item ID. Possession is client evidence rather than independent server verification.
 
 ## Combat achievement tiers
 
