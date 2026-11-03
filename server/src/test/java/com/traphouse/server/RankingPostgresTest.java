@@ -12,6 +12,36 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    @Test public void prestigeCombatBalancePreservesHistoryAndOverrides()throws Exception {
+        for(String resource:new String[]{"/starter-goals.sql","/additional-milestones.sql"})try(InputStream input=RankingServer.class.getResourceAsStream(resource);Statement s=c.createStatement()){s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));}
+        MilestoneCatalog.seed(c);MilestoneCatalog.applyRewards(c);MilestoneCatalog.applyRewardBoost(c);MilestoneCatalog.applyCurrentRewards(c);
+        UUID diary=UUID.fromString("40000000-0000-4000-8000-000000000007");
+        ClanFeatures.sync(c,member,observation(diary,1));
+        RankingStore.execute(c,"UPDATE goals SET points=17 WHERE id='10000000-0000-4000-8000-000000000010'");
+        RankingStore.execute(c,"UPDATE goals SET enabled=false WHERE id='10000000-0000-4000-8000-000000000011'");
+        for(int i=0;i<2;i++)try(InputStream input=RankingServer.class.getResourceAsStream("/prestige-combat-rewards-v2.sql");Statement s=c.createStatement()){s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));}
+        int[] expected={17,60,500,1000,2000,5000};int index=0;
+        try(Statement s=c.createStatement();ResultSet r=s.executeQuery("SELECT points FROM goals WHERE source='CA_TIER' ORDER BY sort_order")){while(r.next())assertEquals(expected[index++],r.getInt(1));}assertEquals(6,index);
+        try(Statement s=c.createStatement();ResultSet r=s.executeQuery("SELECT points FROM goals WHERE source_key IN ('ALL_QUESTS','ALL_DIARIES')")){int count=0;while(r.next()){assertEquals(1000,r.getInt(1));count++;}assertEquals(2,count);}
+        assertEquals(500,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        JsonObject fresh=observation(diary,1);fresh.addProperty("player",admin.name);ClanFeatures.sync(c,admin,fresh);
+        assertEquals(1000,RankingStore.dashboard(c,admin,admin.name).getAsJsonObject("profile").get("points").getAsInt());
+        assertEquals(2,count("ledger"));assertEquals(0,count("point_adjustments"));
+    }
+    @Test public void collectionRewardsIncreaseWithThresholdWithoutRewritingHistoryOrStaffEdits()throws Exception {
+        for(String resource:new String[]{"/additional-milestones.sql","/collection-milestones.sql"})try(InputStream input=RankingServer.class.getResourceAsStream(resource);Statement s=c.createStatement()){s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));}
+        UUID tier=UUID.fromString("41000000-0000-4000-8000-000000000002");ClanFeatures.sync(c,member,observation(tier,300));
+        for(int i=0;i<2;i++)try(InputStream input=RankingServer.class.getResourceAsStream("/collection-milestone-balance-v2.sql");Statement s=c.createStatement()){s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));}
+        int[] rewards={200,250,300,350,400,450,500,550,600};int index=0;
+        try(Statement s=c.createStatement();ResultSet r=s.executeQuery("SELECT points FROM goals WHERE source_key='COLLECTION_COUNT' ORDER BY target")){while(r.next())assertEquals(rewards[index++],r.getInt(1));}assertEquals(9,index);
+        assertEquals(400,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        JsonObject observation=observation(tier,300);observation.addProperty("player",admin.name);ClanFeatures.sync(c,admin,observation);
+        assertEquals(250,RankingStore.dashboard(c,admin,admin.name).getAsJsonObject("profile").get("points").getAsInt());
+        RankingStore.execute(c,"UPDATE goals SET points=17,enabled=false WHERE id=?",tier);
+        try(InputStream input=RankingServer.class.getResourceAsStream("/collection-milestone-balance-v2.sql");Statement s=c.createStatement()){s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));}
+        try(PreparedStatement s=RankingStore.query(c,"SELECT points,enabled FROM goals WHERE id=?",tier);ResultSet r=s.executeQuery()){r.next();assertEquals(17,r.getInt(1));assertFalse(r.getBoolean(2));}
+        assertEquals(2,count("ledger"));assertEquals(0,count("point_adjustments"));
+    }
     @Test public void milestoneSpritesReachProfileCatalogAndGroupedAndIndividualHistory()throws Exception {
         for(String resource:new String[]{"/additional-milestones.sql","/collection-milestones.sql"})try(InputStream input=RankingServer.class.getResourceAsStream(resource);Statement s=c.createStatement()){s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));}
         JsonArray definitions=RankingStore.dashboard(c,member,member.name).getAsJsonArray("goals");assertEquals(16,definitions.size());

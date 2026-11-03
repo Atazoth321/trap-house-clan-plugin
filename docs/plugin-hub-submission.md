@@ -4,6 +4,11 @@ Update the existing `plugins/trap-house-clan-plugin` manifest in `runelite/plugi
 
 ## Changes in this release
 
+- Full clan browser with ten statistics, separate account-type standings, search, collection pages, Luck, Deserved and Dryboard, styled to match the clan sidebar.
+- Public browsing without a member credential; uploads and account actions remain authenticated. Optional sync now includes account type, total XP, collection and combat totals, clue/boss counters, and collection-page item observations. Opening/browsing the player's own collection book supplies historical observations; the plugin never opens it automatically.
+- Discord `/verify` code fallback for approved active character links when browser sign-in fails, with bounded single-use sessions and clearer retry behavior.
+- Expanded milestone/collection tracking, Profile collection thresholds with progress/completion indicators, and item sprites for new milestone and container rewards. The backend separately controls reward prices and caps, including higher EHP/EHB rewards and Sire exchange-only awards.
+
 - Confirmed drop and pet award celebrations with item sprites, category colors and separate settings. Newly observed earned rank milestones show the existing rank emblem, with an optional system beep that defaults to off. Initial connection establishes a silent baseline; repeated notification pages do not replay awards.
 - Loot and achievement observations request background ranking sync after a 150 ms batching window. Observations arriving during a sync request a follow-up; the regular 30-second sync remains a fallback. All displayed points still come from the server.
 - An Activity page displays shared confirmed awards and earned rank milestones from the ranking service. Older servers display an availability message.
@@ -16,6 +21,8 @@ The built-in Loot Tracker's personal-loot events are received through the event 
 ## Data and behavior
 
 Wise Old Man event queries use `api.wiseoldman.net`. Optional ranking sync uses a configurable HTTPS origin, defaulting to `trap-house-ranking-api.onrender.com`. User-initiated Discord sign-in opens the configured service's browser flow and enables sync after authentication. Credentials are stored in RuneLite configuration. README documents submitted observations, shared clan data and retained server history.
+
+Score standings and synced collection pages/category boards can be read publicly, including by nonmembers. The browser does not require uploads or credentials. Passive observation sync requires opt-in and the linked clan character; it ignores a POH host's collection book. Collection observations do not award points themselves. Unseen quantities and unsupported counters remain unknown. Backend changes and database migrations are deployed separately.
 
 Networking uses the injected OkHttp client and background executor. The plugin reads supported game events/state and displays information; it does not automate input, interact with gameplay, or change actual in-game clan ranks. Promotions remain manual. Visual celebrations do not create point awards.
 

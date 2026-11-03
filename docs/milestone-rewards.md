@@ -52,14 +52,14 @@ Combined: **2,450 points**. Detection checks inventory, equipment, or an opened 
 
 | Tier | Points |
 | --- | ---: |
-| Easy | 30 |
-| Medium | 60 |
-| Hard | 120 |
-| Elite | 230 |
-| Master | 380 |
-| Grandmaster | 750 |
+| Easy | 100 |
+| Medium | 250 |
+| Hard | 500 |
+| Elite | 1,000 |
+| Master | 2,000 |
+| Grandmaster | 5,000 |
 
-All tiers combined: **1,570 points**. Earlier tiers stack with later tiers.
+All tiers combined: **8,850 points**. Earlier tiers stack with later tiers. The prestige-combat-rewards-v2 migration changes future awards only, preserving historical points and staff overrides.
 
 ## Quests
 
@@ -94,7 +94,7 @@ Combined: **2,680 points**. Only completed quests qualify, not partial progress.
 
 ## Balance and rollout
 
-All 143 configured rewards sum to **15,070 points**, qualifying for Colonel (10,000) while remaining below Brigadier (17,500). This is the maximum for these goals, assuming no previous custom values; it includes very difficult achievements. The v3 activity policy below adds repeatable and event rewards. Rank intervals remain Recruit 0, Pawn 500, Corporal 1,500, Novice 3,000, Sergeant 6,000, Colonel 10,000, Brigadier 17,500, Admiral 27,500, and Marshal 45,000.
+All 143 configured rewards sum to **22,350 points**, qualifying for Brigadier (17,500) while remaining below Admiral (27,500). This is the maximum for these goals, assuming no previous custom values; it includes very difficult achievements. The v3 activity policy below adds repeatable and event rewards. Rank intervals remain Recruit 0, Pawn 500, Corporal 1,500, Novice 3,000, Sergeant 6,000, Colonel 10,000, Brigadier 17,500, Admiral 27,500, and Marshal 45,000.
 
 Deploy the commit on Render and let its pre-deploy `init` finish. Remain logged into your linked clan character and allow a definition refresh and another progress sync (typically about one minute). Previously completed zero-reward goals can then receive their one-time rewards. The rewards are not applied to the live database merely by building the local project; deployment and live verification are required. Existing earned rank history, protected ranks, locks, permissions, and Owner-only deductions are unchanged.
 
@@ -121,4 +121,4 @@ The later [automatic drops and pets catalog](automatic-drops-and-pets.md) enable
 
 Validation: Gradle build/serverDist and IDE compilation passed. PostgreSQL integration tests cover v3 top-up idempotence, retained Owner deductions, unchanged daily caps and disabled rules, but require a disposable PostgreSQL database and have not been executed locally. Live deployment and awards remain unverified.
 
-See [additional prestige and collection milestones](additional-milestones.md) for the 16 newly added one-time rewards, worth 4,375 points in total.
+See [additional prestige and collection milestones](additional-milestones.md) for the 16 newly added one-time rewards, worth 6,275 points in total under the current increasing collection reward scale.

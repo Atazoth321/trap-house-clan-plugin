@@ -41,6 +41,8 @@ final class DatabaseInitialization {
         script(c,"/clan-browser.sql");
         script(c,"/additional-milestones.sql");
         script(c,"/collection-milestones.sql");
+        script(c,"/collection-milestone-balance-v2.sql");
+        script(c,"/prestige-combat-rewards-v2.sql");
         script(c,"/efficiency-rewards-v2.sql");
     }
 }

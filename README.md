@@ -8,14 +8,14 @@ The ranking service is a separate PostgreSQL-backed deployment; see [server setu
 
 ## Installing through Plugin Hub
 
-This plugin already has a Plugin Hub listing under `trap-house-clan-plugin`. Open Plugin Hub in normal RuneLite, search **Trap House Clan Plugin**, and install it. No source code, IntelliJ, or development launcher is needed. Jagex Accounts continue using normal RuneLite login. The expanded ranking/reward update was merged in [PR #19437](https://github.com/runelite/plugin-hub/pull/19437). The subsequent Fire cape and Dragon defender variant fix requires a follow-up Plugin Hub update; it is available in normal RuneLite only after RuneLite approves and distributes that update.
+This plugin already has a Plugin Hub listing under `trap-house-clan-plugin`. Open Plugin Hub in normal RuneLite, search **Trap House Clan Plugin**, and install it. No source code, IntelliJ, or development launcher is needed. Jagex Accounts continue using normal RuneLite login. The expanded ranking/reward update was merged in [PR #19437](https://github.com/runelite/plugin-hub/pull/19437). The full browser, Discord code fallback, and new milestone/sprite update require a follow-up Plugin Hub release; these changes reach normal RuneLite only after RuneLite approves and distributes that update.
 
 See [submission status and reviewer notes](docs/plugin-hub-submission.md). Building locally or pushing to this repository does not publish a Plugin Hub release.
 
 ## Data and external services
 
 - Event tabs query `api.wiseoldman.net` for public clan competitions and standings while enabled.
-- Ranking sync is opt-in. The configured HTTPS ranking server receives your character name, supported loot/collection/combat observations, and configured achievement/progress values. It stores awarded points and history and provides member profiles and leaderboards to authenticated clan members.
+- Ranking sync is opt-in. The configured HTTPS ranking server receives your character name, supported loot/collection/combat observations, and configured achievement/progress values. It stores awarded points and history. Score leaderboards and synced collection-log pages, Luck, Deserved and Dryboard are publicly readable, including by visitors outside the clan. Member account actions and uploads require authentication. Optional sync also submits account type, total XP, collection totals, combat-achievement and clue counters, collection-page item IDs/observed quantities, and supported boss counters.
 - **Sign in with Discord** opens a browser and contacts the configured server to obtain a member credential. The backend uses your Discord identity to find the Owner-approved character link. It can query Wise Old Man for member statistics and send configured leadership notifications to Discord.
 - The credential is stored in RuneLite configuration. Treat it as a secret; the plugin does not need your Jagex password or session credentials. Disabling ranking sync stops activity submissions; it does not erase previously stored server history.
 - The clan operates its ranking service. Plugin Hub review does not independently verify member awards, and the plugin never automatically changes actual in-game clan ranks.
@@ -79,13 +79,13 @@ The ranking API setting defaults to `https://trap-house-ranking-api.onrender.com
 
 Members can also use **Sign in with Discord** to obtain that credential automatically after leadership verifies and links their character once. See [Discord sign-in setup](docs/discord-sign-in.md). Discord authentication does not replace Jagex login and never grants clan permissions.
 
-The backend deployment seeds [150 tracking goals and the Owner-selected higher rank intervals](docs/milestones.md), preserving existing points, earned ranks, and configured rewards.
+The backend deployment seeds [214 tracking goals and the Owner-selected higher rank intervals](docs/milestones.md), preserving existing points, earned ranks, and configured rewards.
 
 [Automatic drop and pet rules](docs/automatic-drops-and-pets.md) cover 118 named drop items and 55 new pet collection unlocks. Raid drops require the updated plugin and RuneLite Loot Tracker; pet unlocks require collection-log chat notifications.
 
 [Discord linking requests and Owner approval](docs/discord-joining.md) let members request their character link with a Discord button or `/link`, and the Owner approve in Discord after verification. One-time bot/application configuration is required; existing Discord sign-in remains available.
 
-The [WOM efficiency importer](docs/efficiency-rewards.md) displays EHP/EHB and awards 10 points per new EHP or EHB after a saved baseline, sharing a 250-point weekly cap. See the [current reward balance](docs/reward-balance.md) for drop, pet, event, diary, and shared-cap defaults; existing points and rank thresholds are preserved.
+The [WOM efficiency importer](docs/efficiency-rewards.md) displays EHP/EHB and awards 20 points per new EHP or EHB after a saved baseline, sharing a 500-point weekly cap. See the [current reward balance](docs/reward-balance.md) for drop, pet, event, diary, and shared-cap defaults; existing points and rank thresholds are preserved.
 
 ## Settings
 
@@ -172,3 +172,5 @@ Plugin entry point: `com.traphouse.TrapHouseClanPlugin`.
 Run `build` to compile and execute the tests. Tests cover event selection, time boundaries, kill and XP gains, group validation, leaderboard states, tab layout, and packaged logo resources.
 
 This repository is a development project. Plugin Hub distribution requires a separate submission and acceptance; consult the [RuneLite Plugin Hub instructions](https://github.com/runelite/plugin-hub/blob/master/README.md) before submitting.
+
+The [full clan browser](docs/full-leaderboard.md) provides ten score boards, collection pages, Luck, Deserved and Dryboard. [Additional milestones](docs/additional-milestones.md), [additional drops](docs/additional-drop-rewards.md), and [beginner/skilling rewards](docs/beginner-drop-rewards.md) require the updated backend and client. If browser sign-in fails, use Connect with Discord code and your own temporary code with the clan bot's /verify command; an approved active character link remains required.
