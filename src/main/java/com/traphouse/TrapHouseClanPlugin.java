@@ -50,6 +50,7 @@ public class TrapHouseClanPlugin extends Plugin {
     private boolean active;
     private volatile String playerName;
     private volatile boolean rankingMember;
+    private volatile String membershipStatus = "Waiting for RuneLite to load your clan roster.";
     private int progressTicks;
     private final PetTracker petTracker=new PetTracker();
     private final ClanBrowserTracker browserTracker=new ClanBrowserTracker();
@@ -193,9 +194,9 @@ public class TrapHouseClanPlugin extends Plugin {
         if (client.getGameState() != GameState.LOGGED_IN) return;
         net.runelite.api.clan.ClanSettings settings = client.getClanSettings();
         String localName = client.getLocalPlayer() == null ? null : client.getLocalPlayer().getName();
-        rankingMember = settings != null && localName != null
-            && "trap house".equals(RankingTracker.normalize(settings.getName()))
-            && settings.findMember(localName) != null;
+        boolean wasMember = rankingMember;
+        membershipStatus = ClanMembership.problem(settings, localName);
+        rankingMember = membershipStatus == null;
         if(config.rankingEnabled()&&rankingMember)browserTracker.tick(client);
         if (config.rankingEnabled() && rankingMember && ++progressTicks >= 50) {
             progressTicks=0;
@@ -204,6 +205,7 @@ public class TrapHouseClanPlugin extends Plugin {
             petTracker.scan(client,localName,this::queueAward);
         }
         updatePlayer(client.getLocalPlayer() == null ? null : client.getLocalPlayer().getName());
+        if (rankingMember != wasMember) executor.execute(this::syncRankings);
         if(rankingMember)for(String message:rankings.pointMessages(config)) {
             if(config.rankingEnabled()&&config.rankingPointMessages())
                 client.addChatMessage(ChatMessageType.GAMEMESSAGE,"",message,null);
@@ -263,9 +265,10 @@ public class TrapHouseClanPlugin extends Plugin {
     private synchronized void syncRankings() {
         RankingPanel panel = rankingPanel;
         if(panel!=null && config.rankingEnabled() && !config.rankingToken().trim().isEmpty() && !rankingMember) {
-            SwingUtilities.invokeLater(()->{if(panel==rankingPanel)panel.disconnected(playerName==null
+            String message = playerName==null
                 ? "Discord connected. Log into your linked OSRS character to load your profile."
-                : "Discord connected. Waiting for your in-game TRAP HOUSE clan membership; check that you are on your linked character.");});
+                : "Discord connected. " + membershipStatus;
+            SwingUtilities.invokeLater(()->{if(panel==rankingPanel)panel.disconnected(message);});
         } else if (panel != null) rankings.sync(config, rankingMember ? playerName : null, panel);
         if(panel!=null)rankings.publicLeaderboard(config,panel);
     }
