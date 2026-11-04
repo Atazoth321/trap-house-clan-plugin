@@ -86,7 +86,9 @@ final class ClanBrowserTracker {
     }
     synchronized JsonObject collect(Client client,String player) {
         JsonObject body=new JsonObject(),stats=new JsonObject();body.addProperty("player",player);
-        if(client.getAccountType()!=null)stats.addProperty("accountType",client.getAccountType().name());
+        // The deprecated getAccountType() maps unranked GIM (6) to NORMAL.
+        String accountType=accountType(client.getVarbitValue(VarbitID.IRONMAN));
+        if(accountType!=null)stats.addProperty("accountType",accountType);
         stats.addProperty("xp",client.getOverallExperience());stats.addProperty("combat",client.getVarbitValue(VarbitID.CA_POINTS));
         if(client.getVarpValue(VarPlayerID.COLLECTION_COUNT_MAX)>0)stats.addProperty("clog",client.getVarpValue(VarPlayerID.COLLECTION_COUNT));
         JsonObject clues=new JsonObject();String[] tiers={"beginner","easy","medium","hard","elite","master"};for(int i=0;i<tiers.length;i++)clues.addProperty(tiers[i],client.getVarbitValue(11996+i));stats.add("clues",clues);
@@ -105,5 +107,16 @@ final class ClanBrowserTracker {
             sendCursor=(index+1)%definitions.size();
         }
         return body;
+    }
+    static String accountType(int value) {
+        switch(value) {
+            case 0:return "NORMAL";
+            case 1:return "IRONMAN";
+            case 2:return "ULTIMATE_IRONMAN";
+            case 3:return "HARDCORE_IRONMAN";
+            case 4:case 6:return "GROUP_IRONMAN";
+            case 5:return "HARDCORE_GROUP_IRONMAN";
+            default:return null;
+        }
     }
 }
