@@ -112,6 +112,16 @@ CREATE TABLE IF NOT EXISTS goals (
     enabled boolean NOT NULL DEFAULT false,
     sort_order integer NOT NULL DEFAULT 0
 );
+-- Reversed awards remain in the permanent ledger, paired with audited deductions.
+CREATE TABLE IF NOT EXISTS reversed_goal_awards (
+    event_id uuid PRIMARY KEY REFERENCES events(id),
+    repair_id uuid NOT NULL
+);
+CREATE OR REPLACE FUNCTION reject_goal_reversal_change() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN RAISE EXCEPTION 'Goal reversal history cannot be changed'; END $$;
+DROP TRIGGER IF EXISTS immutable_goal_reversals ON reversed_goal_awards;
+CREATE TRIGGER immutable_goal_reversals BEFORE UPDATE OR DELETE OR TRUNCATE ON reversed_goal_awards
+FOR EACH STATEMENT EXECUTE FUNCTION reject_goal_reversal_change();
 CREATE TABLE IF NOT EXISTS goal_progress (
     member_id uuid NOT NULL REFERENCES members(id),
     goal_id uuid NOT NULL REFERENCES goals(id),

@@ -211,6 +211,16 @@ public final class RankingServer {
         }
         try (Connection c = connections.open()) {
             c.setAutoCommit(false);
+            if ((args.length==4&&args[0].equals("preview-arena-repair")) || (args.length==7&&args[0].equals("repair-arena-progress"))) {
+                String name=verifiedName(args[1]);
+                Instant start=Instant.parse(args[2]),end=Instant.parse(args[3]);
+                ArenaProgressRepair.validateWindow(start,end);
+                UUID member=ArenaProgressRepair.member(c,name);
+                JsonObject plan=args[0].equals("preview-arena-repair")
+                    ?ArenaProgressRepair.preview(c,member,start,end)
+                    :ArenaProgressRepair.apply(c,member,start,end,Policy.uuid(args[4]),args[5],args[6]);
+                c.commit();System.out.println(new GsonBuilder().setPrettyPrinting().create().toJson(plan));return;
+            }
             if(args.length==4&&args[0].equals("correct-member-name")) {
                 String oldName=verifiedName(args[1]),newName=verifiedName(args[2]);UUID member;String storedName;
                 try(PreparedStatement s=RankingStore.query(c,"SELECT id,name FROM members WHERE normalized_name=? AND active FOR UPDATE",Policy.normalize(oldName));ResultSet r=s.executeQuery()) {

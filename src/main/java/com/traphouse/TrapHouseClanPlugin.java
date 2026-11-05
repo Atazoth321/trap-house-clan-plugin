@@ -197,8 +197,13 @@ public class TrapHouseClanPlugin extends Plugin {
         boolean wasMember = rankingMember;
         membershipStatus = ClanMembership.problem(settings, localName);
         rankingMember = membershipStatus == null;
-        if(config.rankingEnabled()&&rankingMember)browserTracker.tick(client);
-        if (config.rankingEnabled() && rankingMember && ++progressTicks >= 50) {
+        boolean progressWorld = ProgressWorld.allowsTracking(client);
+        if (!progressWorld) {
+            progressTicks = 0;
+            browserTracker.reset();
+        }
+        if(config.rankingEnabled()&&rankingMember&&progressWorld)browserTracker.tick(client);
+        if (config.rankingEnabled() && rankingMember && progressWorld && ++progressTicks >= 50) {
             progressTicks=0;
             rankings.progress(ProgressTracker.collect(client,localName,rankings.probes()));
             rankings.browserSnapshot(browserTracker.collect(client,localName));
@@ -280,7 +285,7 @@ public class TrapHouseClanPlugin extends Plugin {
     }
 
     private String trackingPlayer() {
-        if (!config.rankingEnabled() || !rankingMember || client.getGameState() != GameState.LOGGED_IN
+        if (!config.rankingEnabled() || !rankingMember || !ProgressWorld.allowsTracking(client) || client.getGameState() != GameState.LOGGED_IN
             || client.getLocalPlayer() == null) return null;
         return client.getLocalPlayer().getName();
     }

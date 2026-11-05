@@ -22,7 +22,7 @@ final class PointNotifications {
                 r.next();cursor=r.getLong(1);
             }
         } else {
-            try(PreparedStatement s=RankingStore.query(c,"SELECT n.id,n.points,n.title,l.category,e.type,e.event_key FROM point_notifications n JOIN ledger l ON l.id=n.ledger_id LEFT JOIN events e ON e.id=l.event_id WHERE n.member_id=? AND n.id>? ORDER BY n.id LIMIT 100",actor.id,after);ResultSet r=s.executeQuery()) {
+            try(PreparedStatement s=RankingStore.query(c,"SELECT n.id,n.points,n.title,l.category,e.type,e.event_key FROM point_notifications n JOIN ledger l ON l.id=n.ledger_id LEFT JOIN events e ON e.id=l.event_id WHERE n.member_id=? AND n.id>? AND NOT EXISTS (SELECT 1 FROM reversed_goal_awards x WHERE x.event_id=l.event_id) ORDER BY n.id LIMIT 100",actor.id,after);ResultSet r=s.executeQuery()) {
                 while(r.next()) {
                     JsonObject award=new JsonObject();cursor=r.getLong(1);
                     award.addProperty("id",Long.toString(cursor));award.addProperty("points",r.getInt(2));award.addProperty("title",r.getString(3));award.addProperty("category",r.getString(4));award.addProperty("sourceType",r.getString(5));award.addProperty("sourceKey",r.getString(6));awards.add(award);

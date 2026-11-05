@@ -38,7 +38,7 @@ final class MilestoneCatalog {
                     RankingStore.Actor member=new RankingStore.Actor(r.getObject(1,UUID.class),r.getString(2),false);
                     RankingStore.lockMember(c,member.id);
                     long paid;
-                    try(PreparedStatement total=RankingStore.query(c,"SELECT coalesce(sum(l.points),0) FROM ledger l JOIN events e ON e.id=l.event_id WHERE l.member_id=? AND e.type='GOAL' AND e.event_key=?",member.id,goal.toString());ResultSet amounts=total.executeQuery()){amounts.next();paid=amounts.getLong(1);}
+                    try(PreparedStatement total=RankingStore.query(c,"SELECT coalesce(sum(l.points),0) FROM ledger l JOIN events e ON e.id=l.event_id WHERE l.member_id=? AND e.type='GOAL' AND e.event_key=? AND NOT EXISTS (SELECT 1 FROM reversed_goal_awards x WHERE x.event_id=e.id)",member.id,goal.toString());ResultSet amounts=total.executeQuery()){amounts.next();paid=amounts.getLong(1);}
                     int difference=(int)Math.max(0L,increased-paid);if(difference==0)continue;
                     UUID event=UUID.randomUUID();
                     UUID request=UUID.nameUUIDFromBytes((migration+":"+member.id+":"+goal).getBytes(StandardCharsets.UTF_8));

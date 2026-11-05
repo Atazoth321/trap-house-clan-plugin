@@ -12,6 +12,61 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    @Test public void arenaRepairReversesOnlyIncidentGoalsAndAllowsLegitimateReearning() throws Exception {
+        UUID earlier=goal("SKILL","ATTACK","Milestones",99,50);
+        UUID falseSkill=goal("SKILL","STRENGTH","Milestones",99,75);
+        UUID falseQuest=goal("QUEST","DRAGON_SLAYER_I","Milestones",1,100);
+        UUID freeGoal=goal("TOTAL_LEVEL","total","Milestones",2277,0);
+        ClanFeatures.sync(c,member,observation(earlier,99));
+        RankingStore.execute(c,"UPDATE goal_progress SET completed_at=now()-interval '2 days' WHERE goal_id=?",earlier);
+        ClanFeatures.sync(c,member,observation(falseSkill,99));
+        ClanFeatures.sync(c,member,observation(falseQuest,1));
+        ClanFeatures.sync(c,member,observation(freeGoal,2277));
+        Instant start=Instant.now().minusSeconds(3600),end=Instant.now().plusSeconds(3600);
+        JsonObject preview=ArenaProgressRepair.preview(c,member.id,start,end);
+        assertEquals(3,preview.getAsJsonArray("goals").size()); assertEquals(175,preview.get("pointsToReverse").getAsInt());
+        ArenaProgressRepair.apply(c,member.id,start,end,clanOwner.id,preview.get("previewHash").getAsString(),"Verified temporary PvP Arena profile");
+        assertEquals(50,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        assertEquals(3,count("ledger")); assertEquals(2,count("reversed_goal_awards")); assertEquals(1,count("point_adjustments"));
+        try(PreparedStatement s=RankingStore.query(c,"SELECT count(*) FROM goal_progress WHERE member_id=? AND completed_at IS NOT NULL",member.id);ResultSet r=s.executeQuery()) {r.next();assertEquals(1,r.getInt(1));}
+        for(JsonElement card:RewardCatalog.read(c,member.id,"Milestones","","name")) {
+            JsonObject row=card.getAsJsonObject();
+            assertEquals(row.get("sourceKey").getAsString().equals(earlier.toString()),row.get("received").getAsBoolean());
+        }
+        int achievementActivity=0;
+        for(JsonElement entry:ClanActivity.read(c))if(entry.getAsJsonObject().get("category").getAsString().equals("Milestones"))achievementActivity++;
+        assertEquals(1,achievementActivity);
+        assertEquals(1,PointNotifications.read(c,member,"after=0").getAsJsonArray("awards").size());
+        try {ArenaProgressRepair.apply(c,member.id,start,end,clanOwner.id,preview.get("previewHash").getAsString(),"Repeated incident repair");fail("Retry must not deduct again");}catch(IllegalArgumentException expected){}
+        assertEquals(1,count("point_adjustments"));
+        ClanFeatures.sync(c,member,observation(falseSkill,70));
+        assertEquals(50,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        ClanFeatures.sync(c,member,observation(falseSkill,99));ClanFeatures.sync(c,member,observation(falseSkill,99));
+        assertEquals(125,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        assertEquals(4,count("ledger"));
+    }
+
+    @Test public void arenaRepairRejectsNonOwnersAndChangedPreviews() throws Exception {
+        UUID goal=goal("SKILL","ATTACK","Milestones",99,75);
+        Instant start=Instant.now().minusSeconds(3600),end=Instant.now().plusSeconds(3600);
+        JsonObject empty=ArenaProgressRepair.preview(c,member.id,start,end);
+        ClanFeatures.sync(c,member,observation(goal,99));
+        JsonObject preview=ArenaProgressRepair.preview(c,member.id,start,end);
+        try {ArenaProgressRepair.apply(c,member.id,start,end,admin.id,preview.get("previewHash").getAsString(),"Verified arena incident");fail("Administrator is not Owner");}catch(IllegalArgumentException expected){}
+        try {ArenaProgressRepair.apply(c,member.id,start,end,clanOwner.id,empty.get("previewHash").getAsString(),"Verified arena incident");fail("Stale preview must fail");}catch(IllegalArgumentException expected){}
+        assertEquals(0,count("point_adjustments"));assertEquals(0,count("reversed_goal_awards"));
+    }
+
+    @Test public void arenaRepairIsAtomicWithItsCallerTransaction() throws Exception {
+        UUID goal=goal("SKILL","ATTACK","Milestones",99,75);
+        ClanFeatures.sync(c,member,observation(goal,99));c.commit();
+        Instant start=Instant.now().minusSeconds(3600),end=Instant.now().plusSeconds(3600);
+        JsonObject preview=ArenaProgressRepair.preview(c,member.id,start,end);
+        ArenaProgressRepair.apply(c,member.id,start,end,clanOwner.id,preview.get("previewHash").getAsString(),"Verified arena incident");
+        c.rollback();assertEquals(0,count("point_adjustments"));assertEquals(0,count("reversed_goal_awards"));
+        assertEquals(75,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        assertEquals(1,ArenaProgressRepair.preview(c,member.id,start,end).getAsJsonArray("goals").size());
+    }
     @Test public void prestigeCombatBalancePreservesHistoryAndOverrides()throws Exception {
         for(String resource:new String[]{"/starter-goals.sql","/additional-milestones.sql"})try(InputStream input=RankingServer.class.getResourceAsStream(resource);Statement s=c.createStatement()){s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));}
         MilestoneCatalog.seed(c);MilestoneCatalog.applyRewards(c);MilestoneCatalog.applyRewardBoost(c);MilestoneCatalog.applyCurrentRewards(c);
