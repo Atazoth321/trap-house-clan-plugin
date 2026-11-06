@@ -87,7 +87,12 @@ final class ClanFeatures {
 
     static void enrich(Connection c,Actor actor,JsonObject data) throws SQLException {
         JsonObject breakdown=new JsonObject();
-        try(PreparedStatement s=query(c,"SELECT category,sum(points) FROM point_entries WHERE member_id=? GROUP BY category",actor.id);ResultSet r=s.executeQuery()){while(r.next())breakdown.addProperty(r.getString(1),r.getLong(2));}
+        // Repairs already deduct from the balance through Misc adjustments. Attribute that
+        // deduction to the original award categories without changing permanent history.
+        String breakdownSql="WITH reversed AS (SELECT l.category,l.points FROM ledger l JOIN reversed_goal_awards x ON x.event_id=l.event_id WHERE l.member_id=?) "
+            +"SELECT category,sum(points) FROM (SELECT category,points::bigint FROM point_entries WHERE member_id=? "
+            +"UNION ALL SELECT category,-points::bigint FROM reversed UNION ALL SELECT 'Misc',points::bigint FROM reversed) entries GROUP BY category";
+        try(PreparedStatement s=query(c,breakdownSql,actor.id,actor.id);ResultSet r=s.executeQuery()){while(r.next())breakdown.addProperty(r.getString(1),r.getLong(2));}
         data.getAsJsonObject("profile").add("breakdown",breakdown);
         JsonObject metrics=new JsonObject();
         metrics.addProperty("ehpRate",EfficiencyRewards.EHP_RATE);metrics.addProperty("ehbRate",EfficiencyRewards.EHB_RATE);metrics.addProperty("weeklyCap",EfficiencyRewards.WEEKLY_CAP);

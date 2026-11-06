@@ -27,6 +27,9 @@ public class RankingPostgresTest {
         assertEquals(3,preview.getAsJsonArray("goals").size()); assertEquals(175,preview.get("pointsToReverse").getAsInt());
         ArenaProgressRepair.apply(c,member.id,start,end,clanOwner.id,preview.get("previewHash").getAsString(),"Verified temporary PvP Arena profile");
         assertEquals(50,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        JsonObject repairedBreakdown=RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").getAsJsonObject("breakdown");
+        assertEquals(50,repairedBreakdown.get("Milestones").getAsInt());
+        assertEquals(0,repairedBreakdown.get("Misc").getAsInt());
         assertEquals(3,count("ledger")); assertEquals(2,count("reversed_goal_awards")); assertEquals(1,count("point_adjustments"));
         try(PreparedStatement s=RankingStore.query(c,"SELECT count(*) FROM goal_progress WHERE member_id=? AND completed_at IS NOT NULL",member.id);ResultSet r=s.executeQuery()) {r.next();assertEquals(1,r.getInt(1));}
         for(JsonElement card:RewardCatalog.read(c,member.id,"Milestones","","name")) {
@@ -43,6 +46,7 @@ public class RankingPostgresTest {
         assertEquals(50,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
         ClanFeatures.sync(c,member,observation(falseSkill,99));ClanFeatures.sync(c,member,observation(falseSkill,99));
         assertEquals(125,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        assertEquals(125,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").getAsJsonObject("breakdown").get("Milestones").getAsInt());
         assertEquals(4,count("ledger"));
     }
 

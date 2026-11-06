@@ -72,6 +72,11 @@ Original events, ledger entries, point history and audit records remain as evide
 alongside the reversal adjustments. Retained earned ranks and lifetime positive-earnings
 history keep their existing semantics; this command does not demote ranks.
 
+Profile category totals subtract reversed awards from their original categories and
+offset the matching repair deduction in Misc. Existing repairs use this display treatment
+automatically after the server update; no additional deduction or repair is needed.
+The points log retains the original awards and signed adjustments for audit history.
+
 On the next normal-world sync, legitimate current progress is restored automatically.
 A repaired achievement can award points once when genuinely completed, because its
 previous award was fully reversed. Achievements genuinely completed before the incident
