@@ -53,6 +53,7 @@ public class TrapHouseClanPlugin extends Plugin {
     private volatile String membershipStatus = "Waiting for RuneLite to load your clan roster.";
     private int progressTicks;
     private final PetTracker petTracker=new PetTracker();
+    private final JarLogTracker jarLogTracker=new JarLogTracker();
     private final ClanBrowserTracker browserTracker=new ClanBrowserTracker();
     private EventAlerts bossAlerts;
     private EventAlerts skillAlerts;
@@ -63,7 +64,7 @@ public class TrapHouseClanPlugin extends Plugin {
 
     @Override protected void startUp() {
         dropSync=new DropSync(executor,this::syncRankings);
-        petTracker.reset();
+        petTracker.reset();jarLogTracker.reset();
         browserTracker.reset();
         loginSession = false;
         playerName = null;
@@ -123,7 +124,7 @@ public class TrapHouseClanPlugin extends Plugin {
 
     @Override protected void shutDown() {
         if(dropSync!=null)dropSync.close();
-        petTracker.reset();
+        petTracker.reset();jarLogTracker.reset();
         discordSignIn.cancel();
         overlayManager.remove(eventOverlay);
         overlayManager.remove(celebrationOverlay);
@@ -150,7 +151,7 @@ public class TrapHouseClanPlugin extends Plugin {
             if(!java.util.Set.of("rankingEnabled","rankingUrl","rankingToken").contains(event.getKey()))return;
             if(event.getKey().equals("rankingUrl"))discordSignIn.cancel();
             rankings.reset();
-            petTracker.reset();
+            petTracker.reset();jarLogTracker.reset();
             browserTracker.reset();
             SwingUtilities.invokeLater(() -> {
                 if (rankingPanel != null) rankingPanel.clear("Ranking settings changed; reconnecting");
@@ -183,7 +184,7 @@ public class TrapHouseClanPlugin extends Plugin {
     @Subscribe public void onGameStateChanged(GameStateChanged event) {
         // Hopping and loading stay in the same session; returning to login resets it.
         if (event.getGameState() == GameState.LOGIN_SCREEN) {
-            petTracker.reset();
+            petTracker.reset();jarLogTracker.reset();
             rankingMember = false;
             loginSession = false;
             updatePlayer(null);
@@ -208,6 +209,7 @@ public class TrapHouseClanPlugin extends Plugin {
             rankings.progress(ProgressTracker.collect(client,localName,rankings.probes()));
             rankings.browserSnapshot(browserTracker.collect(client,localName));
             petTracker.scan(client,localName,this::queueAward);
+            jarLogTracker.flush(localName,this::queueAward);
         }
         updatePlayer(client.getLocalPlayer() == null ? null : client.getLocalPlayer().getName());
         if (rankingMember != wasMember) executor.execute(this::syncRankings);
@@ -325,7 +327,11 @@ public class TrapHouseClanPlugin extends Plugin {
     }
 
     @Subscribe public void onScriptPreFired(net.runelite.api.events.ScriptPreFired event) {
-        if(trackingPlayer()!=null)browserTracker.item(client,event);
+        String player=trackingPlayer();
+        if(player!=null) {
+            browserTracker.item(client,event);
+            jarLogTracker.observe(client,player,event,this::queueAward);
+        }
     }
 
     @Subscribe public void onChatMessage(net.runelite.api.events.ChatMessage event) {

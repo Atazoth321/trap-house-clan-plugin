@@ -51,13 +51,19 @@ final class RankingStore {
         String type = Policy.text(body, "type", 12);
         Policy.observationType(type);
         String key = Policy.normalize(Policy.text(body, "key", 200));
+        // Personal jar drops and viewed collection entries use the same scoring rule and unique key.
+        String jarItem=JarRewards.item(type,key);
+        if(jarItem!=null){type="COLLECTION";key=JarRewards.collectionKey(jarItem);}
         Instant observed = Policy.observed(Policy.text(body, "observedAt", 40), Instant.now());
         if (body.has("points")) throw new Policy.Rejected(400, "Points are calculated by the server");
         lockMember(c, actor.id);
         // Return the stored award for exact retries; unlocks additionally have a semantic unique index.
         try (PreparedStatement s = query(c, "SELECT id,points,type,event_key FROM events WHERE member_id=? AND client_id=?", actor.id, client); ResultSet r = s.executeQuery()) {
             if (r.next()) {
-                if (!type.equals(r.getString(3)) || !key.equals(r.getString(4))) throw new Policy.Rejected(409, "Event ID reused with different evidence");
+                String storedType=r.getString(3),storedKey=r.getString(4);
+                String storedJar=JarRewards.item(storedType,storedKey);
+                if(storedJar!=null){storedType="COLLECTION";storedKey=JarRewards.collectionKey(storedJar);}
+                if (!type.equals(storedType) || !key.equals(storedKey)) throw new Policy.Rejected(409, "Event ID reused with different evidence");
                 return result(r.getObject(1).toString(), "DUPLICATE", r.getInt(2));
             }
         }
@@ -66,6 +72,13 @@ final class RankingStore {
         // Check before the daily cap so an already-paid pet is a clean duplicate.
         if(type.equals("COLLECTION")||type.equals("COMBAT")) {
             try(PreparedStatement s=query(c,"SELECT id FROM events WHERE member_id=? AND type=? AND event_key=?",actor.id,type,key);ResultSet r=s.executeQuery()) {
+                if(r.next())return result(r.getString(1),"DUPLICATE",0);
+            }
+        }
+        String jar=JarRewards.item(type,key);
+        if(jar!=null) {
+            // Legacy drop awards and collection unlocks share one lifetime reward.
+            try(PreparedStatement s=query(c,"SELECT id FROM events WHERE member_id=? AND ((type='LOOT' AND substring(event_key from '[^:]+$')=?) OR (type='COLLECTION' AND event_key=?))",actor.id,jar,JarRewards.collectionKey(jar));ResultSet r=s.executeQuery()) {
                 if(r.next())return result(r.getString(1),"DUPLICATE",0);
             }
         }

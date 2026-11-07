@@ -12,6 +12,97 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    @Test public void jarCollectionUnlocksAndDropsShareOneLifetimeAward() throws Exception {
+        AutomaticRewards.seed(c);
+        JsonObject first=event("COLLECTION","jar of swamp");
+        assertEquals(350,RankingStore.event(c,member,first).get("points").getAsInt());
+        assertEquals("DUPLICATE",RankingStore.event(c,member,first).get("status").getAsString());
+        RankingStore.execute(c,"UPDATE events SET received_at=now()-interval '2 days' WHERE member_id=? AND event_key='jar of swamp'",member.id);
+        assertEquals("DUPLICATE",RankingStore.event(c,member,event("COLLECTION","jar of swamp")).get("status").getAsString());
+        assertEquals(1,count("ledger"));
+        JsonObject card=PointsLog.dropRewards(c,member.id,"Jar of swamp","name").get(0).getAsJsonObject();
+        assertTrue(card.get("onceOnly").getAsBoolean());assertTrue(card.get("received").getAsBoolean());
+        assertEquals(12936,card.get("itemId").getAsInt());assertEquals(1,card.get("receivedCount").getAsInt());
+        assertEquals(250,RankingStore.event(c,member,event("COLLECTION","jar of eyes")).get("points").getAsInt());
+        assertEquals(500,RankingStore.event(c,member,event("COLLECTION","jar of miasma")).get("points").getAsInt());
+        assertEquals("DUPLICATE",RankingStore.event(c,member,event("LOOT","8713:23525")).get("status").getAsString());
+        JsonObject drop=event("LOOT","494:12007");
+        assertEquals(250,RankingStore.event(c,member,drop).get("points").getAsInt());
+        assertEquals("DUPLICATE",RankingStore.event(c,member,drop).get("status").getAsString());
+        assertEquals("DUPLICATE",RankingStore.event(c,member,event("COLLECTION","jar of dirt")).get("status").getAsString());
+        assertEquals("DUPLICATE",RankingStore.event(c,member,event("LOOT","2044:12936")).get("status").getAsString());
+        assertEquals(4,count("ledger"));
+        assertEquals(16,PointsLog.dropRewards(c,member.id,"Jar of ","name").size());
+        rejected(422,()->RankingStore.event(c,member,event("LOOT","1:23525")));
+        rejected(422,()->RankingStore.event(c,member,event("COLLECTION","jar of congealed blood")));
+    }
+    @Test public void jarCollectionMigrationPreservesLegacyAwardsAndOperatorEdits() throws Exception {
+        AutomaticRewards.seed(c);
+        RankingStore.execute(c,"DELETE FROM configuration_migrations WHERE name='boss-jar-collection-rewards-v2'");
+        RankingStore.execute(c,"DELETE FROM rules WHERE type='COLLECTION' AND event_key LIKE 'jar of %'");
+        for(AutomaticRewards.Rule old:JarRewards.legacyRules())RankingStore.execute(c,"UPDATE rules SET enabled=true WHERE type='LOOT' AND event_key=?",old.key);
+        RankingStore.execute(c,"UPDATE rules SET enabled=true WHERE type='LOOT' AND event_key IN ('2042:12936','2044:12936')");
+        RankingStore.execute(c,"UPDATE rules SET points=123,enabled=false WHERE type='LOOT' AND event_key='8713:23525'");
+        RankingStore.execute(c,"DELETE FROM rules WHERE type='LOOT' AND event_key='494:12007'");
+        UUID legacy=UUID.randomUUID();
+        RankingStore.execute(c,"INSERT INTO events(id,member_id,client_id,type,event_key,observed_at,points) VALUES (?,?,?,'LOOT','2042:12936',now(),350)",legacy,member.id,UUID.randomUUID());
+        RankingStore.award(c,member,legacy,null,350,"Legacy jar drop","Drops");
+        AutomaticRewards.seed(c);
+        assertEquals("DUPLICATE",RankingStore.event(c,member,event("COLLECTION","jar of swamp")).get("status").getAsString());
+        assertEquals(1,count("ledger"));
+        JsonObject card=PointsLog.dropRewards(c,member.id,"Jar of swamp","name").get(0).getAsJsonObject();
+        assertTrue(card.get("received").getAsBoolean());assertEquals(350,card.get("earnedPoints").getAsInt());
+        rejected(422,()->RankingStore.rule(c,"LOOT","2042:12936"));
+        rejected(422,()->RankingStore.rule(c,"COLLECTION","jar of eyes"));
+        rejected(422,()->RankingStore.rule(c,"COLLECTION","jar of dirt"));
+        try(PreparedStatement s=RankingStore.query(c,"SELECT points FROM rules WHERE type='COLLECTION' AND event_key='jar of eyes'");ResultSet r=s.executeQuery()) {
+            assertTrue(r.next());assertEquals(123,r.getInt(1));
+        }
+        RankingStore.execute(c,"UPDATE rules SET points=321 WHERE type='COLLECTION' AND event_key='jar of swamp'");
+        AutomaticRewards.seed(c);
+        assertArrayEquals(new int[]{321,1},RankingStore.rule(c,"COLLECTION","jar of swamp"));
+    }
+    @Test public void easyPetBalanceUpdatesExistingDefaultsWithoutChangingPastAwards() throws Exception {
+        AutomaticRewards.seed(c);BalancedRewards.apply(c);
+        RankingStore.execute(c,"DELETE FROM configuration_migrations WHERE name='easy-pet-rewards-v1'");
+        RankingStore.execute(c,"UPDATE rules SET points=500 WHERE type='COLLECTION' AND event_key IN ('chompy chick','scurry','moxi')");
+        RankingStore.event(c,member,event("COLLECTION","chompy chick"));
+        BalancedRewards.apply(c);
+        assertArrayEquals(new int[]{250,1},RankingStore.rule(c,"COLLECTION","chompy chick"));
+        assertArrayEquals(new int[]{350,1},RankingStore.rule(c,"COLLECTION","scurry"));
+        assertArrayEquals(new int[]{350,1},RankingStore.rule(c,"COLLECTION","moxi"));
+        assertEquals(500,RankingStore.dashboard(c,member,member.name).getAsJsonObject("profile").get("points").getAsInt());
+        RankingStore.execute(c,"UPDATE rules SET points=500 WHERE event_key='scurry' AND type='COLLECTION'");
+        BalancedRewards.apply(c);
+        assertArrayEquals(new int[]{500,1},RankingStore.rule(c,"COLLECTION","scurry"));
+    }
+    @Test public void easyPetBalancePreservesCustomAndDisabledRules() throws Exception {
+        AutomaticRewards.seed(c);BalancedRewards.apply(c);
+        RankingStore.execute(c,"DELETE FROM configuration_migrations WHERE name='easy-pet-rewards-v1'");
+        RankingStore.execute(c,"UPDATE rules SET points=123 WHERE type='COLLECTION' AND event_key='moxi'");
+        RankingStore.execute(c,"UPDATE rules SET points=500,enabled=false WHERE type='COLLECTION' AND event_key='scurry'");
+        BalancedRewards.apply(c);
+        assertArrayEquals(new int[]{123,1},RankingStore.rule(c,"COLLECTION","moxi"));
+        try(PreparedStatement s=RankingStore.query(c,"SELECT points,enabled FROM rules WHERE type='COLLECTION' AND event_key='scurry'");ResultSet r=s.executeQuery()) {
+            assertTrue(r.next());assertEquals(500,r.getInt(1));assertFalse(r.getBoolean(2));
+        }
+    }
+    @Test public void additionalPetMigrationUpgradesExistingServersAndPreservesCustomRules() throws Exception {
+        RankingStore.execute(c,"INSERT INTO configuration_migrations(name) VALUES ('automatic-rewards-v1'),('automatic-rewards-v2'),('balanced-rewards-v1')");
+        RankingStore.execute(c,"INSERT INTO rules(type,event_key,points,daily_limit,enabled,category,display_name) VALUES ('COLLECTION','aggy',123,1,false,'Pets','Custom Aggy')");
+        AutomaticRewards.seed(c);
+        for(AutomaticRewards.Rule pet:AutomaticRewards.additionalPetRules()) {
+            if(pet.key.equals("aggy"))continue;
+            assertArrayEquals(new int[]{500,1},RankingStore.rule(c,"COLLECTION",pet.key));
+        }
+        rejected(422,()->RankingStore.rule(c,"COLLECTION","aggy"));
+        RankingStore.execute(c,"UPDATE rules SET points=321 WHERE type='COLLECTION' AND event_key='nexling'");
+        AutomaticRewards.seed(c);
+        assertArrayEquals(new int[]{321,1},RankingStore.rule(c,"COLLECTION","nexling"));
+        RankingStore.event(c,member,event("COLLECTION","scurry"));
+        RankingStore.event(c,member,event("COLLECTION","scurry"));
+        assertEquals(1,count("ledger"));
+    }
     @Test public void arenaRepairReversesOnlyIncidentGoalsAndAllowsLegitimateReearning() throws Exception {
         UUID earlier=goal("SKILL","ATTACK","Milestones",99,50);
         UUID falseSkill=goal("SKILL","STRENGTH","Milestones",99,75);

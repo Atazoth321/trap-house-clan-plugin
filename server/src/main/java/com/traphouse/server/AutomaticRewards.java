@@ -64,7 +64,18 @@ final class AutomaticRewards {
             "Tumeken's guardian","Muphin","Butch","Baron","Lil'viathan","Wisp"}) {
             rules.add(new Rule("COLLECTION",Policy.normalize(pet),pet,"Pets",750,1));
         }
+        rules.addAll(additionalPetRules());
         rules.addAll(expandedRules());
+        return Collections.unmodifiableList(rules);
+    }
+    static List<Rule> additionalPetRules() {
+        List<Rule> rules=new ArrayList<>();
+        for(String pet:new String[]{"Aggy","Beef","Bran","Dom","Gull","Huberte",
+            "Maggot marquess","Moxi","Nexling","Nid","Orion","Smol Heredit",
+            "Scurry","Yami","Quetzin","Soup","Mr McGroot"}) {
+            // Use today's balanced amount even when balanced-rewards-v1 already ran.
+            rules.add(new Rule("COLLECTION",Policy.normalize(pet),pet,"Pets",500,1));
+        }
         return Collections.unmodifiableList(rules);
     }
     static List<Rule> expandedRules() {
@@ -145,6 +156,9 @@ final class AutomaticRewards {
         // Existing v1 installations must still receive the new catalog. Insert only
         // expansion keys so previously removed base rules are not resurrected.
         seed(c,"automatic-rewards-v2",expandedRules());
+        seed(c,"additional-pet-rewards-v1",additionalPetRules());
+        seed(c,"boss-jar-rewards-v1",JarRewards.legacyRules());
+        JarRewards.seed(c);
         lowerBarrowsRewards(c);
         seed(c,"easy-test-cowhide-v1",testDropRules());
         expandCowhideTestLimit(c);

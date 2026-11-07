@@ -1,8 +1,10 @@
 # Automatic drop and pet rewards
 
-The [current reward balance](reward-balance.md) supersedes earlier raid, pet, and manual-claim defaults below. Pet unlocks now default to 500 points, common raid uniques have lower rewards, supported items share caps across sources, and Barrows pays at most four pieces/day at default prices. Historical points remain intact.
+[Boss jar rewards](boss-jar-rewards.md) add 16 named collection-log unlocks at 250–500 points, once per member per jar. View obtained jar entries in your own collection-log pages to recognize historical unlocks, or enable collection-log chat notifications for new unlocks. Personal boss drops also qualify, sharing the same once-only reward; inventory scans do not qualify.
 
-`init` installs the base catalog and the additive `automatic-rewards-v2` expansion once. It enables 118 named drop items and 55 named pet collection unlocks without replacing existing rules, including disabled rules. Subsequent deployments preserve staff edits. The catalog is in `server/src/main/java/com/traphouse/server/AutomaticRewards.java`.
+The [current reward balance](reward-balance.md) supersedes earlier raid, pet, and manual-claim defaults below. Pet unlocks default to 500 points (Chompy chick: 250; Scurry and Moxi: 350), common raid uniques have lower rewards, supported items share caps across sources, and Barrows pays at most four pieces/day at default prices. Historical points remain intact.
+
+`init` installs the base catalog, the additive `automatic-rewards-v2` expansion, and `additional-pet-rewards-v1` once. It enables 118 named drop items and 72 named pet collection unlocks without replacing existing rules, including disabled rules. Subsequent deployments preserve staff edits. The catalog is in `server/src/main/java/com/traphouse/server/AutomaticRewards.java`.
 
 ## How scoring works
 
@@ -74,7 +76,7 @@ Barrows requires the updated plugin and enabled RuneLite Loot Tracker, just like
 
 ## Pets
 
-Each of the 55 named pet collection unlocks pays **500 points once per member per pet**. Examples include Pet kraken, Hellpuppy, Vorki, Ikkle hydra, Olmlet, Lil' zik, Tumeken's guardian, Heron, Beaver, Rocky, and Bloodhound. See the catalog for the complete exact-name allowlist. No wildcard pet messages are rewarded.
+The 72 named pet collection unlocks pay **500 points once per member per pet**, except **Chompy chick (250)** and **Scurry and Moxi (350 each)**. Examples include Pet kraken, Hellpuppy, Vorki, Ikkle hydra, Olmlet, Lil' zik, Tumeken's guardian, Heron, Beaver, Rocky, and Bloodhound. See the catalog for the complete exact-name allowlist. No wildcard pet messages are rewarded.
 
 Enable the game's **collection log notification chat messages**. A supported `New item added to your collection log: <pet name>` system message triggers scoring. The generic funny-feeling message alone cannot identify the pet and does not score. Repeated collection messages and new request IDs cannot pay for the same named pet twice, including on another day. Recolours, transmogs, and duplicate pet drops do not receive separate rules.
 

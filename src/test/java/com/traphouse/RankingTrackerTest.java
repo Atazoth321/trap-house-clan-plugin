@@ -4,6 +4,24 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class RankingTrackerTest {
+    @Test public void jarsUseTheExistingCollectionLogNotificationParser() {
+        for(String jar:new String[]{"Dirt","Sand","Swamp","Souls","Miasma","Darkness","Stone","Decay","Chemicals","Eyes","Dreams","Spirits","Smoke","Venom","Feathers","Light"}) {
+            RankingEvent event=RankingTracker.chat("Member","New item added to your collection log: <col=ff0000>Jar of "+jar+"</col>");
+            assertNotNull(event);assertEquals("COLLECTION",event.type);
+            assertEquals("jar of "+jar.toLowerCase(java.util.Locale.ROOT),event.key);
+        }
+    }
+    @Test public void jarExchangeAndNightmareLootUsePersonalDropObservations() {
+        net.runelite.client.plugins.loottracker.LootReceived loot=new net.runelite.client.plugins.loottracker.LootReceived(
+            "Unsired",0,net.runelite.http.api.loottracker.LootRecordType.EVENT,
+            java.util.Arrays.asList(new net.runelite.client.game.ItemStack(13277,1)),1,null);
+        assertEquals("chest:unsired:13277",RankingTracker.containerLoot("Member",loot).get(0).key);
+        loot.setType(net.runelite.http.api.loottracker.LootRecordType.PLAYER);
+        assertTrue(RankingTracker.containerLoot("Member",loot).isEmpty());
+        loot.setType(net.runelite.http.api.loottracker.LootRecordType.NPC);loot.setMetadata(378);
+        assertEquals("378:13277",RankingTracker.containerLoot("Member",loot).get(0).key);
+        assertTrue(RankingTracker.serverLootNpc(13669)); // Araxxor uses ServerNpcLoot.
+    }
     @Test public void skillingContainersUseCanonicalSourcesAndOnlyActualEventLoot() {
         String[] names={"Supply crate (Wintertodt)","Reward cart (Wintertodt)","Reward pool (Tempoross)","Guardians of the Rift"};
         String[] sources={"wintertodt","wintertodt","tempoross","guardians of the rift"};

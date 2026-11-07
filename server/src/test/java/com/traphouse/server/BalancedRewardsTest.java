@@ -9,10 +9,13 @@ public class BalancedRewardsTest {
         Map<String,Integer> points=new HashMap<>();int barrows=0,pets=0;
         for(AutomaticRewards.Rule rule:AutomaticRewards.rules()) {
             int reward=BalancedRewards.points(rule);assertTrue(reward>0);assertTrue(reward<=1000);points.put(rule.key,reward);
-            if(rule.category.equals("Pets")){assertEquals(500,reward);assertEquals(1,rule.limit);pets++;}
+            if(rule.category.equals("Pets")){assertEquals(rule.key.equals("chompy chick")?250:Arrays.asList("scurry","moxi").contains(rule.key)?350:500,reward);assertEquals(1,rule.limit);pets++;}
             if(rule.key.startsWith("chest:barrows:")){assertEquals(50,reward);barrows++;}
         }
-        assertEquals(24,barrows);assertEquals(55,pets);
+        assertEquals(24,barrows);assertEquals(72,pets);
+        assertEquals(Integer.valueOf(250),points.get("chompy chick"));
+        assertEquals(Integer.valueOf(350),points.get("scurry"));
+        assertEquals(Integer.valueOf(350),points.get("moxi"));
         assertEquals(Integer.valueOf(150),points.get("chest:chambers of xeric:21079"));
         assertEquals(Integer.valueOf(250),points.get("chest:tombs of amascut:26219"));
         assertEquals(Integer.valueOf(1000),points.get("chest:tombs of amascut:27277"));

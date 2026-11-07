@@ -15,7 +15,7 @@ final class PetTracker {
         pet(pets,sprites,"Baby mole",12646,25613);
         pet(pets,sprites,"Beaver",13322,28229,28230,28231,28232,28233,28234,28235,28236,28237,28669,28670,31279,31280,31281,31282);
         pet(pets,sprites,"Bloodhound",19730);
-        pet(pets,sprites,"Callisto cub",13178);
+        pet(pets,sprites,"Callisto cub",13178,27649);
         pet(pets,sprites,"Chompy chick",13071);
         pet(pets,sprites,"Giant squirrel",20659,24701,30151);
         pet(pets,sprites,"Hellpuppy",13247);
@@ -49,14 +49,14 @@ final class PetTracker {
         pet(pets,sprites,"Smolcano",23760);
         pet(pets,sprites,"Sraracha",23495,25842,25843);
         pet(pets,sprites,"Tangleroot",20661,24555,24557,24559,24561,24563);
-        pet(pets,sprites,"Tzrek-jad",13225);
-        pet(pets,sprites,"Venenatis spiderling",13177);
+        pet(pets,sprites,"Tzrek-jad",13225,25519);
+        pet(pets,sprites,"Venenatis spiderling",13177,27648);
         pet(pets,sprites,"Vet'ion jr.",13179,13180,27650,27651);
         pet(pets,sprites,"Vorki",21992);
         pet(pets,sprites,"Youngllef",23757,23759);
         pet(pets,sprites,"Lil' zik",22473,25748,25749,25750,25751,25752);
         pet(pets,sprites,"Little nightmare",24491,25836);
-        pet(pets,sprites,"Lil' creator",25348);
+        pet(pets,sprites,"Lil' creator",25348,25350);
         pet(pets,sprites,"Tiny tempor",25602);
         pet(pets,sprites,"Abyssal protector",26901);
         pet(pets,sprites,"Tumeken's guardian",27352,27354,27382,27383,27384,27385,27386,27387);
@@ -65,6 +65,24 @@ final class PetTracker {
         pet(pets,sprites,"Baron",28250);
         pet(pets,sprites,"Lil'viathan",28252);
         pet(pets,sprites,"Wisp",28246);
+        // Verified against RuneLite 1.13.5 gameval ItemID; alternate forms share one reward.
+        pet(pets,sprites,"Aggy",34042);
+        pet(pets,sprites,"Beef",33124);
+        pet(pets,sprites,"Bran",30622,30624);
+        pet(pets,sprites,"Dom",31130);
+        pet(pets,sprites,"Gull",31285,31287);
+        pet(pets,sprites,"Huberte",30152);
+        pet(pets,sprites,"Maggot marquess",33642);
+        pet(pets,sprites,"Moxi",30154);
+        pet(pets,sprites,"Nexling",26348);
+        pet(pets,sprites,"Nid",29836,29838);
+        pet(pets,sprites,"Orion",34646,34648);
+        pet(pets,sprites,"Smol Heredit",28960);
+        pet(pets,sprites,"Scurry",28801);
+        pet(pets,sprites,"Yami",30888);
+        pet(pets,sprites,"Quetzin",28962);
+        pet(pets,sprites,"Soup",31283);
+        pet(pets,sprites,"Mr McGroot",34040);
         PETS=Collections.unmodifiableMap(pets);SPRITES=Collections.unmodifiableMap(sprites);
     }
     private static void pet(Map<Integer,String> pets,Map<String,Integer> sprites,String name,int... ids) {

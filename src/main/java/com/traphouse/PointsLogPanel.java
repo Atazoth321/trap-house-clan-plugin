@@ -19,6 +19,7 @@ final class PointsLogPanel extends JPanel {
     private final JComboBox<String> dropStatus=new JComboBox<>(new String[]{"All rewards","Not received yet","Received"});
     private final JTabbedPane views=new JTabbedPane();
     private final JPanel rewards=new JPanel(new BorderLayout(8,8));
+    private final JLabel jarNote=ProfileStyle.label("<html><b>Already earned a jar?</b> Open your in-game Collection Log and search &quot;jar&quot;<br>to sync your unlocked jars. Each jar awards points once.</html>",12,ProfileStyle.TEXT);
     private final JScrollPane rewardScroll=new JScrollPane(rewards);
     private final JButton prev=ClanStyle.button("Prev",()->{}),next=ClanStyle.button("Next",()->{});
     private final String member;
@@ -41,6 +42,8 @@ final class PointsLogPanel extends JPanel {
         JPanel rewardHeader=new JPanel(new BorderLayout(8,8));rewardHeader.setOpaque(false);
         rewardHeader.add(ProfileStyle.label("Received status uses recorded point awards; earlier untracked achievements are not included.",11,ProfileStyle.MUTED),BorderLayout.CENTER);
         rewardHeader.add(dropStatus,BorderLayout.EAST);rewards.add(rewardHeader,BorderLayout.NORTH);
+        jarNote.setBorder(BorderFactory.createEmptyBorder(6,0,6,0));
+        rewardHeader.add(jarNote,BorderLayout.SOUTH);
         JPanel rewardBody=new JPanel(new BorderLayout());rewardBody.setOpaque(false);rewardBody.add(rewardCards,BorderLayout.NORTH);
         rewards.add(rewardBody,BorderLayout.CENTER);rewardScroll.setBorder(null);rewardScroll.getVerticalScrollBar().setUnitIncrement(16);
         views.addTab("Award history",scroll);add(views,BorderLayout.CENTER);
@@ -53,6 +56,7 @@ final class PointsLogPanel extends JPanel {
     }
     void close(){active=false;revision++;}
     private void load() {
+        jarNote.setVisible("Drops".equals(source.getSelectedItem())||"All".equals(source.getSelectedItem()));
         if(!active)return;long request=++revision;prev.setEnabled(false);next.setEnabled(false);summary.setText("Loading...");cards.removeAll();cards.revalidate();cards.repaint();
         rewardCards.removeAll();rewardCards.add(ProfileStyle.label("Loading current rewards...",12,ProfileStyle.MUTED));rewardCards.revalidate();rewardCards.repaint();
         if(!hasRewardBrowser())views.remove(rewardScroll);

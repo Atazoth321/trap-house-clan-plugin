@@ -21,7 +21,13 @@ final class BalancedRewards {
     }
     static boolean barrows(String type,String key){return sharedItem(type,key)!=null&&key.startsWith("chest:barrows:");}
     static int points(AutomaticRewards.Rule rule) {
-        if(rule.category.equals("Pets"))return 500;
+        if(rule.category.equals("Pets")) {
+            switch(rule.key) {
+                case "chompy chick":return 250;
+                case "scurry":case "moxi":return 350;
+                default:return 500;
+            }
+        }
         switch(rule.key.substring(rule.key.lastIndexOf(':')+1)) {
             case "21034":return 250; // Dexterous prayer scroll
             case "21079":return 150; // Arcane prayer scroll
@@ -44,6 +50,20 @@ final class BalancedRewards {
         }
     }
     static void apply(Connection c)throws SQLException {
+        applyBase(c);
+        lowerEasyPetRewards(c);
+    }
+    private static void lowerEasyPetRewards(Connection c)throws SQLException {
+        try(Statement s=c.createStatement()){s.execute("SELECT pg_advisory_xact_lock(72419051001)");}
+        String migration="easy-pet-rewards-v1";
+        try(PreparedStatement s=RankingStore.query(c,"SELECT 1 FROM configuration_migrations WHERE name=?",migration);ResultSet r=s.executeQuery()){if(r.next())return;}
+        // Future awards only; preserve disabled rules, custom amounts and award history.
+        for(String key:new String[]{"chompy chick","scurry","moxi"}) {
+            RankingStore.execute(c,"UPDATE rules SET points=? WHERE type='COLLECTION' AND event_key=? AND category='Pets' AND points=500 AND enabled",key.equals("chompy chick")?250:350,key);
+        }
+        RankingStore.execute(c,"INSERT INTO configuration_migrations(name) VALUES (?)",migration);
+    }
+    private static void applyBase(Connection c)throws SQLException {
         try(Statement s=c.createStatement()){s.execute("SELECT pg_advisory_xact_lock(72419051001)");}
         String migration="balanced-rewards-v1";
         try(PreparedStatement s=RankingStore.query(c,"SELECT 1 FROM configuration_migrations WHERE name=?",migration);ResultSet r=s.executeQuery()){if(r.next())return;}

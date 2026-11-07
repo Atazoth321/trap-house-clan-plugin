@@ -4,6 +4,8 @@ Update the existing `plugins/trap-house-clan-plugin` manifest in `runelite/plugi
 
 ## Changes in this release
 
+- Expand pet recognition from 55 to 72 families, including supported alternate forms. Recognize historical jars when obtained entries are viewed in the player''s own collection log, with a reminder to search for jars in the reward browser. Backend rewards share one lifetime jar award across drops and collection observations. Chompy chick pays 250 points; Scurry and Moxi pay 350 each; other pet defaults remain 500.
+
 - Full clan browser with ten statistics, separate account-type standings, search, collection pages, Luck, Deserved and Dryboard, styled to match the clan sidebar.
 - Public browsing without a member credential; uploads and account actions remain authenticated. Optional sync now includes account type, total XP, collection and combat totals, clue/boss counters, and collection-page item observations. Opening/browsing the player's own collection book supplies historical observations; the plugin never opens it automatically.
 - Discord `/verify` code fallback for approved active character links when browser sign-in fails, with bounded single-use sessions and clearer retry behavior.
@@ -22,7 +24,7 @@ The built-in Loot Tracker's personal-loot events are received through the event 
 
 Wise Old Man event queries use `api.wiseoldman.net`. Optional ranking sync uses a configurable HTTPS origin, defaulting to `trap-house-ranking-api.onrender.com`. User-initiated Discord sign-in opens the configured service's browser flow and enables sync after authentication. Credentials are stored in RuneLite configuration. README documents submitted observations, shared clan data and retained server history.
 
-Score standings and synced collection pages/category boards can be read publicly, including by nonmembers. The browser does not require uploads or credentials. Passive observation sync requires opt-in and the linked clan character; it ignores a POH host's collection book. Collection observations do not award points themselves. Unseen quantities and unsupported counters remain unknown. Backend changes and database migrations are deployed separately.
+Score standings and synced collection pages/category boards can be read publicly, including by nonmembers. The browser does not require uploads or credentials. Passive observation sync requires opt-in and the linked clan character; it ignores a POH host's collection book. Collection observations are submitted to the backend, which controls once-only jar and pet awards. Unseen quantities and unsupported counters remain unknown. Backend changes and database migrations are deployed separately.
 
 Networking uses the injected OkHttp client and background executor. The plugin reads supported game events/state and displays information; it does not automate input, interact with gameplay, or change actual in-game clan ranks. Promotions remain manual. Visual celebrations do not create point awards.
 

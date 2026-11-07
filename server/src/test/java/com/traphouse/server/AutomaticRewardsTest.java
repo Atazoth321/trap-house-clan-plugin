@@ -21,13 +21,13 @@ public class AutomaticRewardsTest {
             assertTrue(rule.points>0);assertTrue(rule.points<=1000);
             assertFalse(rule.name.isEmpty());assertFalse(rule.key.contains("*"));
             if(rule.type.equals("COLLECTION")) {
-                assertEquals("Pets",rule.category);assertEquals(750,rule.points);assertEquals(1,rule.limit);pets++;
+                assertEquals("Pets",rule.category);assertEquals(AutomaticRewards.additionalPetRules().stream().anyMatch(pet->pet.key.equals(rule.key))?500:750,rule.points);assertEquals(1,rule.limit);pets++;
             } else {
                 assertEquals("LOOT",rule.type);assertEquals("Drops",rule.category);assertEquals(2,rule.limit);items.add(rule.name);
                 if(rule.key.startsWith("chest:barrows:"))assertEquals(50,rule.points);
             }
         }
-        assertEquals(55,pets);assertEquals(118,items.size());
+        assertEquals(72,pets);assertEquals(118,items.size());
         assertTrue(keys.contains("LOOT:2215:11832"));
         assertTrue(keys.contains("LOOT:chest:tombs of amascut:27277"));
         assertTrue(keys.contains("COLLECTION:pet kraken"));

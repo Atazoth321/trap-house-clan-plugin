@@ -8,7 +8,7 @@ Recruit 0; Pawn 500; Corporal 1,500; Novice 3,000; Sergeant 6,000; Colonel 10,00
 
 The 143 milestone/quest/combat tier rewards remain **15,070 points combined**. That maximum includes very difficult achievements, not just maxed skills. All skill milestones total 5,520; all total-level milestones total 2,850. Existing completed supported milestones can qualify on sync. No blanket award is issued for maxed or high-ranked accounts.
 
-Named automatic pet collection unlocks and the independently reviewed pet claim default now pay **500 points**. Automatic collection rules remain once per member per named pet, not once per day. Previously paid 750-point pets retain their full award. Historical/unsupported pet claims still need independent staff verification, including checking that the unlock was not already paid automatically.
+Named automatic pet collection unlocks default to **500 points**, except **Chompy chick (250)** and **Scurry and Moxi (350 each)**. The independently reviewed generic pet claim remains **500 points**. The one-time `easy-pet-rewards-v1` migration lowers only enabled 500-point defaults for these three pets; custom amounts, disabled rules and past awards are preserved. Automatic collection rules remain once per member per named pet, not once per day. Previously paid 750-point pets retain their full award. Historical/unsupported pet claims still need independent staff verification, including checking that the unlock was not already paid automatically.
 
 ## Drop rewards
 
