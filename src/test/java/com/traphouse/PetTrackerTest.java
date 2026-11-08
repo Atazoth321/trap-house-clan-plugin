@@ -3,10 +3,23 @@ package com.traphouse;
 import java.lang.reflect.Proxy;
 import java.util.*;
 import net.runelite.api.*;
+import net.runelite.api.gameval.ItemID;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class PetTrackerTest {
+    @Test public void phoenixFormsNeverSubmitRocky() {
+        for(int id:new int[]{ItemID.PHOENIXPET,ItemID.PHOENIXPET_GREEN,ItemID.PHOENIXPET_BLUE,ItemID.PHOENIXPET_WHITE,ItemID.PHOENIXPET_PURPLE}) {
+            List<RankingEvent> events=new ArrayList<>();
+            new PetTracker().scan(client(new Item[]{new Item(id,1)},null),"Member",event->{events.add(event);return true;});
+            assertEquals(1,events.size());assertEquals("phoenix",events.get(0).key);
+        }
+    }
+    @Test public void bankRockyIsDiscoveredSeparatelyFromInventoryPhoenix() {
+        List<RankingEvent> events=new ArrayList<>();
+        new PetTracker().scan(client(new Item[]{new Item(ItemID.PHOENIXPET,1)},new Item[]{new Item(ItemID.SKILLPETTHIEVING,1)}),"Member",event->{events.add(event);return true;});
+        assertEquals(2,events.size());assertEquals("phoenix",events.get(0).key);assertEquals("rocky",events.get(1).key);
+    }
     @Test public void newPetsAndAlternateFormsSubmitOneCanonicalRewardPerFamily() {
         int[] ids={34042,33124,30622,30624,31130,31285,31287,30152,33642,30154,26348,
             29836,29838,34646,34648,28960,28801,30888,28962,31283,34040};

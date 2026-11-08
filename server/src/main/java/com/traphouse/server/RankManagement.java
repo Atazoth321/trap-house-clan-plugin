@@ -13,7 +13,12 @@ final class RankManagement {
         try(PreparedStatement s=query(c,"SELECT m.id,m.name,s.assigned_rank,coalesce(s.locked,false) FROM members m LEFT JOIN member_rank_state s ON s.member_id=m.id WHERE m.active ORDER BY m.normalized_name,m.id");ResultSet r=s.executeQuery()) {
             while(r.next()){JsonObject member=new JsonObject();member.addProperty("id",r.getString(1));member.addProperty("name",r.getString(2));member.addProperty("assignedRank",RankSecurity.canonicalRank(c,r.getString(3)));member.addProperty("locked",r.getBoolean(4));members.add(member);}
         }
-        data.add("members",members);return data;
+        data.add("members",members);
+        JsonArray membershipMembers=new JsonArray();
+        try(PreparedStatement s=query(c,"SELECT m.id,m.name,s.started_at FROM members m JOIN membership_reward_state s ON s.member_id=m.id ORDER BY m.normalized_name,m.id");ResultSet r=s.executeQuery()) {
+            while(r.next()){JsonObject member=new JsonObject();member.addProperty("id",r.getString(1));member.addProperty("name",r.getString(2));member.addProperty("trackingDate",r.getTimestamp(3).toInstant().atZone(java.time.ZoneOffset.UTC).toLocalDate().toString());membershipMembers.add(member);}
+        }
+        data.add("membershipMembers",membershipMembers);return data;
     }
     static void initializeOwnerRanks(Connection c)throws SQLException {
         try(Statement s=c.createStatement()){s.execute("SELECT pg_advisory_xact_lock(72419051001)");}

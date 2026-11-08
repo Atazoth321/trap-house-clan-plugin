@@ -111,7 +111,11 @@ final class RankSecurity {
         catch(RuntimeException invalid){throw new Policy.Rejected(400,"Integer points required");}
         if(delta==0||delta>100000||delta< -100000)throw new Policy.Rejected(400,"Adjustment must be between -100000 and 100000 and nonzero");
         adjustmentPermission(actor,delta);
-        lockMember(c,member);
+        if(actor.role==Role.OWNER) {
+            try(PreparedStatement s=query(c,"SELECT id FROM members WHERE id=? FOR UPDATE",member);ResultSet r=s.executeQuery()) {
+                if(!r.next())throw new Policy.Rejected(404,"Member not found");
+            }
+        }else lockMember(c,member);
         try(PreparedStatement s=query(c,"SELECT member_id,actor,points,reason FROM point_adjustments WHERE id=?",id);ResultSet r=s.executeQuery()) {
             if(r.next()) {
                 if(!member.equals(r.getObject(1,UUID.class))||!actor.id.equals(r.getObject(2,UUID.class))||delta!=r.getInt(3)||!reason.equals(r.getString(4)))throw new Policy.Rejected(409,"Adjustment ID reused");

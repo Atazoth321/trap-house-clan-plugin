@@ -103,6 +103,14 @@ public class TrapHouseClanPlugin extends Plugin {
             if(error==null)executor.execute(this::syncRankings);
         })));
         rankingPanel.itemArt(awardItemImages);
+        rankingPanel.directAwardEditor((member,body,done)->executor.execute(rankings.directAward(config,member,body,error->{
+            done.accept(error);
+            if(error==null)executor.execute(this::syncRankings);
+        })));
+        rankingPanel.membershipEditor((member,body,done)->executor.execute(rankings.membershipChange(config,member,body,error->{
+            done.accept(error);
+            if(error==null)executor.execute(this::syncRankings);
+        })));
         rankingPanel.browserLoader((selection,refresh,done,failed)->executor.execute(()->rankings.browserView(config,selection,refresh,done,failed)));
         rankingPanel.discordLogin(()->discordSignIn.start(config,message->{if(rankingPanel!=null)rankingPanel.loginStatus(message);}));
         rankingPanel.fallbackLogin(()->discordSignIn.startCode(config,

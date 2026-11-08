@@ -56,8 +56,11 @@ public class RankingPanelTest {
             data.add("rankManagement",RankManagementPanelTest.data());panel.showData(data);assertNull(button(panel,"Manage player ranks"));
             data.getAsJsonObject("profile").addProperty("permission","OWNER");data.getAsJsonObject("profile").addProperty("rank","Owner");panel.showData(data);
             assertNotNull(button(panel,"Manage player ranks"));assertNotNull(findLabel(panel,"Rank: Owner"));assertNotNull(findLabel(panel,"Rank: Owner").getIcon());
+            assertNotNull(button(panel,"Manage manual awards"));assertNull(button(panel,"Request manual reward"));
+            assertNotNull(button(panel,"Verified clan membership"));
             JsonObject other=snapshot();other.getAsJsonObject("profile").addProperty("name","Raider");panel.showMember(other);assertNull(button(panel,"Manage player ranks"));
             panel.clear("Signed out");assertNull(button(panel,"Manage player ranks"));
+            assertNull(button(panel,"Manage manual awards"));assertNull(button(panel,"Verified clan membership"));
         });
     }
     @Test public void profileFitsNarrowSidebarWithoutClippingRightHandTotals()throws Exception {

@@ -44,5 +44,7 @@ final class DatabaseInitialization {
         script(c,"/collection-milestone-balance-v2.sql");
         script(c,"/prestige-combat-rewards-v2.sql");
         script(c,"/efficiency-rewards-v2.sql");
+        script(c,"/weekly-membership.sql");
+        script(c,"/verified-membership.sql");
     }
 }

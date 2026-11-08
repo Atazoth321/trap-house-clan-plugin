@@ -12,6 +12,42 @@ import static org.junit.Assert.*;
 
 /** Uses a fresh isolated schema per test in an explicitly selected disposable PostgreSQL DB. */
 public class RankingPostgresTest {
+    @Test public void ownerDirectAwardsToInactiveMembersAreImmediateAndRetrySafe()throws Exception {
+        RankingStore.execute(c,"UPDATE members SET active=false WHERE id=?",member.id);
+        JsonObject body=new JsonObject();body.addProperty("id",UUID.randomUUID().toString());body.addProperty("points",50);body.addProperty("reason","Verified event attendance");
+        rejected(403,()->RankSecurity.adjust(c,member,member.id,body));
+        rejected(403,()->RankSecurity.adjust(c,admin,member.id,body));
+        assertEquals("ADJUSTED",RankSecurity.adjust(c,clanOwner,member.id,body).get("status").getAsString());
+        assertEquals("DUPLICATE",RankSecurity.adjust(c,clanOwner,member.id,body).get("status").getAsString());
+        assertEquals(1,count("point_adjustments"));assertEquals(0,count("manual_rewards"));
+        try(PreparedStatement s=RankingStore.query(c,"SELECT sum(points) FROM point_entries WHERE member_id=?",member.id);ResultSet r=s.executeQuery()){r.next();assertEquals(50,r.getInt(1));}
+        body.addProperty("id",UUID.randomUUID().toString());
+        assertEquals("ADJUSTED",RankSecurity.adjust(c,clanOwner,clanOwner.id,body).get("status").getAsString());
+    }
+    private JsonObject verifiedRange(String start,String end) {
+        JsonObject body=new JsonObject();body.addProperty("id",UUID.randomUUID().toString());body.addProperty("startDate",start);body.addProperty("endDate",end);body.addProperty("reason","Verified clan roster archive");return body;
+    }
+    @Test public void ownerCanVerifyOwnAndInactiveMemberHistoryWithoutOverlap()throws Exception {
+        JsonObject body=verifiedRange("2020-01-01","2020-01-15");
+        rejected(403,()->VerifiedMembership.award(c,member,member.id,body));
+        rejected(403,()->VerifiedMembership.award(c,admin,member.id,body));
+        assertEquals(50,VerifiedMembership.award(c,clanOwner,clanOwner.id,body).get("points").getAsInt());
+        assertEquals("DUPLICATE",VerifiedMembership.award(c,clanOwner,clanOwner.id,body).get("status").getAsString());
+        assertEquals(1,count("ledger"));assertEquals(1,count("verified_membership_awards"));
+        rejected(409,()->VerifiedMembership.award(c,clanOwner,clanOwner.id,verifiedRange("2020-01-08","2020-01-22")));
+        assertEquals(25,VerifiedMembership.award(c,clanOwner,clanOwner.id,verifiedRange("2020-01-15","2020-01-22")).get("points").getAsInt());
+        RankingStore.execute(c,"UPDATE members SET active=false WHERE id=?",member.id);
+        assertEquals(50,VerifiedMembership.award(c,clanOwner,member.id,verifiedRange("2020-01-01","2020-01-15")).get("points").getAsInt());
+        assertEquals(3,RankManagement.read(c,clanOwner).getAsJsonArray("membershipMembers").size());
+        try(PreparedStatement s=RankingStore.query(c,"SELECT count(*) FROM audit WHERE action='MEMBERSHIP_VERIFIED'");ResultSet r=s.executeQuery()){r.next();assertEquals(3,r.getInt(1));}
+    }
+    @Test public void verifiedHistoryCannotIncludeAutomaticTrackingOrFutureDates()throws Exception {
+        RankingStore.execute(c,"UPDATE membership_reward_state SET started_at='2024-01-01T12:00:00Z' WHERE member_id=?",member.id);
+        rejected(400,()->VerifiedMembership.award(c,clanOwner,member.id,verifiedRange("2023-12-25","2024-01-02")));
+        rejected(400,()->VerifiedMembership.award(c,clanOwner,member.id,verifiedRange("2023-12-25","2099-01-02")));
+        assertEquals(0,count("ledger"));
+        assertEquals(25,VerifiedMembership.award(c,clanOwner,member.id,verifiedRange("2023-12-25","2024-01-01")).get("points").getAsInt());
+    }
     @Test public void jarCollectionUnlocksAndDropsShareOneLifetimeAward() throws Exception {
         AutomaticRewards.seed(c);
         JsonObject first=event("COLLECTION","jar of swamp");
@@ -1273,6 +1309,11 @@ public class RankingPostgresTest {
             s.execute(new String(input.readAllBytes(), StandardCharsets.UTF_8));
         }
         // Production init creates this in rank-thresholds-v1.sql before reward migrations.
+        for(String resource:new String[]{"/weekly-membership.sql","/verified-membership.sql"}) {
+            try(InputStream input=RankingServer.class.getResourceAsStream(resource);Statement s=c.createStatement()) {
+                s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));
+            }
+        }
         // Keep legacy rank fixtures here while providing the same migration registry.
         RankingStore.execute(c,"CREATE TABLE configuration_migrations (name varchar(100) PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())");
         for (RankingStore.Actor actor : new RankingStore.Actor[] {member, admin, clanOwner}) {

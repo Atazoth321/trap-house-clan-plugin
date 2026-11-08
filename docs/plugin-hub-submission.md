@@ -4,6 +4,8 @@ Update the existing `plugins/trap-house-clan-plugin` manifest in `runelite/plugi
 
 ## Changes in this release
 
+- Owner profile buttons open separate manual-award and verified-membership windows with searchable member dropdowns. Direct manual points use the existing audited adjustment API without a staff approval request. Verified historical date ranges earn 25 points per full week through a new Owner-only backend operation, with duplicate/overlap checks. The separate backend automatically awards all members 25 points per full week after its migration baseline, including inactive members. See [weekly membership rewards](weekly-membership-rewards.md). No gameplay is automated; backend migrations and deployment are required for new server behavior.
+
 - Expand pet recognition from 55 to 72 families, including supported alternate forms. Recognize historical jars when obtained entries are viewed in the player''s own collection log, with a reminder to search for jars in the reward browser. Backend rewards share one lifetime jar award across drops and collection observations. Chompy chick pays 250 points; Scurry and Moxi pay 350 each; other pet defaults remain 500.
 
 - Full clan browser with ten statistics, separate account-type standings, search, collection pages, Luck, Deserved and Dryboard, styled to match the clan sidebar.

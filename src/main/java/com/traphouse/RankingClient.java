@@ -75,6 +75,15 @@ final class RankingClient {
     synchronized void register(String id,boolean join) { java.util.UUID.fromString(id);registrationPath="/v1/clan-events/"+id+(join?"/register":"/cancel"); }
 
     Runnable rankChange(TrapHouseConfig config,String member,JsonObject body,java.util.function.Consumer<String> done) {
+        return ownerChange(config,member,"rank",body,done);
+    }
+    Runnable membershipChange(TrapHouseConfig config,String member,JsonObject body,java.util.function.Consumer<String> done) {
+        return ownerChange(config,member,"membership",body,done);
+    }
+    Runnable directAward(TrapHouseConfig config,String member,JsonObject body,java.util.function.Consumer<String> done) {
+        return ownerChange(config,member,"points",body,done);
+    }
+    private Runnable ownerChange(TrapHouseConfig config,String member,String action,JsonObject body,java.util.function.Consumer<String> done) {
         java.util.UUID.fromString(member);
         final long epoch; synchronized(this){epoch=generation;}
         final String origin=endpoint(config.rankingUrl().trim()),token=config.rankingToken().trim();
@@ -84,9 +93,15 @@ final class RankingClient {
             String error=null;
             try {
                 if(!config.rankingEnabled()||token.isEmpty())throw new IOException("Ranking sync disabled");
-                try(Response response=http.newCall(request(origin+"/v1/admin/members/"+member+"/rank",token)
+                try(Response response=http.newCall(request(origin+"/v1/admin/members/"+member+"/"+action,token)
                     .post(RequestBody.create(MediaType.parse("application/json"),gson.toJson(command))).build()).execute()) {
-                    if(!response.isSuccessful())error=response.code()==401||response.code()==403?"Owner access rejected. Sign in and refresh.":"Rank change rejected (HTTP "+response.code()+"). Refresh and retry.";
+                    if(!response.isSuccessful()) {
+                        error=response.code()==401||response.code()==403?"Owner access rejected. Sign in and refresh.":"Change rejected (HTTP "+response.code()+"). Refresh and retry.";
+                        if(!action.equals("rank")&&response.code()!=401&&response.code()!=403&&response.body()!=null) {
+                            JsonObject rejection=gson.fromJson(response.body().string(),JsonObject.class);
+                            if(rejection!=null&&rejection.has("error")&&rejection.get("error").isJsonPrimitive())error=rejection.get("error").getAsString();
+                        }
+                    }
                 }
             }catch(IOException|RuntimeException failed){error="Could not confirm the change. Refresh before retrying.";}
             final String result=error;

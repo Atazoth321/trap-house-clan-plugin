@@ -117,10 +117,11 @@ public final class RankingServer {
 
     static JsonElement route(Connection c, RankingStore.Actor actor, String method, String path, String query, JsonObject body) throws SQLException {
         if(method.equals("POST")&&path.equals("/v1/browser/sync"))return ClanBrowserData.sync(c,actor,body);
-        if(method.equals("POST")&&path.matches("/v1/admin/members/[0-9a-fA-F-]{36}/(rank|points|permission)")) {
+        if(method.equals("POST")&&path.matches("/v1/admin/members/[0-9a-fA-F-]{36}/(rank|points|permission|membership)")) {
             String[] parts=path.split("/"); UUID member=Policy.uuid(parts[4]);
             if(parts[5].equals("rank"))return RankSecurity.changeRank(c,actor,member,body);
             if(parts[5].equals("points"))return RankSecurity.adjust(c,actor,member,body);
+            if(parts[5].equals("membership"))return VerifiedMembership.award(c,actor,member,body);
             return RankSecurity.permission(c,actor,member,body);
         }
         if(method.equals("POST")&&path.matches("/v1/admin/clan-events/[0-9a-fA-F-]{36}/publish"))
@@ -178,6 +179,7 @@ public final class RankingServer {
         server.setExecutor(pool);
         server.createContext("/", service::handle);
         ScheduledExecutorService notifications = Executors.newSingleThreadScheduledExecutor();
+        notifications.scheduleWithFixedDelay(() -> MembershipRewards.run(RankingServer::connect),10,1,TimeUnit.SECONDS);
         notifications.scheduleWithFixedDelay(() -> RankSecurity.promotions(RankingServer::connect),10,30,TimeUnit.SECONDS);
         String webhook = System.getenv("TRAP_DISCORD_WEBHOOK");
         if (webhook != null && !webhook.isBlank()) notifications.scheduleWithFixedDelay(new DiscordWorker(RankingServer::connect, webhook), 5, 5, TimeUnit.SECONDS);

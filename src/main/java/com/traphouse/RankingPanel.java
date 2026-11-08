@@ -61,6 +61,13 @@ final class RankingPanel extends JPanel {
     private RankManagementPanel.Save rankEditor=(member,body,done)->done.accept("Rank editor is not connected.");
     private JDialog rankWindow;
     private RankManagementPanel rankForm;
+    private MembershipHistoryPanel membershipForm;
+    private DirectAwardPanel directAwardForm;
+    private JDialog directAwardWindow,membershipWindow;
+    private RankManagementPanel.Save directAwardEditor=(member,body,done)->done.accept("Manual awards are not connected.");
+    void directAwardEditor(RankManagementPanel.Save editor){directAwardEditor=editor;}
+    private RankManagementPanel.Save membershipEditor=(member,body,done)->done.accept("Membership editor is not connected.");
+    void membershipEditor(RankManagementPanel.Save editor){membershipEditor=editor;}
     void rankEditor(RankManagementPanel.Save editor){rankEditor=editor;}
     private void openRankEditor() {
         if(snapshot==null||!snapshot.has("rankManagement")||!"OWNER".equals(string(snapshot.getAsJsonObject("profile"),"permission","")))return;
@@ -73,6 +80,30 @@ final class RankingPanel extends JPanel {
         rankWindow.pack();rankWindow.setLocationRelativeTo(this);rankWindow.setVisible(true);
     }
     private void closeRankEditor(){if(rankForm!=null)rankForm.close();if(rankWindow!=null)rankWindow.dispose();rankForm=null;rankWindow=null;}
+    private void closeMembershipForm(){if(membershipForm!=null)membershipForm.close();membershipForm=null;if(directAwardForm!=null)directAwardForm.close();directAwardForm=null;if(directAwardWindow!=null)directAwardWindow.dispose();if(membershipWindow!=null)membershipWindow.dispose();directAwardWindow=null;membershipWindow=null;}
+    private boolean ownerToolsAvailable(){return snapshot!=null&&snapshot.has("rankManagement")&&"OWNER".equals(string(snapshot.getAsJsonObject("profile"),"permission",""));}
+    private JDialog ownerWindow(String title,JPanel content) {
+        content.setBorder(BorderFactory.createEmptyBorder(12,12,12,12));ClanStyle.finish(content);
+        JDialog dialog=new JDialog(SwingUtilities.getWindowAncestor(this),"TRAP HOUSE - "+title,Dialog.ModalityType.MODELESS);
+        JScrollPane scroll=ClanStyle.scroll(content);dialog.setContentPane(scroll);dialog.setSize(460,580);
+        dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);dialog.setLocationRelativeTo(this);return dialog;
+    }
+    private void openDirectAwardEditor() {
+        if(!ownerToolsAvailable())return;
+        if(directAwardWindow!=null){directAwardWindow.toFront();return;}
+        directAwardForm=new DirectAwardPanel(snapshot.getAsJsonObject("rankManagement"),directAwardEditor);
+        final DirectAwardPanel form=directAwardForm;directAwardWindow=ownerWindow("Manual awards",form);final JDialog dialog=directAwardWindow;
+        dialog.addWindowListener(new java.awt.event.WindowAdapter(){public void windowClosed(java.awt.event.WindowEvent e){form.close();if(directAwardWindow==dialog){directAwardForm=null;directAwardWindow=null;}}});
+        dialog.setVisible(true);
+    }
+    private void openMembershipEditor() {
+        if(!ownerToolsAvailable())return;
+        if(membershipWindow!=null){membershipWindow.toFront();return;}
+        membershipForm=new MembershipHistoryPanel(snapshot.getAsJsonObject("rankManagement"),membershipEditor);
+        final MembershipHistoryPanel form=membershipForm;membershipWindow=ownerWindow("Verified clan membership",form);final JDialog dialog=membershipWindow;
+        dialog.addWindowListener(new java.awt.event.WindowAdapter(){public void windowClosed(java.awt.event.WindowEvent e){form.close();if(membershipWindow==dialog){membershipForm=null;membershipWindow=null;}}});
+        dialog.setVisible(true);
+    }
     void pointsLogLoader(BiConsumer<JsonObject,Consumer<JsonObject>> loader){logLoader=loader;}
     private JButton pointsTile(String member,String category,long points) {
         JButton button=new JButton();button.setLayout(new BorderLayout());button.add(ProfileStyle.tile(abbreviated(points),category,ProfileStyle.ACCENT));
@@ -143,7 +174,7 @@ final class RankingPanel extends JPanel {
     }
 
     void showData(JsonObject data) {
-        if(!"OWNER".equals(string(data.getAsJsonObject("profile"),"permission","")))closeRankEditor();
+        if(!"OWNER".equals(string(data.getAsJsonObject("profile"),"permission",""))){closeRankEditor();closeMembershipForm();}
         snapshot=data;
         if(!viewingOther)renderProfile(data,false); renderRanks(data);
         leaderboard=array(data,"leaderboard"); renderLeaderboardPage();
@@ -239,7 +270,14 @@ final class RankingPanel extends JPanel {
         if(!other) {
             if("OWNER".equals(string(player,"permission",""))&&data.has("rankManagement"))
                 ClanStyle.add(profile,ClanStyle.button("Manage player ranks",this::openRankEditor));
-            JPanel manual=ProfileStyle.card("MANUAL REWARDS"); manual.add(ClanStyle.text("Staff approval is required. Select a reward and provide evidence."));
+            boolean owner="OWNER".equals(string(player,"permission",""))&&data.has("rankManagement");
+            JPanel manual=ProfileStyle.card("MANUAL REWARDS");
+            if(owner) {
+                manual.add(ClanStyle.text("Give points directly to any member, including yourself or inactive members. No staff approval is needed."));
+                if(directAwardForm!=null)directAwardForm.updateMembers(data.getAsJsonObject("rankManagement"));
+                manual.add(ClanStyle.button("Manage manual awards",this::openDirectAwardEditor));
+            } else {
+            manual.add(ClanStyle.text("Staff approval is required. Select a reward and provide evidence."));
             Object selected=manualRules.getSelectedItem(); manualRules.removeAllItems();
             for(JsonElement element:array(data,"sources")) {
                 JsonObject source=element.getAsJsonObject(); if("MANUAL".equals(string(source,"type",""))) manualRules.addItem(string(source,"key",""));
@@ -247,10 +285,16 @@ final class RankingPanel extends JPanel {
             if(selected!=null)manualRules.setSelectedItem(selected);
             request.setEnabled(manualRules.getItemCount()>0);
             manual.add(manualRules); manual.add(reason); manual.add(request);
+            }
             for(JsonElement element:array(data,"rewards")) {
                 JsonObject row=element.getAsJsonObject(); manual.add(ClanStyle.text(string(row,"key","")+" / "+string(row,"status","")));
             }
-            ClanStyle.add(profile,manual); ClanStyle.add(profile,ClanStyle.button("Refresh rankings",refresh));
+            ClanStyle.add(profile,manual);
+            if("OWNER".equals(string(player,"permission",""))&&data.has("rankManagement")) {
+                if(membershipForm!=null)membershipForm.updateMembers(data.getAsJsonObject("rankManagement"));
+                ClanStyle.add(profile,ClanStyle.button("Verified clan membership",this::openMembershipEditor));
+            }
+            ClanStyle.add(profile,ClanStyle.button("Refresh rankings",refresh));
         }
         ClanStyle.finish(profile);
     }
@@ -463,6 +507,7 @@ final class RankingPanel extends JPanel {
         if(snapshot!=null||!message.equals(status.getText()))clear(message);
     }
     void clear(String message) {
+        closeMembershipForm();
         message(activity,"CLAN ACTIVITY",message);
         closeRankEditor();
         for(JDialog dialog:new java.util.ArrayList<>(logWindows)){((PointsLogPanel)dialog.getContentPane()).close();dialog.dispose();}logWindows.clear();
