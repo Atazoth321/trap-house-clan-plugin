@@ -82,6 +82,13 @@ final class ClanStyle {
         row.add(new JLabel(new ImageIcon(ImageUtil.loadImageResource(ClanStyle.class,"logo.png").getScaledInstance(42,42,Image.SCALE_SMOOTH))),BorderLayout.WEST);
         JPanel name = new JPanel(new GridLayout(2,1)); name.setOpaque(false);
         name.add(label("TRAP HOUSE.",16,WHITE)); name.add(label("PvM. Skill. TRAP.",10,GOLD));
-        row.add(name,BorderLayout.CENTER); header.add(row); return header;
+        row.add(name,BorderLayout.CENTER);header.add(row);
+        header.add(Box.createVerticalStrut(10));
+        JPanel divider=new JPanel();divider.setBackground(new Color(108,53,64));
+        divider.setPreferredSize(new Dimension(200,1));divider.setMaximumSize(new Dimension(Integer.MAX_VALUE,1));divider.setAlignmentX(Component.LEFT_ALIGNMENT);
+        header.add(divider);header.add(Box.createVerticalStrut(8));
+        JPanel links=new JPanel(new GridLayout(1,2,6,0));links.setOpaque(false);links.setAlignmentX(Component.LEFT_ALIGNMENT);
+        links.add(new CommunityLinkButton(true));links.add(new CommunityLinkButton(false));header.add(links);
+        return header;
     }
 }
