@@ -166,6 +166,11 @@ final class AutomaticRewards {
         seed(c,"expanded-encounter-and-clue-rewards-v1",ExpandedEncounterRewards.rules());
         AdditionalDropRewards.seed(c);
         seed(c,"beginner-and-skilling-drop-rewards-v1",BeginnerDropRewards.rules());
+        seed(c,"accessible-drop-rewards-v1",AccessibleDropRewards.rules());
+        seed(c,"slayer-drop-rewards-v1",SlayerDropRewards.rules());
+        seed(c,"broad-drop-rewards-v1",BroadDropRewards.rules());
+        seed(c,"wilderness-and-clue-rewards-v1",WildernessAndClueRewards.rules());
+        AccessibleDropRewards.balance(c);
     }
     private static void expandCowhideTestLimit(Connection c)throws SQLException {
         try(Statement s=c.createStatement()){s.execute("SELECT pg_advisory_xact_lock(72419051001)");}

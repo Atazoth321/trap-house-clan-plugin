@@ -14,6 +14,10 @@ final class BalancedRewards {
         for(AutomaticRewards.Rule rule:ExpandedEncounterRewards.rules())if(rule.type.equals("LOOT"))rules.put(rule.key,rule);
         for(AutomaticRewards.Rule rule:AdditionalDropRewards.rules())rules.put(rule.key,rule);
         for(AutomaticRewards.Rule rule:BeginnerDropRewards.rules())rules.put(rule.key,rule);
+        for(AutomaticRewards.Rule rule:AccessibleDropRewards.rules())rules.put(rule.key,rule);
+        for(AutomaticRewards.Rule rule:SlayerDropRewards.rules())rules.put(rule.key,rule);
+        for(AutomaticRewards.Rule rule:BroadDropRewards.rules())rules.put(rule.key,rule);
+        for(AutomaticRewards.Rule rule:WildernessAndClueRewards.rules())rules.put(rule.key,rule);
         CATALOG=Collections.unmodifiableMap(rules);
     }
     static String sharedItem(String type,String key) {

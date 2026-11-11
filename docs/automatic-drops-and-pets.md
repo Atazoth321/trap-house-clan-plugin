@@ -24,6 +24,59 @@ Supported automatic drop items allow **two awards per member per UTC day per ite
 
 ## Drop rewards
 
+### Wilderness and lower-tier clue expansion (55 items)
+
+The additive `wilderness-and-clue-rewards-v1` migration adds the following exact personal-loot rules. Existing enabled/disabled rules, custom prices and caps, and award history are preserved.
+
+| Source | Rewards | Points each |
+| --- | --- | ---: |
+| Ordinary Revenant Cave monsters | Uncharged Viggora's chainmace / Craw's bow / Thammaron's sceptre | 300 / 350 / 250 |
+| Ordinary Revenant Cave monsters | Amulet of avarice / ancient crystal | 100 / 50 |
+| Ordinary Revenant Cave monsters | Ancient emblem / totem / statuette | 25 / 40 / 75 |
+| Ordinary Revenant Cave monsters | Ancient medallion / effigy / relic | 100 / 150 / 250 |
+| Ordinary Revenant Cave monsters | Uncharged bracelet of ethereum | 5 |
+| Beginner clues | Mole/frog slippers, bear/demon feet, jester cape, shoulder parrot, trimmed monk robe top/bottom, all three sandwich lady pieces | 10 |
+| Easy clues | Flared trousers / pantaloons / sleeping cap | 50 / 25 / 25 |
+| Easy clues | Black pickaxe / ham joint / team capes zero, X and i | 10 / 75 / 25 |
+| Easy, medium and hard clues | All four pages for Saradomin, Zamorak, Guthix, Bandos, Armadyl and Ancient books | 10 |
+
+Clue items and bracelets pay once per item per member per UTC day. Other Revenant items pay up to twice per item/day. Caps are shared across supported monsters and clue tiers; quantities do not multiply points. Charged player-owned weapons, purchases and inventory scans do not qualify. Only the listed ordinary Revenant NPC IDs are covered; Maledictus and unlisted variants are excluded. Clue rewards require RuneLite Loot Tracker. Deploy the updated backend with successful `init` to enable these rewards. Unit tests cover duplicate keys, shared item caps, clue parsing, and exclusion of charged variants; live loot callbacks and PostgreSQL migration execution have not been verified from this workspace.
+
+### Broad drop expansion (52 items)
+
+The additive `broad-drop-rewards-v1` migration installs these rewards without overwriting existing rules or awarding historical backpay:
+
+| Source | New rewards | Points each |
+| --- | --- | ---: |
+| Dagannoth Supreme / Prime | Seercull / mud battlestaff | 50 |
+| K'ril Tsutsaroth | Steam battlestaff | 50 |
+| Thermonuclear smoke devil | Smoke battlestaff | 75 |
+| Fossil Island wyverns | Wyvern visage | 350 |
+| Alchemical Hydra | Hydra's heart, fang, eye | 50 |
+| Hard clues | Zamorak, Guthix, Saradomin, Ancient, Bandos and Armadyl bracers/coifs | 15 |
+| Hard clues | All six blessed d'hide bodies/chaps | 25 |
+| Hard clues | All six blessed d'hide boots/shields | 35 |
+| Medium clues | Wizard boots / holy sandals / spiked manacles | 50 / 100 / 100 |
+| Hard clues | Robin hood hat | 100 |
+| Elite clues | Rangers' tunic, rangers' tights, holy wraps / Fremennik kilt | 100 / 75 |
+
+The 44 clue items pay once per item per member per UTC day and appear under **Clues** in the reward browser. The eight boss items pay up to twice per item per day, shared across supported NPC variants. Keep RuneLite Loot Tracker enabled for personal clue reward-container observations. Buying, trading, banking and owning these items do not qualify. Deploy the updated backend with successful `init` to enable this catalog; no new client observation path is needed. Unit tests check catalog uniqueness, source restrictions, clue item parsing and shared-cap registration. Live loot callbacks and PostgreSQL migration execution have not been verified from this workspace.
+
+### Accessible drop expansion
+
+The additive `accessible-drop-rewards-v1` migration adds 20 items. Each pays once per member per UTC day, shared across its supported NPC sources. Existing rewards and staff customizations are preserved; previously tracked drops receive no backpay. Deploy the updated backend and run `init` (the Render pre-deploy command) to install them.
+
+| Drops | Points each |
+| --- | ---: |
+| Rune scimitar (fire giants) | 2 |
+| Dragon boots (spiritual mages), granite maul (gargoyles), dragon med helm (metal dragons), leaf-bladed sword (turoths/kurasks) | 10 |
+| Dragon platelegs/plateskirt (metal dragons) | 15 |
+| Black mask (10) (cave horrors), granite legs (skeletal wyverns), granite boots (Fossil Island wyverns) | 20 |
+| Dark/light mystic hats, gloves and boots (their respective Slayer monsters) | 5 |
+| Dark/light mystic robe tops and bottoms (their respective Slayer monsters) | 10 |
+
+Only personal NPC loot observations qualify. Purchases, trades, bank withdrawals and inventory ownership do not award points. This expansion preserves the existing higher rewards for boss drops such as abyssal whips, occult necklaces, berserker rings and Sarachnis cudgels.
+
 ### Visual reward browser
 
 The points log now extends the drop-card layout to **All**, **Pets**, **Milestones**, **Combat**, **Diaries**, **Challenges**, **Events**, **Collection**, and **Misc**. The **Available rewards** tab lists enabled point-paying rules and automatic goals in the selected category; **Award history** keeps the existing ledger view. Categories without a configured reward have an empty catalog. Efficiency awards remain visible in award history; their gain-based rates are shown on the profile rather than represented as collectible rewards.
@@ -95,3 +148,5 @@ These are authenticated client observations, not independent Jagex proof. A modi
 
 
 Barrows reward adjustment: the one-time deployment migration lowers unchanged enabled 150-point Barrows rules to 50 points per piece. Disabled rules, other custom amounts, and daily limits are preserved. Historical awards are retained at their original value; no points are deducted, and subsequent operator edits survive redeployment. This database migration has integration coverage but has not been executed against the live service from this workspace.
+
+The additive slayer-drop-rewards-v1 migration extends abyssal whips (100 points, two/day) to greater Abyssal demons and the additional Catacombs variant. It adds crawling hands (10), cockatrice/basilisk heads (15), kurask heads (25), abyssal heads (50), and dust battlestaves (25), once per item/day. Skeletal wyvern draconic visages pay 300 points with the existing shared two/day visage cap. Accessible-drop-balance-v2 raises only unchanged enabled original accessible-drop defaults; custom values, disabled rules and historical awards are preserved.
