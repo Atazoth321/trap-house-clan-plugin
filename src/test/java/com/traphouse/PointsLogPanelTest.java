@@ -9,6 +9,22 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class PointsLogPanelTest {
+    @Test public void refreshLoadsRewardsAddedAfterWindowOpened()throws Exception {
+        SwingUtilities.invokeAndWait(()->{
+            JsonObject log=data("Member",1,0);JsonArray catalog=new JsonArray();log.add("availableRewards",catalog);
+            java.util.List<JsonObject> queries=new ArrayList<>();
+            PointsLogPanel panel=new PointsLogPanel("Member","Drops",(query,done)->{queries.add(query);done.accept(log);});
+            assertFalse(text(panel,"Dragon boots"));
+            catalog.add(new Gson().fromJson("{category:'Drops',title:'Dragon boots',points:10,sourceType:'LOOT',sourceKey:'2212:11840',dailyLimit:1,received:false,receivedCount:0,earnedPoints:0}",JsonObject.class));
+            button(panel,"Refresh rewards").doClick();
+            assertEquals(2,queries.size());
+            assertEquals("Member",queries.get(1).get("player").getAsString());
+            assertEquals("Drops",queries.get(1).get("category").getAsString());
+            assertTrue(text(panel,"Dragon boots"));
+            assertTrue(text(panel,"+10 pts per drop"));
+            panel.close();
+        });
+    }
     @Test public void efficiencyCardsExplainRatesAndSharedWeeklyCap()throws Exception {
         SwingUtilities.invokeAndWait(()->{
             JsonObject log=data("Member",1,0);JsonArray catalog=new JsonArray();

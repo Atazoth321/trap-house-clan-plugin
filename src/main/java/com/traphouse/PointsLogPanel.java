@@ -20,8 +20,9 @@ final class PointsLogPanel extends JPanel {
     private final JTabbedPane views=new JTabbedPane();
     private final JPanel rewards=new JPanel(new BorderLayout(8,8));
     private final JLabel jarNote=ProfileStyle.label("<html><b>Already earned a jar?</b> Open your in-game Collection Log and search &quot;jar&quot;<br>to sync your unlocked jars. Each jar awards points once.</html>",12,ProfileStyle.TEXT);
-    private final JScrollPane rewardScroll=new JScrollPane(rewards);
+    private final JScrollPane rewardScroll=new PageScrollPane(rewards);
     private final JButton prev=ClanStyle.button("Prev",()->{}),next=ClanStyle.button("Next",()->{});
+    private final JButton refresh=ClanStyle.button("Refresh rewards",()->load());
     private final String member;
     private final BiConsumer<JsonObject,Consumer<JsonObject>> loader;
     private int page=1;private long revision;private boolean active=true;
@@ -35,9 +36,9 @@ final class PointsLogPanel extends JPanel {
         JPanel top=new JPanel(new BorderLayout(4,8)),filters=new JPanel(new FlowLayout(FlowLayout.LEFT,8,0)),paging=new JPanel(new FlowLayout(FlowLayout.RIGHT,8,0));
         top.setOpaque(false);filters.setOpaque(false);paging.setOpaque(false);group.setOpaque(false);group.setForeground(ProfileStyle.TEXT);
         source.setSelectedItem(category);filters.add(source);filters.add(sort);filters.add(ProfileStyle.label("Search:",11,ProfileStyle.TEXT));filters.add(search);filters.add(group);
-        paging.add(summary);paging.add(prev);paging.add(pagination);paging.add(next);top.add(filters,BorderLayout.NORTH);top.add(paging,BorderLayout.SOUTH);add(top,BorderLayout.NORTH);
+        paging.add(summary);paging.add(refresh);paging.add(prev);paging.add(pagination);paging.add(next);top.add(filters,BorderLayout.NORTH);top.add(paging,BorderLayout.SOUTH);add(top,BorderLayout.NORTH);
         cards.setBackground(ProfileStyle.BACKGROUND);JPanel content=new JPanel(new BorderLayout());content.setBackground(ProfileStyle.BACKGROUND);content.add(cards,BorderLayout.NORTH);
-        JScrollPane scroll=new JScrollPane(content);scroll.setBorder(null);scroll.getViewport().setBackground(ProfileStyle.BACKGROUND);scroll.getVerticalScrollBar().setUnitIncrement(16);
+        JScrollPane scroll=new PageScrollPane(content);scroll.setBorder(null);scroll.getViewport().setBackground(ProfileStyle.BACKGROUND);scroll.getVerticalScrollBar().setUnitIncrement(16);
         rewardCards.setBackground(ProfileStyle.BACKGROUND);rewards.setBackground(ProfileStyle.BACKGROUND);
         JPanel rewardHeader=new JPanel(new BorderLayout(8,8));rewardHeader.setOpaque(false);
         rewardHeader.add(ProfileStyle.label("Received status uses recorded point awards; earlier untracked achievements are not included.",11,ProfileStyle.MUTED),BorderLayout.CENTER);

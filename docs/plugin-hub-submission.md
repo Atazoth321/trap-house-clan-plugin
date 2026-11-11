@@ -4,23 +4,10 @@ Update the existing `plugins/trap-house-clan-plugin` manifest in `runelite/plugi
 
 ## Changes in this release
 
-- Owner profile buttons open separate manual-award and verified-membership windows with searchable member dropdowns. Direct manual points use the existing audited adjustment API without a staff approval request. Verified historical date ranges earn 25 points per full week through a new Owner-only backend operation, with duplicate/overlap checks. The separate backend automatically awards all members 25 points per full week after its migration baseline, including inactive members. See [weekly membership rewards](weekly-membership-rewards.md). No gameplay is automated; backend migrations and deployment are required for new server behavior.
+- Mouse-wheel scrolling over nested sidebar pages, reward cards and collection panes now passes to the enclosing page when the inner pane has no room to scroll in that direction. Scrollable inner content retains normal wheel handling.
+- The points-log window adds **Refresh rewards**, which reloads the current backend catalog and award history with the selected filters. Members can load newly deployed rewards without closing the window.
 
-- Expand pet recognition from 55 to 72 families, including supported alternate forms. Recognize historical jars when obtained entries are viewed in the player''s own collection log, with a reminder to search for jars in the reward browser. Backend rewards share one lifetime jar award across drops and collection observations. Chompy chick pays 250 points; Scurry and Moxi pay 350 each; other pet defaults remain 500.
-
-- Full clan browser with ten statistics, separate account-type standings, search, collection pages, Luck, Deserved and Dryboard, styled to match the clan sidebar.
-- Public browsing without a member credential; uploads and account actions remain authenticated. Optional sync now includes account type, total XP, collection and combat totals, clue/boss counters, and collection-page item observations. Opening/browsing the player's own collection book supplies historical observations; the plugin never opens it automatically.
-- Discord `/verify` code fallback for approved active character links when browser sign-in fails, with bounded single-use sessions and clearer retry behavior.
-- Expanded milestone/collection tracking, Profile collection thresholds with progress/completion indicators, and item sprites for new milestone and container rewards. The backend separately controls reward prices and caps, including higher EHP/EHB rewards and Sire exchange-only awards.
-
-- Confirmed drop and pet award celebrations with item sprites, category colors and separate settings. Newly observed earned rank milestones show the existing rank emblem, with an optional system beep that defaults to off. Initial connection establishes a silent baseline; repeated notification pages do not replay awards.
-- Loot and achievement observations request background ranking sync after a 150 ms batching window. Observations arriving during a sync request a follow-up; the regular 30-second sync remains a fallback. All displayed points still come from the server.
-- An Activity page displays shared confirmed awards and earned rank milestones from the ranking service. Older servers display an availability message.
-- Personal-loot observations cover additional boss encounters and clue caskets, with a separate Clues reward browser, first tracked clue completions, and 10/50/100 completion milestones. See [encounter and clue rewards](encounter-and-clue-rewards.md) for backend requirements.
-- Existing pets in inventory or a loaded bank can be recognized through an explicit item allowlist. Observations use the existing once-only named pet reward keys. See [existing pet recognition](existing-pet-tracking.md).
-- Reward cards resolve game item sprites, and leaderboard rows display clan rank emblems beside member names.
-
-The built-in Loot Tracker's personal-loot events are received through the event bus. The plugin does not declare a `PluginDependency` on Loot Tracker because it exposes no services. Members should enable Loot Tracker for container-loot observations. Backend rules, caps, categories and migrations are independently deployed and never included in the plugin JAR.
+The 133 additional drop rewards and point updates are already deployed separately on the ranking backend. This client submission does not deploy the backend or change reward prices. No new dependencies, network destinations, submitted data or gameplay interactions are introduced.
 
 ## Data and behavior
 

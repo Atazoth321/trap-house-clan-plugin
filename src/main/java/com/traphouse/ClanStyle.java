@@ -70,7 +70,7 @@ final class ClanStyle {
         panel.revalidate(); panel.repaint();
     }
     static JScrollPane scroll(JPanel panel) {
-        JScrollPane scroll = new JScrollPane(panel); scroll.setBorder(null);
+        JScrollPane scroll = new PageScrollPane(panel); scroll.setBorder(null);
         scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scroll.getVerticalScrollBar().setUnitIncrement(16); return scroll;
     }

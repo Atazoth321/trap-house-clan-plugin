@@ -32,7 +32,7 @@ final class BrowserStandings extends JPanel {
             }};for(int column=0;column<3;column++)table.getColumnModel().getColumn(column).setCellRenderer(renderer);
             table.addMouseListener(new MouseAdapter(){public void mouseClicked(MouseEvent event){int row=table.rowAtPoint(event.getPoint());if(event.getButton()==MouseEvent.BUTTON1&&event.getClickCount()==2&&row>=0)open.accept(String.valueOf(table.getValueAt(row,1)));}});
             table.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER,0),"collection");table.getActionMap().put("collection",new AbstractAction(){public void actionPerformed(ActionEvent event){int row=table.getSelectedRow();if(row>=0)open.accept(String.valueOf(table.getValueAt(row,1)));}});
-            JScrollPane scroll=new JScrollPane(table);scroll.setColumnHeaderView(table.getTableHeader());scroll.setBorder(null);scroll.getViewport().setBackground(CARD);card.add(scroll,BorderLayout.CENTER);
+            JScrollPane scroll=new PageScrollPane(table);scroll.setColumnHeaderView(table.getTableHeader());scroll.setBorder(null);scroll.getViewport().setBackground(CARD);card.add(scroll,BorderLayout.CENTER);
             if(rows.size()==0){JLabel empty=label(kind.equals("dryboard")?"No comparable drop KC yet":"No recorded scores",18,INK);empty.setHorizontalAlignment(SwingConstants.CENTER);card.add(empty,BorderLayout.SOUTH);}
             if(key.equals("unknown")){card.setPreferredSize(new Dimension(0,145));add(card,BorderLayout.SOUTH);}else columns.add(card);
         }
