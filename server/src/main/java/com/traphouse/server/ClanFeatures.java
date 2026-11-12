@@ -34,7 +34,23 @@ final class ClanFeatures {
             }
         }
         updateEventGoals(c,actor);
+        updateDiaryMilestone(c,actor);
         return RankingStore.result(actor.id.toString(),"SYNCED",0);
+    }
+
+    private static void updateDiaryMilestone(Connection c,Actor actor) throws SQLException {
+        // Use the canonical 48 tiers, not a count of whichever goals happen to be enabled.
+        // Older clients may sync every tier without supplying the aggregate observation.
+        try(PreparedStatement s=query(c,"SELECT count(*) FROM generate_series(1,48) tier(n) "
+            +"JOIN goals g ON g.id=('30000000-0000-4000-8000-'||lpad(tier.n::text,12,'0'))::uuid "
+            +"JOIN goal_progress p ON p.goal_id=g.id AND p.member_id=? "
+            +"WHERE g.source='VARBIT' AND p.completed_at IS NOT NULL AND p.value>=g.target",actor.id);
+            ResultSet r=s.executeQuery()) {
+            r.next();if(r.getInt(1)!=48)return;
+        }
+        try(PreparedStatement s=query(c,"SELECT id,target,points,category,name FROM goals WHERE enabled AND source='MILESTONE' AND source_key='ALL_DIARIES' AND target=1");ResultSet r=s.executeQuery()) {
+            while(r.next())progress(c,actor,r.getObject(1,UUID.class),1,r.getLong(2),r.getInt(3),r.getString(4),r.getString(5));
+        }
     }
 
     static void updateEventGoals(Connection c,Actor actor) throws SQLException {

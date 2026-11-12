@@ -438,6 +438,48 @@ public class RankingPostgresTest {
         AutomaticRewards.seed(c);assertEquals(123,RankingStore.rule(c,"LOOT","13599:29580")[0]);
         rejected(422,()->RankingStore.rule(c,"LOOT","13668:29799"));
     }
+    @Test public void allDiaryMilestoneUsesAll48SyncedTiersEvenWhenAggregateIsMissingOrZero()throws Exception {
+        seedDiaryMilestone();
+        UUID aggregate=UUID.fromString("40000000-0000-4000-8000-000000000007");
+        JsonObject body=observation(aggregate,0),values=body.getAsJsonObject("values");
+        for(int tier=1;tier<=47;tier++)values.addProperty(diaryTier(tier),1);
+        ClanFeatures.sync(c,member,body);
+        assertEquals(47,count("ledger"));
+        values.remove(aggregate.toString()); // The older client never reports this milestone.
+        values.addProperty(diaryTier(48),1);
+        ClanFeatures.sync(c,member,body);
+        assertEquals(49,count("ledger")); // 48 individual tiers and one combined reward.
+        try(PreparedStatement s=RankingStore.query(c,"SELECT completed_at,value FROM goal_progress WHERE member_id=? AND goal_id=?",member.id,aggregate);ResultSet r=s.executeQuery()) {
+            assertTrue(r.next());assertNotNull(r.getTimestamp(1));assertEquals(1,r.getInt(2));
+        }
+        ClanFeatures.sync(c,member,observation(aggregate,0)); // Stale aggregate cannot undo or repay it.
+        assertEquals(49,count("ledger"));
+        JsonObject other=observation(aggregate,0);other.addProperty("player",admin.name);
+        ClanFeatures.sync(c,admin,other); // Another member's tiers cannot qualify.
+        assertEquals(49,count("ledger"));
+    }
+    @Test public void missingDiaryTierAndDisabledAggregateDoNotGrantCombinedReward()throws Exception {
+        seedDiaryMilestone();
+        UUID aggregate=UUID.fromString("40000000-0000-4000-8000-000000000007");
+        JsonObject body=observation(aggregate,0),values=body.getAsJsonObject("values");
+        for(int tier=1;tier<=47;tier++)values.addProperty(diaryTier(tier),1);
+        RankingStore.execute(c,"UPDATE goals SET enabled=false WHERE id=?",UUID.fromString(diaryTier(48)));
+        ClanFeatures.sync(c,member,body);assertEquals(47,count("ledger"));
+        RankingStore.execute(c,"UPDATE goals SET enabled=true WHERE id=?",UUID.fromString(diaryTier(48)));
+        RankingStore.execute(c,"UPDATE goals SET enabled=false WHERE id=?",aggregate);
+        values.remove(aggregate.toString());values.addProperty(diaryTier(48),1);
+        ClanFeatures.sync(c,member,body);assertEquals(48,count("ledger"));
+    }
+    private static String diaryTier(int tier) {
+        return String.format(java.util.Locale.ROOT,"30000000-0000-4000-8000-%012d",tier);
+    }
+    private void seedDiaryMilestone()throws Exception {
+        for(String resource:new String[]{"/achievement-diaries.sql","/additional-milestones.sql"}) {
+            try(InputStream input=RankingServer.class.getResourceAsStream(resource);Statement s=c.createStatement()) {
+                s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));
+            }
+        }
+    }
     @Test public void achievementDiariesAwardEachTierOnceAndPreserveStaffEdits()throws Exception {
         String sql;
         try(InputStream input=RankingServer.class.getResourceAsStream("/achievement-diaries.sql")) {

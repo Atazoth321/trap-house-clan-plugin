@@ -2,7 +2,9 @@ package com.traphouse;
 
 import com.google.gson.*;
 import java.lang.reflect.Proxy;
+import java.util.Arrays;
 import net.runelite.api.*;
+import net.runelite.api.gameval.DBTableID;
 import net.runelite.api.gameval.VarPlayerID;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -17,6 +19,7 @@ public class MilestoneTrackerTest {
             if(m.getName().equals("getVarbitValue"))return (int)a[0]==1782?max:(int)a[0]==missing?0:1;
             if(m.getName().equals("getVarpValue"))return (int)a[0]==VarPlayerID.COLLECTION_COUNT_MAX?max:points;
             if(m.getName().equals("getItemContainer"))return a[0]==InventoryID.BANK?container:null;
+            if(m.getName().equals("getDBTableRows"))return null;
             throw new AssertionError("Unexpected game call: "+m.getName());
         });
     }
@@ -30,6 +33,33 @@ public class MilestoneTrackerTest {
         assertEquals(48,MilestoneTracker.DIARIES.length);
         assertEquals(Long.valueOf(1),MilestoneTracker.read(client(350,350,-1,0),"ALL_DIARIES"));
         for(int flag:MilestoneTracker.DIARIES)assertEquals(Long.valueOf(0),MilestoneTracker.read(client(350,350,flag,0),"ALL_DIARIES"));
+    }
+    @Test public void missingQuestPointMaximumFallsBackToReleasedRegularQuests() {
+        assertEquals(Long.valueOf(1),MilestoneTracker.read(questClient(-1,false,false),"ALL_QUESTS"));
+        assertEquals(Long.valueOf(0),MilestoneTracker.read(questClient(Quest.DEMON_SLAYER.getId(),false,false),"ALL_QUESTS"));
+        // An unfinished miniquest does not block the normal quest cape milestone.
+        assertEquals(Long.valueOf(1),MilestoneTracker.read(questClient(Quest.ALFRED_GRIMHANDS_BARCRAWL.getId(),false,false),"ALL_QUESTS"));
+    }
+    @Test public void questFallbackDoesNotAwardWhenCacheOrNewQuestIsUnknown() {
+        assertNull(MilestoneTracker.read(questClient(-1,true,false),"ALL_QUESTS"));
+        assertNull(MilestoneTracker.read(questClient(-1,false,true),"ALL_QUESTS"));
+    }
+    private Client questClient(int incomplete,boolean unknownQuest,boolean missingField) {
+        int[] lastQuest={-1};
+        return (Client)Proxy.newProxyInstance(Client.class.getClassLoader(),new Class<?>[]{Client.class},(p,m,a)->{
+            switch(m.getName()) {
+                case "getVarbitValue":return 0;
+                case "getDBTableRows":return unknownQuest
+                    ?Arrays.asList(Quest.COOKS_ASSISTANT.getId(),Quest.DEMON_SLAYER.getId(),999999)
+                    :Arrays.asList(Quest.COOKS_ASSISTANT.getId(),Quest.DEMON_SLAYER.getId(),Quest.ALFRED_GRIMHANDS_BARCRAWL.getId());
+                case "getDBTableField":
+                    if(missingField)return null;
+                    return new Object[]{(int)a[1]==DBTableID.Quest.COL_TYPE&&(int)a[0]==Quest.ALFRED_GRIMHANDS_BARCRAWL.getId()?2:1};
+                case "runScript":lastQuest[0]=(int)((Object[])a[0])[1];return null;
+                case "getIntStack":return new int[]{lastQuest[0]==incomplete?1:2};
+                default:throw new AssertionError("Unexpected game call: "+m.getName());
+            }
+        });
     }
     @Test public void itemMilestonesAcceptAppliedRewardsButRejectComponentsAndOrdinaryGear() {
         String[] keys={"QUIVER","MASORI_KIT","MENAPHITE_KIT","PURIFYING_SIGIL","ANCIENT_BLOOD_KIT"};
