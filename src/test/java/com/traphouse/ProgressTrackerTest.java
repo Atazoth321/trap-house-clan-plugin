@@ -38,6 +38,18 @@ public class ProgressTrackerTest {
         assertEquals(Long.valueOf(0),ProgressTracker.read(itemClient(InventoryID.INVENTORY,new Item(1,1)),"ITEM","6570"));
         assertEquals(Long.valueOf(0),ProgressTracker.read(itemClient(InventoryID.INVENTORY,new Item(6570,1)),"ITEM","21295"));
     }
+    @Test public void recognizesInfernalCapeVariantsInEachSupportedContainer() {
+        for(InventoryID location:new InventoryID[]{InventoryID.INVENTORY,InventoryID.EQUIPMENT,InventoryID.BANK}) {
+            for(int cape:new int[]{21295,21297,21287,23622,24224,33500,33502,21284,21285,21289,24133,33496,33498}) {
+                assertEquals("Infernal cape "+cape+" in "+location,Long.valueOf(1),
+                    ProgressTracker.read(itemClient(location,new Item(cape,1)),"ITEM","21295"));
+            }
+        }
+        for(int other:new int[]{6570,24223,13280,21282,1}) {
+            assertEquals("Non-infernal item "+other,Long.valueOf(0),
+                ProgressTracker.read(itemClient(InventoryID.INVENTORY,new Item(other,1)),"ITEM","21295"));
+        }
+    }
     private Client itemClient(InventoryID location,Item item) {
         ItemContainer container=(ItemContainer)Proxy.newProxyInstance(ItemContainer.class.getClassLoader(),new Class<?>[]{ItemContainer.class},(proxy,method,args)-> {
             if(method.getName().equals("getItems"))return new Item[]{item};

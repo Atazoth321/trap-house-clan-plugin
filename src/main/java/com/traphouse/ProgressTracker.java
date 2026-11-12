@@ -46,10 +46,11 @@ final class ProgressTracker {
         }
     }
     private static boolean matchesItem(int required,int observed) {
-        if(required!=6570&&required!=12954)return observed==required;
+        if(required!=6570&&required!=12954&&required!=21295)return observed==required;
         // Normalize both sides: some families use a broken item as their canonical ID.
         int family=ItemVariationMapping.map(observed);
         if(family==ItemVariationMapping.map(required))return true;
+        if(required==21295)return family==ItemVariationMapping.map(21285); // Infernal max cape variants.
         if(required==6570)return family==ItemVariationMapping.map(21295)
             ||family==ItemVariationMapping.map(21285); // Infernal max cape variants.
         return family==ItemVariationMapping.map(22322)

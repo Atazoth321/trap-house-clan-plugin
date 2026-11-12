@@ -4,10 +4,9 @@ Update the existing `plugins/trap-house-clan-plugin` manifest in `runelite/plugi
 
 ## Changes in this release
 
-- Mouse-wheel scrolling over nested sidebar pages, reward cards and collection panes now passes to the enclosing page when the inner pane has no room to scroll in that direction. Scrollable inner content retains normal wheel handling.
-- The points-log window adds **Refresh rewards**, which reloads the current backend catalog and award history with the selected filters. Members can load newly deployed rewards without closing the window.
+- The Infernal cape achievement now recognizes RuneLite's mapped locked, broken and alternate Infernal cape forms, including Infernal max capes. Previously only the standard item ID qualified. Inventory, equipment and loaded bank detection use the same matching.
 
-The 133 additional drop rewards and point updates are already deployed separately on the ranking backend. This client submission does not deploy the backend or change reward prices. No new dependencies, network destinations, submitted data or gameplay interactions are introduced.
+This client submission does not deploy the backend or change reward prices. No new dependencies, network destinations, submitted data or gameplay interactions are introduced. Existing Fire cape and defender variant matching is retained; quest completion behavior is unchanged.
 
 ## Data and behavior
 
