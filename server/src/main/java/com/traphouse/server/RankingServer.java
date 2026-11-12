@@ -57,7 +57,10 @@ public final class RankingServer {
             String method = exchange.getRequestMethod();
             String path = exchange.getRequestURI().getPath();
             if ("GET".equals(method) && "/health".equals(path)) {
-                JsonObject health = new JsonObject(); health.addProperty("status", "ok"); result = health;
+                JsonObject health = new JsonObject(); health.addProperty("status", "ok");
+                String commit=System.getenv("RENDER_GIT_COMMIT");
+                if(commit!=null&&commit.matches("[0-9a-f]{40}"))health.addProperty("commit",commit);
+                result = health;
             } else if ("GET".equals(method) && "/ready".equals(path)) {
                 try (Connection c = connections.open(); Statement s = c.createStatement()) {
                     s.executeQuery("SELECT 1 FROM members LIMIT 1").close();
