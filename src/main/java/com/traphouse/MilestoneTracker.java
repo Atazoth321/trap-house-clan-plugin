@@ -1,10 +1,6 @@
 package com.traphouse;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import net.runelite.api.*;
-import net.runelite.api.gameval.DBTableID;
 
 /** Passive, bounded observations for the additional one-time milestone rewards. */
 final class MilestoneTracker {
@@ -19,8 +15,7 @@ final class MilestoneTracker {
                     ?(long)client.getVarpValue(net.runelite.api.gameval.VarPlayerID.COLLECTION_COUNT):null;
             case "ALL_QUESTS":
                 int maximum=client.getVarbitValue(net.runelite.api.gameval.VarbitID.QP_MAX);
-                if(maximum<=0)return questCompletion(client);
-                return client.getVarpValue(VarPlayer.QUEST_POINTS)>=maximum?1L:0L;
+                return maximum<=0?null:client.getVarpValue(VarPlayer.QUEST_POINTS)>=maximum?1L:0L;
             case "ALL_DIARIES":
                 for(int flag:DIARIES)if(client.getVarbitValue(flag)!=1)return 0L;
                 return 1L;
@@ -31,34 +26,6 @@ final class MilestoneTracker {
             case "ANCIENT_BLOOD_KIT":return owns(client,28336,28254,28256,28258);
             default:return null;
         }
-    }
-    private static Long questCompletion(Client client) {
-        // The maximum-QP variable is not always populated. Consult the live quest
-        // table instead; its type distinguishes regular quests from miniquests.
-        List<Integer> rows=client.getDBTableRows(DBTableID.Quest.ID);
-        if(rows==null||rows.isEmpty()||rows.size()>512)return null;
-        int reference=Quest.COOKS_ASSISTANT.getId();
-        Integer type=questField(client,reference,DBTableID.Quest.COL_TYPE);
-        Integer release=questField(client,reference,DBTableID.Quest.COL_RELEASE_TYPE);
-        if(type==null||release==null||!rows.contains(reference))return null;
-        Map<Integer,Quest> quests=new HashMap<>();
-        for(Quest quest:Quest.values())quests.put(quest.getId(),quest);
-        boolean incomplete=false,unknown=false;
-        for(int row:rows) {
-            Integer rowType=questField(client,row,DBTableID.Quest.COL_TYPE);
-            Integer rowRelease=questField(client,row,DBTableID.Quest.COL_RELEASE_TYPE);
-            if(rowType==null||rowRelease==null){unknown=true;continue;}
-            if(!type.equals(rowType)||!release.equals(rowRelease))continue;
-            Quest quest=quests.get(row);
-            if(quest==null){unknown=true;continue;} // A new quest requires a matching API update.
-            if(quest.getState(client)!=QuestState.FINISHED)incomplete=true;
-        }
-        if(incomplete)return 0L;
-        return unknown?null:Long.valueOf(1);
-    }
-    private static Integer questField(Client client,int row,int column) {
-        Object[] values=client.getDBTableField(row,column,0);
-        return values!=null&&values.length==1&&values[0] instanceof Integer?(Integer)values[0]:null;
     }
     private static long owns(Client client,int... ids) {
         for(InventoryID location:new InventoryID[]{InventoryID.INVENTORY,InventoryID.EQUIPMENT,InventoryID.BANK}) {

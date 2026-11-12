@@ -4,9 +4,10 @@ Update the existing `plugins/trap-house-clan-plugin` manifest in `runelite/plugi
 
 ## Changes in this release
 
-- When the maximum quest-point variable is unavailable, the all-quests milestone checks the live game quest table and regular quest completion states. Miniquests do not block completion. Missing cache data and quests absent from the installed API remain unknown rather than granting an award.
+- Mouse-wheel scrolling over nested sidebar pages, reward cards and collection panes now passes to the enclosing page when the inner pane has no room to scroll in that direction. Scrollable inner content retains normal wheel handling.
+- The points-log window adds **Refresh rewards**, which reloads the current backend catalog and award history with the selected filters. Members can load newly deployed rewards without closing the window.
 
-The companion backend change completes the all-diaries milestone from the member's 48 recorded diary tiers, with the existing once-only reward handling. Deploy that change separately to Render; the quest fallback requires this client update. No new dependencies, network destinations, submitted data or gameplay interactions are introduced.
+The 133 additional drop rewards and point updates are already deployed separately on the ranking backend. This client submission does not deploy the backend or change reward prices. No new dependencies, network destinations, submitted data or gameplay interactions are introduced.
 
 ## Data and behavior
 
