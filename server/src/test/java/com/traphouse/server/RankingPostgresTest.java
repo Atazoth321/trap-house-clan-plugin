@@ -438,6 +438,40 @@ public class RankingPostgresTest {
         AutomaticRewards.seed(c);assertEquals(123,RankingStore.rule(c,"LOOT","13599:29580")[0]);
         rejected(422,()->RankingStore.rule(c,"LOOT","13668:29799"));
     }
+    @Test public void infernalCapeRecoversFromSavedCollectionEvidenceOnceDespiteZeroItemObservation()throws Exception {
+        UUID goal=UUID.randomUUID();
+        RankingStore.execute(c,"INSERT INTO goals(id,name,category,section,source,source_key,target,points,enabled) VALUES (?,'Infernal cape','Milestones','Milestones','ITEM','21295',1,750,true)",goal);
+        JsonObject page=JsonParser.parseString("{key:'the_inferno',label:'The Inferno',section:'Bosses',counter:1,items:[{id:21295,quantity:1}]}").getAsJsonObject();
+        syncInfernoPage(page);
+        ClanFeatures.sync(c,member,observation(goal,0));
+        ClanFeatures.sync(c,member,observation(goal,0));
+        assertEquals(1,count("ledger"));
+        try(PreparedStatement s=RankingStore.query(c,"SELECT points FROM ledger WHERE member_id=?",member.id);ResultSet r=s.executeQuery()) {
+            assertTrue(r.next());assertEquals(750,r.getInt(1));
+        }
+        JsonObject other=observation(goal,0);other.addProperty("player",admin.name);
+        ClanFeatures.sync(c,admin,other);assertEquals(1,count("ledger"));
+    }
+    @Test public void infernalCapeRequiresPositiveCapeQuantityAndRespectsDisabledGoal()throws Exception {
+        UUID goal=UUID.randomUUID();
+        RankingStore.execute(c,"INSERT INTO goals(id,name,category,section,source,source_key,target,points,enabled) VALUES (?,'Infernal cape','Milestones','Milestones','ITEM','21295',1,750,true)",goal);
+        for(String items:new String[]{"[{id:21295}]","[{id:21295,quantity:0}]","[{id:21291,quantity:1}]"}) {
+            JsonObject page=JsonParser.parseString("{key:'the_inferno',label:'The Inferno',section:'Bosses',counter:1,items:"+items+"}").getAsJsonObject();
+            syncInfernoPage(page);
+            ClanFeatures.sync(c,member,observation(goal,0));assertEquals(0,count("ledger"));
+        }
+        RankingStore.execute(c,"UPDATE goals SET enabled=false WHERE id=?",goal);
+        syncInfernoPage(JsonParser.parseString("{key:'the_inferno',label:'The Inferno',section:'Bosses',items:[{id:21295,quantity:2}]}").getAsJsonObject());
+        JsonObject empty=new JsonObject();empty.addProperty("player",member.name);empty.add("values",new JsonObject());
+        ClanFeatures.sync(c,member,empty);assertEquals(0,count("ledger"));
+        RankingStore.execute(c,"UPDATE goals SET enabled=true WHERE id=?",goal);
+        ClanFeatures.sync(c,member,empty);assertEquals(1,count("ledger"));
+    }
+    private void syncInfernoPage(JsonObject page)throws Exception {
+        JsonObject body=new JsonObject();body.addProperty("player",member.name);
+        JsonArray pages=new JsonArray();pages.add(page);body.add("pages",pages);
+        ClanBrowserData.sync(c,member,body);
+    }
     @Test public void allDiaryMilestoneUsesAll48SyncedTiersEvenWhenAggregateIsMissingOrZero()throws Exception {
         seedDiaryMilestone();
         UUID aggregate=UUID.fromString("40000000-0000-4000-8000-000000000007");
@@ -1351,7 +1385,7 @@ public class RankingPostgresTest {
             s.execute(new String(input.readAllBytes(), StandardCharsets.UTF_8));
         }
         // Production init creates this in rank-thresholds-v1.sql before reward migrations.
-        for(String resource:new String[]{"/weekly-membership.sql","/verified-membership.sql"}) {
+        for(String resource:new String[]{"/weekly-membership.sql","/verified-membership.sql","/clan-browser.sql"}) {
             try(InputStream input=RankingServer.class.getResourceAsStream(resource);Statement s=c.createStatement()) {
                 s.execute(new String(input.readAllBytes(),StandardCharsets.UTF_8));
             }

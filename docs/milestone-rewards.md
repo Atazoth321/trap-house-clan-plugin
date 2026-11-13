@@ -48,6 +48,8 @@ All thresholds combined: **2,850 points**. These stack with individual skill goa
 
 Combined: **2,450 points**. Detection checks inventory, equipment, or an opened bank. Fire cape also accepts Infernal capes and Infernal max capes; Infernal cape accepts Infernal max capes; Dragon defender also accepts Avernic defenders and Ghommal's Avernic defenders. These three milestones recognize RuneLite's mapped cosmetic, broken, and locked variants. An Avernic defender hilt alone does not qualify. Other item goals require their configured exact item ID. Possession is client evidence rather than independent server verification.
 
+After deploying the backend recovery, progress sync also credits the Infernal cape milestone when the member's saved `the_inferno` collection page explicitly records a positive quantity of item `21295`. This can recover credit after combining, storing or consuming the cape. An unknown or zero quantity, or an Inferno completion counter alone, does not qualify. Existing awards remain once-only; disabled goals remain disabled. Saved evidence is checked on the next authenticated progress sync, including evidence uploaded before deployment.
+
 ## Combat achievement tiers
 
 | Tier | Points |

@@ -35,7 +35,25 @@ final class ClanFeatures {
         }
         updateEventGoals(c,actor);
         updateDiaryMilestone(c,actor);
+        updateInfernalCapeMilestone(c,actor);
         return RankingStore.result(actor.id.toString(),"SYNCED",0);
+    }
+
+    private static void updateInfernalCapeMilestone(Connection c,Actor actor) throws SQLException {
+        // A logged cape remains evidence after it is combined, stored or consumed.
+        // Only this member's explicit positive item quantity qualifies, not a boss counter.
+        boolean obtained=false;
+        try(PreparedStatement s=query(c,"SELECT items::text FROM browser_collection_pages WHERE member_id=? AND page_key='the_inferno'",actor.id);ResultSet r=s.executeQuery()) {
+            if(r.next())for(JsonElement item:JsonParser.parseString(r.getString(1)).getAsJsonArray()) {
+                JsonObject entry=item.getAsJsonObject();
+                if(entry.get("id").getAsInt()==21295&&entry.has("quantity")&&!entry.get("quantity").isJsonNull()
+                    &&entry.get("quantity").getAsLong()>0)obtained=true;
+            }
+        }
+        if(!obtained)return;
+        try(PreparedStatement s=query(c,"SELECT id,target,points,category,name FROM goals WHERE enabled AND source='ITEM' AND source_key='21295' AND target=1");ResultSet r=s.executeQuery()) {
+            while(r.next())progress(c,actor,r.getObject(1,UUID.class),1,r.getLong(2),r.getInt(3),r.getString(4),r.getString(5));
+        }
     }
 
     private static void updateDiaryMilestone(Connection c,Actor actor) throws SQLException {
